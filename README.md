@@ -1,20 +1,18 @@
-# FinQuest — Guía de Setup
+# Blinkids — Guía de Setup
 
-> Juego educativo de finanzas para niños de 8-13 años.
-> Flutter + Flame + Supabase — mercado México 🇲🇽
+> Juego educativo de finanzas personales para niños de 8–13 años.  
+> Flutter 3.32 + Supabase · Orientación landscape · Mercado México 🇲🇽
 
 ---
 
 ## Requisitos previos
 
-| Herramienta | Versión mínima | Link |
-|---|---|---|
-| Flutter SDK | 3.32+ | https://docs.flutter.dev/get-started/install/windows |
-| Dart | 3.0+ | incluido con Flutter |
-| Supabase CLI | cualquiera | https://supabase.com/docs/guides/cli |
-| Android Studio | Ladybug+ | para Android |
-| Xcode | 15+ | para iOS (solo macOS) |
-| Git | cualquiera | https://git-scm.com |
+| Herramienta    | Versión mínima | Link |
+|----------------|---------------|------|
+| Flutter SDK    | 3.32+         | https://docs.flutter.dev/get-started/install/windows |
+| Dart           | 3.0+          | incluido con Flutter |
+| Android Studio | Ladybug+      | para compilar Android |
+| Git            | cualquiera    | https://git-scm.com |
 
 ---
 
@@ -25,19 +23,37 @@
 ```bash
 flutter doctor
 ```
-Android toolchain y/o Xcode deben estar en verde.
+Android toolchain debe estar en verde.
 
 ### 2. Instalar dependencias
 
 ```bash
-cd finquest/app
+cd app
 flutter pub get
 ```
 
-### 3. Configurar Supabase
+### 3. Configurar credenciales de Supabase
 
-1. Crea un proyecto en https://supabase.com
-2. Ve a **SQL Editor** y ejecuta los archivos en orden:
+Copia el archivo de ejemplo y rellena tus datos:
+
+```bash
+cp app/dart_defines/local.json.example app/dart_defines/local.json
+```
+
+Edita `app/dart_defines/local.json`:
+
+```json
+{
+  "SUPABASE_URL": "https://TU_PROYECTO.supabase.co",
+  "SUPABASE_ANON_KEY": "TU_ANON_KEY_AQUI"
+}
+```
+
+> ⚠️ `local.json` está en `.gitignore` — nunca se sube al repositorio.
+
+### 4. Configurar base de datos (Supabase)
+
+En el **SQL Editor** de tu proyecto Supabase, ejecuta los archivos en orden:
 
 ```
 supabase/migrations/001_extensions_types.sql
@@ -49,68 +65,26 @@ supabase/migrations/006_mission_market_tables.sql
 supabase/migrations/007_tutorial_purchases.sql
 supabase/migrations/008_rls_policies.sql
 supabase/migrations/009_seed_data.sql
-supabase/migrations/010_parent_notifications.sql   ← solicitudes de vinculación + notificaciones
+supabase/migrations/010_parent_notifications.sql
+supabase/migrations/011_unique_display_name.sql
+supabase/migrations/012_tutorials_seen.sql
+supabase/migrations/013_mark_tutorial_seen.sql
+supabase/migrations/014_invite_codes.sql
+supabase/migrations/015_child_sees_parent_profile.sql
+supabase/migrations/016_demo_accounts.sql
 ```
 
-3. Activa **Google Auth** en Supabase:
-   - Authentication → Providers → Google
-   - Agrega tu **Client ID** y **Client Secret** de Google Cloud Console
-   - Agrega `finquest://callback` en "Redirect URLs"
-
-4. Copia tus credenciales en `app/lib/core/constants/app_strings.dart`:
-
-```dart
-static const supabaseUrl    = 'https://TU_PROYECTO.supabase.co';
-static const supabaseAnonKey = 'TU_ANON_KEY_AQUI';
-```
-
-> ⚠️ **Nunca uses la `service_role` key** en la app Flutter — bypasea RLS.
-
-### 4. Configurar deep link OAuth
-
-**Android** — `android/app/src/main/AndroidManifest.xml`:
-
-```xml
-<intent-filter>
-    <action android:name="android.intent.action.VIEW" />
-    <category android:name="android.intent.category.DEFAULT" />
-    <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="finquest" android:host="callback" />
-</intent-filter>
-```
-
-**iOS** — `ios/Runner/Info.plist`:
-
-```xml
-<key>CFBundleURLTypes</key>
-<array>
-    <dict>
-        <key>CFBundleURLSchemes</key>
-        <array><string>finquest</string></array>
-    </dict>
-</array>
-```
-
-### 5. Agregar la fuente Nunito
-
-Descarga desde [Google Fonts](https://fonts.google.com/specimen/Nunito) y agrégala en `app/assets/fonts/`:
-
-```yaml
-# pubspec.yaml → flutter → fonts:
-fonts:
-  - family: Nunito
-    fonts:
-      - asset: assets/fonts/Nunito-Regular.ttf
-      - asset: assets/fonts/Nunito-Bold.ttf        weight: 700
-      - asset: assets/fonts/Nunito-ExtraBold.ttf   weight: 800
-      - asset: assets/fonts/Nunito-Black.ttf        weight: 900
-```
-
-### 6. Correr la app
+### 5. Correr la app
 
 ```bash
-flutter run                       # dispositivo conectado
-flutter run -d chrome             # web (solo para debug)
+# Debug en dispositivo conectado
+flutter run --dart-define-from-file=dart_defines/local.json
+
+# Compilar APK debug
+flutter build apk --dart-define-from-file=dart_defines/local.json --debug
+
+# Compilar APK release
+flutter build apk --dart-define-from-file=dart_defines/local.json --release
 ```
 
 ---
@@ -118,168 +92,123 @@ flutter run -d chrome             # web (solo para debug)
 ## Estructura del proyecto
 
 ```
-finquest/
-├── CHANGELOG.md                  ← historial de cambios
-├── README.md                     ← este archivo
+blinkids/
+├── README.md
+├── CHANGELOG.md
 │
-├── app/                          ← proyecto Flutter
+├── app/                              ← proyecto Flutter
 │   ├── pubspec.yaml
+│   ├── dart_defines/
+│   │   └── local.json.example        ← plantilla de credenciales
 │   └── lib/
 │       ├── main.dart
 │       ├── core/
-│       │   ├── constants/        ← app_colors, app_sizes, app_strings
-│       │   ├── router/           ← app_router, go_router_refresh_stream
-│       │   ├── theme/            ← app_theme
-│       │   └── utils/            ← extensions
+│       │   ├── constants/            ← app_colors, app_sizes, app_strings
+│       │   ├── router/               ← app_router, go_router_refresh_stream
+│       │   ├── theme/                ← app_theme
+│       │   └── utils/
 │       ├── data/
-│       │   ├── models/           ← profile, wallet, character, mission,
-│       │   │                        question, job, item, crafting_job,
-│       │   │                        app_notification, world
-│       │   ├── repositories/     ← auth, profile, wallet, character,
-│       │   │                        mission, question, job, item,
-│       │   │                        mission_tracker, parent, notification,
-│       │   │                        world
-│       │   └── services/         ← supabase_service
+│       │   ├── models/               ← profile, wallet, mission, question…
+│       │   ├── repositories/         ← auth, profile, wallet, mission…
+│       │   └── services/             ← supabase_service, analytics, push
 │       ├── features/
-│       │   ├── auth/             ← splash, login, register_role, register_profile
-│       │   ├── parent/           ← parent_home_screen, child_detail_screen
-│       │   ├── tutorial/         ← tutorial_screen
-│       │   ├── wallet/           ← wallet_screen
+│       │   ├── auth/
+│       │   │   ├── splash_screen.dart
+│       │   │   ├── adventurer_name_screen.dart
+│       │   │   ├── demo_complete_screen.dart
+│       │   │   ├── waiting_for_parent_screen.dart
+│       │   │   ├── pin_setup_screen.dart
+│       │   │   └── pin_entry_screen.dart
+│       │   ├── tutorial/
+│       │   │   └── tutorial_screen.dart
 │       │   └── worlds/
-│       │       ├── forest/       ← forest_world_map
-│       │       ├── space/        ← space_world_map
-│       │       ├── misiones/     ← misiones_screen
-│       │       ├── preguntas/    ← preguntas_screen
-│       │       ├── trabajos/     ← trabajos_screen + vendedor_frutas/
-│       │       ├── mercado/      ← mercado_screen (inventario + tienda + explorar)
-│       │       ├── tienda/       ← tienda_screen
-│       │       └── widgets/      ← forest_buildings, space_buildings
+│       │       ├── space/
+│       │       │   ├── space_world_map.dart   ← mapa principal Bloque 1
+│       │       │   └── banco_estelar_screen.dart
+│       │       └── world_selector_screen.dart
 │       └── shared/
-│           ├── providers/        ← auth, profile, wallet, character, world,
-│           │                        mission, question, job, item, parent
-│           └── widgets/          ← screen_tutorial, fin_button, coin_display,
-│                                    loading_overlay
+│           ├── providers/
+│           └── widgets/              ← blink_character, coin_display…
 │
-├── supabase/
-│   ├── migrations/               ← 10 archivos SQL numerados
-│   └── functions/                ← Edge Functions (Fase 3)
-│
-└── admin/                        ← Next.js panel admin (Fase 5)
+└── supabase/
+    ├── migrations/                   ← 16 archivos SQL numerados
+    └── functions/
+        └── send-push/                ← Edge Function notificaciones push
 ```
 
 ---
 
-## Flujo de autenticación
+## Flujo de la app (Bloque 1)
 
 ```
 App abre
-  └── SplashScreen
-        ├── No hay sesión  → /login
-        ├── Sin perfil     → /register/role → /register/profile
-        ├── Sin tutorial   → /tutorial
-        ├── Rol padre      → /parent
-        └── Rol hijo       → /world (ForestWorldMap)
+  └── SplashScreen (animación Blink + "Blinkids")
+        ├── Sin sesión          → /adventurer-name
+        ├── Demo, sin tutorial  → /tutorial
+        ├── Demo, con tutorial  → /world  (SpaceWorldMap)
+        └── Cuenta completa     → /enter-pin (o /setup-pin si no tiene)
+```
+
+### Registro de nuevo usuario (cuenta demo)
+
+```
+/adventurer-name  →  elige nombre de aventurero
+                  →  crea sesión anónima Supabase
+                  →  crea perfil con account_type='demo'
+                  →  /tutorial
+                  →  /world
 ```
 
 ---
 
-## Rutas principales
+## Rutas activas (Bloque 1)
 
 | Ruta | Pantalla |
-|---|---|
+|------|----------|
 | `/` | SplashScreen |
-| `/login` | LoginScreen |
-| `/register/role` | RegisterRoleScreen |
-| `/register/profile` | RegisterProfileScreen |
+| `/adventurer-name` | AdventurerNameScreen |
 | `/tutorial` | TutorialScreen |
-| `/world` | ForestWorldMap |
-| `/world-space` | SpaceWorldMap |
+| `/world` | SpaceWorldMap |
+| `/space/banco_estelar` | BancoEstelarScreen |
 | `/worlds` | WorldSelectorScreen |
-| `/world/misiones` | MisionesScreen |
-| `/world/preguntas` | PreguntasScreen |
-| `/world/trabajos` | TrabajosScreen (crafting jobs) |
-| `/world/mercado` | MercadoScreen (inventario + mi tienda + explorar) |
-| `/world/tienda` | TiendaScreen |
-| `/wallet` | WalletScreen |
-| `/parent` | ParentHomeScreen |
-| `/parent/child` | ChildDetailScreen |
+| `/demo-end` | DemoCompleteScreen |
+| `/waiting-parent` | WaitingForParentScreen |
+| `/setup-pin` | PinSetupScreen |
+| `/enter-pin` | PinEntryScreen |
+
+Las rutas de Bloque 2+ (`/misiones`, `/trabajos`, `/mercado`, etc.) muestran una pantalla de "Próximamente".
 
 ---
 
-## Sistema de economía del juego
-
-### Ítems (12 total)
-- **Bosque (6):** Tablón de Madera 🪵, Martillo 🔨, Hierba Mágica 🌿, Poción de Vida 🧪, Bellota 🌰, Gema del Bosque 💎 (solo misión)
-- **Espacio (6):** Tornillo Espacial 🔩, Llave Inglesa 🔧, Batería ⚡, Cápsula de Combustible 💊, Circuito Lunar 🖥️, Cristal Estelar 🔮 (solo misión)
-
-### Trabajos de Crafting (6 total)
-- **Bosque:** Reparar Cabaña 🏚️, Curar al Zorro 🦊, Festín de la Ardilla 🐿️
-- **Espacio:** Reparar Nave 🚀, Activar Estación ⚡, Arreglar Robot 🦾
-
-### Mercado (3 tabs)
-- 🎒 **Mi Inventario** — ítems comprados en la Tienda
-- 🏪 **Mi Tienda** — vender ítems a otros jugadores (máx. 10 anuncios)
-- 🔍 **Explorar** — comprar a otros jugadores
-
-### Misiones con seguimiento automático
-- Tipo `completeQuizzes` → se registra al responder preguntas correctas
-- Tipo `completeJobs` → se registra al completar trabajos de crafting
-- Tipo `buyFromShop` → se registra al comprar en la Tienda
-- Botón **Reclamar** aparece cuando se alcanza el objetivo
-
----
-
-## Panel de Padres
-
-### Funcionalidades
-- **Campana 🔔** — badge de notificaciones no leídas, panel deslizante lateral
-- **Tarjetas de hijos** — nivel, XP, monedas, misiones con emoji de evolución (🐣→🦊→🦁→🐉)
-- **Buscar hijo** — por apodo (display_name) o correo (vía RPC `search_child`)
-- **Solicitud de vinculación** — padre envía → notificación al niño → niño acepta
-- **Ver actividad** → `ChildDetailScreen`: historial de misiones, stats, barra XP
-- **Enviar monedas** — el padre deduce de su wallet y acredita al hijo + notificación automática
-
-### Tablas Supabase (migration 010)
-- `link_requests` — solicitudes padre→hijo con estado `pending/accepted/rejected`
-- `notifications` — notificaciones in-app por usuario
-- Función RPC `search_child(p_query)` — búsqueda por apodo O correo con SECURITY DEFINER
-
----
-
-## Reglas de seguridad (obligatorias)
-
-- 🔒 Nunca usar `service_role` key en Flutter — solo `anon` key
-- 🔒 Niños no pueden hacer compras reales — solo el padre
-- 🔒 Todas las transacciones reales van por Edge Functions
-- 🔒 La UI del niño solo muestra monedas virtuales, nunca dinero real
-- 🔒 RLS activado en todas las tablas
-
----
-
-## Estado actual del proyecto
+## Estado del Bloque 1 — entregado
 
 ### ✅ Completado
-- Estructura Flutter completa (Flame, Riverpod, GoRouter, Supabase)
-- Base de datos: 22+ tablas, RLS, seed data, 10 migraciones SQL
-- Autenticación: Google OAuth + email/password
-- Flujo de registro completo: rol → perfil → cartera → personaje → tutorial
-- **Bioma Bosque:** mapa 2D, 6 edificios funcionales, HUD completo
-- **Bioma Espacio:** mapa 2D, 6 estaciones, HUD cian
-- **Sistema de mundos:** selector con compra de mundos (Espacio: 500 🪙)
-- **Misiones** con seguimiento automático y recompensas
-- **Preguntas** (quiz) con explicaciones y registro en Supabase
-- **Trabajos de Crafting** con verificación de inventario y recompensas
-- **Mercado** (inventario + mi tienda + explorar marketplace)
-- **Tienda** filtrada por mundo con sistema de compra
-- **Sistema de economía:** 12 ítems, 6 crafting jobs, mission tracker
-- **Orientación landscape** forzada en todas las sub-pantallas de mundos
-- **Panel de Padres** rediseñado: notificaciones, búsqueda de hijos, actividad, envío de monedas
-- **Sistema XP:** barra de progreso, 4 etapas evolutivas de Juan
+- Splash nativo Android 12+ con Blink (sin círculo verde, sin recorte)
+- Animación splash Flutter: Blink cae con rebote + letras "Blinkids" una a una
+- Pantalla de nombre de aventurero con validación en tiempo real
+- Autenticación anónima Supabase (sin login ni Google OAuth)
+- Tutorial de 4 pasos con Blink grande + globo de texto animado
+- **Mundo Espacio:** mapa con 6 edificios, HUD superior, panel de perfil
+- Panel de perfil: avatar de Blink en círculo, nombre, nivel, estrellas XP, barra de progreso
+- **Banco Estelar:** pantalla funcional dentro del Mundo Espacio
+- Pantallas "Próximamente" para features de Bloque 2
+- Demo completa → flujo de espera de vinculación con papá
+- PIN de acceso para cuentas completas
+- Base de datos: 16 migraciones SQL con RLS activado
 
-### 🔲 Pendiente (Fases futuras)
-- Sincronizar mundos desbloqueados con Supabase (ahora solo en SharedPreferences)
-- Push notifications reales (Firebase Cloud Messaging)
-- Panel admin Next.js (Fase 5)
-- Edge Functions para transacciones atómicas de dinero real (Fase 3)
-- Biomas Océano y Desierto (bloqueados como "próximamente")
-- Animación de subida de nivel para Juan
+### 🔲 Pendiente (Bloques siguientes)
+- Módulo de Misiones
+- Módulo de Trabajos / Crafting
+- Módulo de Mercado (inventario + tienda + explorar)
+- Panel de Padres
+- Push notifications reales
+- Biomas adicionales (Bosque, Océano, Desierto)
+
+---
+
+## Seguridad
+
+- Nunca usar `service_role` key en Flutter — solo `anon` key
+- `dart_defines/local.json` está en `.gitignore`
+- RLS activado en todas las tablas de Supabase
+- Cuentas anónimas no tienen acceso a datos de otros usuarios
