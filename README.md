@@ -77,6 +77,8 @@ supabase/migrations/016_demo_accounts.sql
 ### 5. Correr la app
 
 ```bash
+cd app
+
 # Debug en dispositivo conectado
 flutter run --dart-define-from-file=dart_defines/local.json
 
