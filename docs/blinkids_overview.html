@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blinkids — Resumen de Producto</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #f7f8fc;
+      color: #1a1a2e;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── PORTADA ── */
+    .cover {
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 40px;
+      page-break-after: always;
+    }
+    .cover .emoji-big { font-size: 80px; margin-bottom: 20px; }
+    .cover h1 {
+      font-size: 56px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(90deg, #FFD600, #FF6D00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+    .cover .tagline {
+      font-size: 22px;
+      color: rgba(255,255,255,0.75);
+      font-weight: 600;
+      margin-bottom: 40px;
+    }
+    .cover .badge {
+      display: inline-block;
+      background: rgba(255,214,0,0.15);
+      border: 1.5px solid rgba(255,214,0,0.5);
+      color: #FFD600;
+      padding: 8px 24px;
+      border-radius: 40px;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 6px;
+    }
+    .cover .version {
+      margin-top: 60px;
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+    }
+
+    /* ── LAYOUT ── */
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 60px 50px;
+      page-break-after: always;
+    }
+    .page:last-child { page-break-after: avoid; }
+
+    /* ── SECCIÓN TÍTULO ── */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding-bottom: 14px;
+      border-bottom: 3px solid #FFD600;
+    }
+    .section-title .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .section-title h2 {
+      font-size: 26px;
+      font-weight: 900;
+      color: #1a1a2e;
+    }
+    .section-title p {
+      font-size: 13px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      border-left: 5px solid #FFD600;
+    }
+    .card.blue { border-left-color: #4A90E2; }
+    .card.green { border-left-color: #27AE60; }
+    .card.purple { border-left-color: #8E44AD; }
+    .card.orange { border-left-color: #FF6D00; }
+    .card.teal { border-left-color: #00BCD4; }
+    .card.red { border-left-color: #E74C3C; }
+    .card.pink { border-left-color: #E91E63; }
+
+    .card h3 {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card p { color: #444; font-size: 13px; }
+    .card ul { margin-top: 8px; padding-left: 20px; color: #444; font-size: 13px; }
+    .card ul li { margin-bottom: 4px; }
+
+    /* ── GRID ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    /* ── FLUJO / STEPS ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 24px;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      position: relative;
+    }
+    .flow-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 42px;
+      width: 2px;
+      height: calc(100% - 10px);
+      background: #e0e0e0;
+    }
+    .step-num {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #302b63, #24243e);
+      color: white;
+      font-weight: 900;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .step-content {
+      background: white;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      flex: 1;
+    }
+    .step-content h4 {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* ── PILL TAGS ── */
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .tag {
+      background: #f0f0f8;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #302b63;
+    }
+    .tag.yellow { background: #FFF9E0; color: #B8860B; }
+    .tag.green  { background: #E8F8F0; color: #1B6B3A; }
+    .tag.blue   { background: #E8F0FE; color: #1A4E8A; }
+    .tag.orange { background: #FFF0E0; color: #A84300; }
+    .tag.pink   { background: #FCE4EC; color: #880E4F; }
+
+    /* ── TABLA ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 13px;
+    }
+    thead tr { background: #302b63; color: white; }
+    thead th { padding: 12px 16px; text-align: left; font-weight: 700; }
+    tbody tr:nth-child(even) { background: #f7f8fc; }
+    tbody td { padding: 11px 16px; border-bottom: 1px solid #eee; }
+    tbody td:first-child { font-weight: 700; }
+
+    /* ── HIGHLIGHT BOX ── */
+    .highlight {
+      background: linear-gradient(135deg, #302b63 0%, #0f0c29 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+    }
+    .highlight h3 {
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      color: #FFD600;
+    }
+    .highlight p { font-size: 13px; color: rgba(255,255,255,0.8); }
+    .highlight ul { margin-top: 10px; padding-left: 20px; }
+    .highlight li { color: rgba(255,255,255,0.8); font-size: 13px; margin-bottom: 5px; }
+
+    /* ── MUNDO CARD ── */
+    .mundo-card {
+      border-radius: 16px;
+      padding: 22px;
+      color: white;
+      margin-bottom: 16px;
+    }
+    .mundo-card.forest {
+      background: linear-gradient(135deg, #1B5E20, #2E7D32);
+    }
+    .mundo-card.space {
+      background: linear-gradient(135deg, #0f0c29, #302b63);
+    }
+    .mundo-card h3 { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
+    .mundo-card p { font-size: 12px; color: rgba(255,255,255,0.75); margin-bottom: 12px; }
+    .mundo-card .activities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .mundo-card .act {
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* ── COIN SYSTEM ── */
+    .coin-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .coin-icon { font-size: 26px; }
+    .coin-info h4 { font-size: 13px; font-weight: 800; }
+    .coin-info p { font-size: 12px; color: #666; }
+    .coin-amount {
+      margin-left: auto;
+      font-weight: 900;
+      font-size: 15px;
+      color: #FF6D00;
+    }
+
+    /* ── PRINT ── */
+    @media print {
+      body { background: white; }
+      .page { padding: 40px 40px; }
+      .cover { min-height: auto; padding: 80px 60px; }
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #e0e0e0, transparent);
+      margin: 28px 0;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      color: #aaa;
+      font-size: 11px;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     PORTADA
+══════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="emoji-big">🦊🚀</div>
+  <h1>Blinkids</h1>
+  <p class="tagline">El videojuego que enseña a los niños a manejar su dinero</p>
+
+  <div>
+    <span class="badge">📱 iOS &amp; Android</span>
+    <span class="badge">👨‍👩‍👧 Para niños de 8 a 13 años</span>
+    <span class="badge">🎮 Gamificación completa</span>
+    <span class="badge">🇲🇽 Mercado México</span>
+  </div>
+
+  <p class="version">Documento de producto — Versión 1.0 · 2026</p>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PÁGINA 1 — ¿QUÉ ES BLINKIDS?
+══════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="section-title">
+    <div class="icon" style="background:#FFF9E0">💡</div>
+    <div>
+      <h2>¿Qué es Blinkids?</h2>
+      <p>El problema que resuelve y cómo lo hace</p>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <h3>🎯 La misión</h3>
+    <p>Los niños de hoy crecerán en un mundo donde saber manejar el dinero es fundamental. Sin embargo, la educación financiera no se enseña en la escuela. <strong style="color:white">Blinkids convierte ese aprendizaje en un videojuego que los niños quieren jugar.</strong></p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card blue">
+      <h3>😟 El problema</h3>
+      <ul>
+        <li>Los niños no aprenden finanzas en la escuela</li>
+        <li>Los papás no saben cómo enseñarlo</li>
+        <li>Las apps educativas son aburridas y los niños las abandonan</li>
+        <li>No existe supervisión parental en herramientas digitales de dinero para niños en México</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3>✅ La solución</h3>
+      <ul>
+        <li>Un videojuego atractivo con mecánicas de misiones, recompensas y progresión</li>
+        <li>El niño aprende jugando sin darse cuenta</li>
+        <li>El papá supervisa y participa desde su propio panel</li>
+        <li>Todo con <strong>monedas virtuales</strong> — sin dinero real en manos del niño</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🦊 El personaje — Blink</h3>
+    <p>Blink es un zorro aventurero que acompaña al niño en su viaje. El niño personaliza a Blink con cosméticos (casco, traje, mochila, botas, bandera) que gana jugando. A medida que sube de nivel y completa misiones, Blink se vuelve más poderoso.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">
+    <div class="icon" style="background:#E8F0FE">👥</div>
+    <div>
+      <h2>¿Quiénes usan Blinkids?</h2>
+      <p>Dos tipos de usuarios conectados en la misma app</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card purple">
+      <h3>👨‍👩‍👧 El Padre / Madre</h3>
+      <ul>
+        <li>Crea su cuenta y busca a su hijo por apodo</li>
+        <li>Envía una solicitud de vinculación</li>
+        <li>Asigna un <strong>salario semanal</strong> virtual (20–35 monedas Blink)</li>
+        <li>Ve la actividad, XP, nivel y monedas de su hijo en tiempo real</li>
+        <li>Puede enviar monedas extra como premio</li>
+        <li>Recibe notificaciones cuando el niño logra medallas</li>
+      </ul>
+    </div>
+    <div class="card orange">
+      <h3>🧒 El Niño</h3>
+      <ul>
+        <li>Crea su personaje Blink con un apodo</li>
+        <li>Acepta la vinculación del padre</li>
+        <li>Explora mundos, completa misiones y responde preguntas</li>
+        <li>Gana monedas Blink y las distribuye en su alcancía</li>
+        <li>Personaliza a Blink con cosméticos</li>
+        <li>Trabaja para llenar la barra de combustible y llegar a Marte 🚀</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">Blinkids · Documento confidencial · 2026</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PÁGINA 2 — LOS MUNDOS
+══════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="section-title">
+    <div class="icon" style="background:#E8F8F0">🌍</div>
+    <div>
+      <h2>Los Mundos</h2>
+      <p>Cada mundo es un ambiente visual diferente con las mismas actividades</p>
+    </div>
+  </div>
+
+  <div class="mundo-card forest">
+    <h3>🌲 Mundo Bosque — El inicio</h3>
+    <p>El primer mundo que desbloquea el niño. Ambientado en un bosque mágico con edificios temáticos. Disponible desde el primer día sin costo.</p>
+    <div class="activities">
+      <span class="act">⚔️ Misiones</span>
+      <span class="act">❓ Preguntas</span>
+      <span class="act">🔨 Trabajos</span>
+      <span class="act">🛒 Mercado</span>
+      <span class="act">🔮 Tienda</span>
+      <span class="act">🏠 Mi Bolsa</span>
+    </div>
+  </div>
+
+  <div class="mundo-card space">
+    <h3>🚀 Mundo Espacio — El reto</h3>
+    <p>El segundo mundo, desbloqueado al avanzar. La misión especial: <strong style="color:#FFD600">llenar la Barra de Combustible al 100%</strong> para que Blink llegue a Marte y entre al Hangar de Despegue.</p>
+    <div class="activities">
+      <span class="act">⚔️ Misiones</span>
+      <span class="act">❓ Preguntas</span>
+      <span class="act">🔨 Trabajos</span>
+      <span class="act">🛒 Mercado</span>
+      <span class="act">🔮 Tienda</span>
+      <span class="act">🏠 Mi Bolsa</span>
+      <span class="act">🚀 Hangar de Despegue</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">
+    <div class="icon" style="background:#FFF0E0">🏛️</div>
+    <div>
+      <h2>Las Actividades</h2>
+      <p>Qué hay dentro de cada edificio del mundo</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>⚔️ Misiones</h3>
+      <p>El niño se une a misiones grupales con metas de ahorro o aprendizaje. Al completarlas recibe monedas y XP. Hay misiones semanales y especiales.</p>
+    </div>
+    <div class="card blue">
+      <h3>❓ Preguntas</h3>
+      <p>Banco de preguntas educativas sobre finanzas personales. El niño elige dificultad: fácil, medio o difícil. Cada respuesta correcta da monedas y XP.</p>
+    </div>
+    <div class="card green">
+      <h3>🔨 Trabajos</h3>
+      <p>Mini-juegos temáticos (ej. Vendedor de Frutas) donde el niño "trabaja" para ganar monedas. Aprende conceptos como ganancia, costo y precio.</p>
+    </div>
+    <div class="card purple">
+      <h3>🛒 Mercado</h3>
+      <p>Simulación de mercado entre jugadores. El niño aprende a comprar barato y vender más caro, entendiendo oferta y demanda de forma práctica.</p>
+    </div>
+    <div class="card orange">
+      <h3>🔮 Tienda</h3>
+      <p>Catálogo oficial de artículos y cosméticos. El niño decide en qué gastar sus monedas, practicando la toma de decisiones financieras.</p>
+    </div>
+    <div class="card teal">
+      <h3>🏠 Mi Bolsa (Alcancía)</h3>
+      <p>El niño distribuye sus monedas en 3 categorías y aprende para qué sirve cada una.</p>
+      <div class="tags">
+        <span class="tag yellow">🐷 Guardar</span>
+        <span class="tag blue">🏦 Banco Estelar</span>
+        <span class="tag orange">🛒 Gastar</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Blinkids · Documento confidencial · 2026</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PÁGINA 3 — LOS SISTEMAS DEL JUEGO
+══════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="section-title">
+    <div class="icon" style="background:#FCE4EC">⚙️</div>
+    <div>
+      <h2>Sistemas del Juego</h2>
+      <p>Las mecánicas que mantienen al niño motivado y regresando cada día</p>
+    </div>
+  </div>
+
+  <!-- Monedas Blink -->
+  <div class="card" style="border-left-color:#FFD600">
+    <h3>🪙 Monedas Blink — La moneda del juego</h3>
+    <p>Todas las transacciones dentro de Blinkids usan <strong>Monedas Blink</strong>, una moneda 100% virtual. El niño nunca maneja dinero real. El padre asigna las monedas como parte del sistema de salario semanal.</p>
+    <div style="margin-top:14px">
+      <div class="coin-row">
+        <span class="coin-icon">⚔️</span>
+        <div class="coin-info"><h4>Completar misión</h4><p>Al terminar una misión del mundo</p></div>
+        <span class="coin-amount">+10 a +30 🪙</span>
+      </div>
+      <div class="coin-row">
+        <span class="coin-icon">❓</span>
+        <div class="coin-info"><h4>Respuesta correcta</h4><p>Según la dificultad elegida</p></div>
+        <span class="coin-amount">+3 a +10 🪙</span>
+      </div>
+      <div class="coin-row">
+        <span class="coin-icon">🔨</span>
+        <div class="coin-info"><h4>Completar trabajo</h4><p>Mini-juego del vendedor de frutas</p></div>
+        <span class="coin-amount">+15 a +25 🪙</span>
+      </div>
+      <div class="coin-row">
+        <span class="coin-icon">💰</span>
+        <div class="coin-info"><h4>Salario semanal del padre</h4><p>Asignado cada semana por el padre</p></div>
+        <span class="coin-amount">+20 a +35 🪙</span>
+      </div>
+      <div class="coin-row">
+        <span class="coin-icon">🏦</span>
+        <div class="coin-info"><h4>Interés del Banco Estelar</h4><p>Automático cada domingo</p></div>
+        <span class="coin-amount">+5 🪙</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- XP y Niveles -->
+    <div class="card green">
+      <h3>⭐ XP y Niveles</h3>
+      <p>Cada acción en el juego da puntos de experiencia (XP). Al acumular 100 XP el niño sube de nivel. No hay límite de niveles. El nivel es visible para el padre en el panel de supervisión.</p>
+      <div class="tags" style="margin-top:10px">
+        <span class="tag green">Misión → +50 XP</span>
+        <span class="tag green">Pregunta → +10-25 XP</span>
+        <span class="tag green">Trabajo → +30 XP</span>
+      </div>
+    </div>
+
+    <!-- Rachas -->
+    <div class="card pink">
+      <h3>🔥 Sistema de Rachas</h3>
+      <p>Por entrar al juego días y semanas consecutivas el niño recibe bonos de monedas. Esto incentiva el hábito diario.</p>
+      <ul>
+        <li><strong>3 días seguidos</strong> → +5 monedas</li>
+        <li><strong>4 semanas seguidas</strong> → +15 monedas</li>
+        <li><strong>8 semanas seguidas</strong> → +25 monedas</li>
+        <li><strong>12 semanas seguidas</strong> → +35 monedas</li>
+      </ul>
+    </div>
+
+    <!-- Medallas -->
+    <div class="card">
+      <h3>🏅 Medallas (Badges)</h3>
+      <p>El niño gana medallas automáticamente al alcanzar hitos. Se muestran en su perfil y el padre las ve en su panel.</p>
+      <ul>
+        <li>Nivel 5, 10, 20 alcanzado</li>
+        <li>10, 30 misiones completadas</li>
+        <li>100, 500 monedas ahorradas</li>
+        <li>7 y 30 días de racha</li>
+        <li>Primer mundo completado</li>
+      </ul>
+    </div>
+
+    <!-- Cosméticos -->
+    <div class="card teal">
+      <h3>🎭 Cosméticos para Blink</h3>
+      <p>El niño personaliza a Blink equipando artículos en 5 ranuras. Algunos se compran con monedas Blink, otros se ganan por logros especiales.</p>
+      <div class="tags" style="margin-top:10px">
+        <span class="tag">⛑️ Casco</span>
+        <span class="tag">👔 Traje</span>
+        <span class="tag">🎒 Mochila</span>
+        <span class="tag">👢 Botas</span>
+        <span class="tag">🚩 Bandera</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Blinkids · Documento confidencial · 2026</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PÁGINA 4 — BANCO ESTELAR + COMBUSTIBLE + HANGAR
+══════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="section-title">
+    <div class="icon" style="background:#E8F0FE">🌟</div>
+    <div>
+      <h2>Los Tres Grandes Sistemas</h2>
+      <p>Las mecánicas más innovadoras de Blinkids</p>
+    </div>
+  </div>
+
+  <!-- Banco Estelar -->
+  <div class="highlight" style="margin-bottom:20px">
+    <h3>🏦 Banco Estelar — El poder del ahorro</h3>
+    <p>El niño puede guardar monedas en el <strong style="color:white">Banco Estelar</strong>, su cuenta de ahorro virtual. Cada domingo, de forma automática, <strong style="color:#FFD600">el banco le paga +5 monedas de interés</strong> por cada semana que mantuvo dinero guardado.</p>
+    <ul>
+      <li>Enseña el concepto de interés compuesto de forma práctica</li>
+      <li>El niño aprende que guardar dinero produce más dinero</li>
+      <li>No requiere ninguna acción del padre ni del niño — es automático cada domingo</li>
+    </ul>
+  </div>
+
+  <!-- Combustible -->
+  <div class="card orange">
+    <h3>🚀 Barra de Combustible — La gran meta</h3>
+    <p>En el Mundo Espacio, cada acción positiva del niño llena la <strong>Barra de Combustible</strong> del cohete de Blink. La meta: llegar al 100% para lanzar el cohete a Marte.</p>
+    <div style="background:#f7f8fc; border-radius:10px; padding:16px; margin-top:14px">
+      <p style="font-weight:800; margin-bottom:10px">¿Qué llena el combustible?</p>
+      <div class="grid-2" style="margin-bottom:0">
+        <div>
+          <div class="coin-row" style="margin-bottom:8px">
+            <span class="coin-icon" style="font-size:18px">💰</span>
+            <div class="coin-info"><h4>Cobrar salario semanal</h4></div>
+            <span class="coin-amount" style="font-size:13px">+8% 🚀</span>
+          </div>
+          <div class="coin-row" style="margin-bottom:8px">
+            <span class="coin-icon" style="font-size:18px">🐷</span>
+            <div class="coin-info"><h4>Guardar en la alcancía</h4></div>
+            <span class="coin-amount" style="font-size:13px">+5% 🚀</span>
+          </div>
+          <div class="coin-row" style="margin-bottom:0">
+            <span class="coin-icon" style="font-size:18px">🏦</span>
+            <div class="coin-info"><h4>Depositar en Banco Estelar</h4></div>
+            <span class="coin-amount" style="font-size:13px">+5% 🚀</span>
+          </div>
+        </div>
+        <div>
+          <div class="coin-row" style="margin-bottom:8px">
+            <span class="coin-icon" style="font-size:18px">🛒</span>
+            <div class="coin-info"><h4>Distribuir para gastos</h4></div>
+            <span class="coin-amount" style="font-size:13px">+3% 🚀</span>
+          </div>
+          <div class="coin-row" style="margin-bottom:8px">
+            <span class="coin-icon" style="font-size:18px">🔥</span>
+            <div class="coin-info"><h4>Racha diaria activa</h4></div>
+            <span class="coin-amount" style="font-size:13px">+2% 🚀</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hangar de Despegue -->
+  <div class="card purple">
+    <h3>🌌 Hangar de Despegue — La gran celebración</h3>
+    <p>Cuando la Barra de Combustible llega al 100%, aparece un botón brillante en el mapa espacial: <strong>"¡LANZAR COHETE!"</strong>. Al tocarlo:</p>
+    <ul style="margin-top:10px">
+      <li>🎉 Pantalla de celebración animada con cohete y estrellas</li>
+      <li>🪙 El niño recibe <strong>+50 monedas Blink</strong> de bonificación</li>
+      <li>🥇 Se desbloquea el <strong>Traje Dorado</strong> — cosmético exclusivo que solo se obtiene por este logro</li>
+      <li>🔄 La barra de combustible se reinicia a 0% para el siguiente ciclo</li>
+    </ul>
+    <p style="margin-top:10px; font-style:italic; color:#666">Esto crea un ciclo de motivación a largo plazo: el niño siempre tiene una gran meta que alcanzar.</p>
+  </div>
+
+  <div class="footer">Blinkids · Documento confidencial · 2026</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PÁGINA 5 — FLUJOS DE USO
+══════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="section-title">
+    <div class="icon" style="background:#E8F8F0">🗺️</div>
+    <div>
+      <h2>Flujos de Uso</h2>
+      <p>Cómo usan la app el padre y el niño paso a paso</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- Flujo Padre -->
+    <div>
+      <p style="font-weight:900; font-size:15px; margin-bottom:16px; color:#302b63">👨‍👩‍👧 Flujo del Padre</p>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>Registro</h4>
+            <p>Crea cuenta con correo y contraseña. Elige rol "Padre/Madre".</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>Genera un código</h4>
+            <p>La app genera un código de 6 letras válido 24 horas. Lo comparte con su hijo.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>Vinculación confirmada</h4>
+            <p>Cuando el hijo ingresa el código, quedan conectados. El padre recibe una notificación.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h4>Asigna salario semanal</h4>
+            <p>Desde el panel, elige entre 20 y 35 monedas Blink por semana para su hijo.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <h4>Monitorea el progreso</h4>
+            <p>Ve en tiempo real: nivel, XP, monedas, misiones completadas y medallas ganadas.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flujo Niño -->
+    <div>
+      <p style="font-weight:900; font-size:15px; margin-bottom:16px; color:#FF6D00">🧒 Flujo del Niño</p>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num" style="background:linear-gradient(135deg,#FF6D00,#FFD600)">1</div>
+          <div class="step-content">
+            <h4>Registro y personaje</h4>
+            <p>Crea su cuenta con un apodo. Elige rol "Niño" y conoce a Blink 🦊.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num" style="background:linear-gradient(135deg,#FF6D00,#FFD600)">2</div>
+          <div class="step-content">
+            <h4>Ingresa código del padre</h4>
+            <p>Escribe el código de 6 letras que le dio su papá/mamá para vincularse.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num" style="background:linear-gradient(135deg,#FF6D00,#FFD600)">3</div>
+          <div class="step-content">
+            <h4>Explora el mundo</h4>
+            <p>Entra al Bosque o al Espacio y toca los edificios para hacer actividades.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num" style="background:linear-gradient(135deg,#FF6D00,#FFD600)">4</div>
+          <div class="step-content">
+            <h4>Cobra su salario</h4>
+            <p>Cada semana aparece un botón "💰 ¡Cobrar!" en el HUD del mapa.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num" style="background:linear-gradient(135deg,#FF6D00,#FFD600)">5</div>
+          <div class="step-content">
+            <h4>Distribuye en su alcancía</h4>
+            <p>Decide cuánto guardar, cuánto al Banco Estelar y cuánto gastar.</p>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num" style="background:linear-gradient(135deg,#FF6D00,#FFD600)">6</div>
+          <div class="step-content">
+            <h4>¡Llega a Marte!</h4>
+            <p>Al llenar el combustible al 100%, lanza el cohete y gana el Traje Dorado 🥇.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">Blinkids · Documento confidencial · 2026</div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     PÁGINA 6 — PANEL DE PADRE + SEGURIDAD
+══════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="section-title">
+    <div class="icon" style="background:#E8F0FE">📊</div>
+    <div>
+      <h2>Panel del Padre</h2>
+      <p>Control total y visibilidad del progreso del niño</p>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card blue">
+      <h3>📈 Vista de actividad del hijo</h3>
+      <ul>
+        <li>Nivel actual y barra de XP</li>
+        <li>Total de monedas disponibles</li>
+        <li>Número de misiones completadas</li>
+        <li>Medallas ganadas (últimas 4 visibles)</li>
+        <li>Botón para ver detalle completo</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>💰 Gestión del salario</h3>
+      <ul>
+        <li>El padre elige entre 20 y 35 monedas por semana</li>
+        <li>El niño ve el botón "¡Cobrar!" en el mapa cada semana</li>
+        <li>El padre puede cambiar el monto cuando quiera</li>
+        <li>Si el padre no asigna salario, el niño simplemente no tiene el botón</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3>🔔 Notificaciones al padre</h3>
+      <ul>
+        <li>El hijo aceptó la vinculación</li>
+        <li>El hijo ganó una nueva medalla</li>
+        <li>El hijo llegó al Hangar de Despegue</li>
+      </ul>
+    </div>
+    <div class="card purple">
+      <h3>👥 Múltiples hijos</h3>
+      <ul>
+        <li>Un padre puede vincular a más de un hijo</li>
+        <li>Cada hijo aparece como una tarjeta separada</li>
+        <li>Se asigna salario individual por hijo</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">
+    <div class="icon" style="background:#FCE4EC">🔒</div>
+    <div>
+      <h2>Seguridad y Confianza</h2>
+      <p>Garantías para padres y niños</p>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="card red">
+      <h3>💳 Sin dinero real</h3>
+      <p>El niño nunca maneja dinero real. Las monedas Blink son 100% virtuales. No hay tarjetas ni pagos en la interfaz del niño.</p>
+    </div>
+    <div class="card orange">
+      <h3>👁️ Supervisión total</h3>
+      <p>El padre ve en tiempo real todo lo que hace su hijo en la app. No hay actividades ocultas ni comunicación entre niños.</p>
+    </div>
+    <div class="card green">
+      <h3>🔐 Datos seguros</h3>
+      <p>Toda la información está cifrada y almacenada de forma segura. Los datos del niño nunca se comparten con terceros.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">
+    <div class="icon" style="background:#FFF9E0">🗓️</div>
+    <div>
+      <h2>Resumen — Lo que aprende el niño</h2>
+      <p>Conceptos financieros enseñados a través del juego</p>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Concepto financiero</th>
+        <th>Cómo se enseña en Blinkids</th>
+        <th>Actividad</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Ahorro</td>
+        <td>Guardar monedas en "Guardar" o "Banco Estelar"</td>
+        <td>Mi Bolsa 🏠</td>
+      </tr>
+      <tr>
+        <td>Interés</td>
+        <td>El Banco Estelar paga +5 monedas cada domingo</td>
+        <td>Banco Estelar 🏦</td>
+      </tr>
+      <tr>
+        <td>Presupuesto</td>
+        <td>Distribuir el salario en 3 categorías</td>
+        <td>Alcancía 🐷</td>
+      </tr>
+      <tr>
+        <td>Ganancia y costo</td>
+        <td>Vender frutas a precio mayor al de compra</td>
+        <td>Trabajos 🔨</td>
+      </tr>
+      <tr>
+        <td>Oferta y demanda</td>
+        <td>Comprar barato y vender caro en el mercado</td>
+        <td>Mercado 🛒</td>
+      </tr>
+      <tr>
+        <td>Metas financieras</td>
+        <td>Ahorrar para llegar al Hangar de Despegue</td>
+        <td>Combustible 🚀</td>
+      </tr>
+      <tr>
+        <td>Decisiones de gasto</td>
+        <td>Elegir qué cosméticos comprar con monedas limitadas</td>
+        <td>Tienda 🔮</td>
+      </tr>
+      <tr>
+        <td>Hábito financiero</td>
+        <td>Sistema de rachas por entrar cada día</td>
+        <td>Racha diaria 🔥</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">Blinkids · Documento confidencial · 2026</div>
+</div>
+
+</body>
+</html>

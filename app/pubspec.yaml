@@ -1,0 +1,59 @@
+name: finquest
+description: FinQuest — Videojuego educativo de finanzas personales para niños
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Motor de juego 2D
+  flame: ^1.18.0
+
+  # Estado global
+  flutter_riverpod: ^2.5.1
+
+  # Navegación
+  go_router: ^14.2.0
+
+  # Backend
+  supabase_flutter: ^2.5.0
+
+  # Autenticación social
+  google_sign_in: ^6.2.1
+
+  # Animaciones Flutter
+  flutter_animate: ^4.5.0
+
+  # Almacenamiento local
+  shared_preferences: ^2.3.2
+
+  # URL launcher para OAuth en web
+  url_launcher: ^6.3.0
+
+  # Push notifications
+  onesignal_flutter: ^5.2.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/characters/
+    - assets/characters/blink/
+    - assets/characters/blink/top/
+    - assets/characters/blink/bottom/
+    - assets/worlds/
+    - assets/ui/
+    - assets/sounds/
+    - assets/images/worlds/forest/
+    - assets/images/worlds/space/
+    - assets/images/ui/

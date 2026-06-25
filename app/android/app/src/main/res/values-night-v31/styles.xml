@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/launch_background</item>
+        <!-- Android 12+ splash en modo oscuro: fondo oscuro, sin ícono, sin círculo -->
+        <item name="android:windowSplashScreenBackground">#060618</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/blink_splash</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#060618</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>
