@@ -7,11 +7,12 @@
 
 ## Requisitos previos
 
-| Herramienta    | Versión mínima | Link |
-|----------------|---------------|------|
+| Herramienta    | Versión mínima | Notas |
+|----------------|---------------|-------|
 | Flutter SDK    | 3.32+         | https://docs.flutter.dev/get-started/install/windows |
 | Dart           | 3.0+          | incluido con Flutter |
 | Android Studio | Ladybug+      | para compilar Android |
+| Xcode          | 15+           | para compilar iOS (solo macOS) |
 | Git            | cualquiera    | https://git-scm.com |
 
 ---
