@@ -6,6 +6,7 @@ final questionRepositoryProvider = Provider<QuestionRepository>(
   (_) => QuestionRepository(),
 );
 
-final forestQuestionsProvider = FutureProvider<List<Question>>((ref) async {
-  return ref.read(questionRepositoryProvider).getQuestionsForWorld();
+final questionsForWorldProvider =
+    FutureProvider.family<List<Question>, String>((ref, worldSlug) async {
+  return ref.read(questionRepositoryProvider).getQuestionsForWorld(worldSlug: worldSlug);
 });

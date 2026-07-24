@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Flutter (Chrome)",
+      "request": "launch",
+      "type": "dart",
+      "device": "chrome",
+      "toolArgs": ["--dart-define-from-file=C:\\Binkids\\Bloque 2 entrega\\blinkids\\app\\dart_defines\\local.json"]
+    },
+    {
+      "name": "Flutter (Android)",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": ["--dart-define-from-file=C:\\Binkids\\Bloque 2 entrega\\blinkids\\app\\dart_defines\\local.json"]
+    }
+  ]
+}

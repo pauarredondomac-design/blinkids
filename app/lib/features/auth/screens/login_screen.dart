@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -189,7 +189,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Image.asset(
-                            'assets/characters/blink/blink_dressed.png',
+                            'assets/blink/blink_dressed.png',
                             width: 200,
                             filterQuality: FilterQuality.high,
                           ).animate().scale(duration: 800.ms, curve: Curves.elasticOut),

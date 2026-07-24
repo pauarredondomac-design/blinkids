@@ -1,19 +1,18 @@
-// ─────────────────────────────────────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────────────────────────────────────
 // BlinkCharacterWidget
 //
-// Renderiza al personaje Blink en el mapa con animación de rebote.
+// Ensambla a Blink a partir de recortes PNG individuales.
 //
-// Arquitectura de capas (se activa cuando llegan los PNGs separados):
+// Orden de pintura (de abajo a arriba):
+//   1. cuerpo_principal   — cuerpo en calzones (referencia de ancho)
+//   2. pants / bottom     — pantalón, sobre cintura y piernas
+//   3. top / sudadera     — sudadera, cubre torso y brazos
+//   4. boots              — botas, en los pies
+//   5. accesorios         — guantes, a la altura de los puños
+//   6. cabeza / helmet    — cabeza que encaja en el stub gris del cuerpo
 //
-//   Stack [
-//     blink_base.png      ← cuerpo desnudo (sin accesorios)
-//     bottom/[id].png     ← accesorio de tronco inferior (OBLIGATORIO)
-//     top/[id].png        ← accesorio de tronco superior (OBLIGATORIO)
-//     head/[id].png       ← sombrero (opcional)
-//   ]
-//
-// Modo actual: imagen única (blink_dressed.png) hasta que lleguen los
-// PNGs de capas separadas. Cambiar [useLayeredMode] a true cuando estén.
+// Todos los offsets son fracciones de W (ancho del cuerpo) y pueden
+// ajustarse en _BlinkLayout si el ilustrador entrega nuevas proporciones.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -22,23 +21,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/providers/cosmetic_provider.dart';
 import '../../data/models/cosmetic.dart';
 
-// ─── Rutas de assets ─────────────────────────────────────────────────────────
+// ─── Paths base (vestidor) ────────────────────────────────────────────────────
+const _kBody    = 'assets/blink/layers/cuerpo_principal.png';
+const _kHead    = 'assets/blink/layers/cabeza_principal.png';
+const _kDefTop  = 'assets/blink/layers/sudadera_azul.png';
+const _kDefBot  = 'assets/blink/layers/pants_azul.png';
 
-/// Imagen de Blink sin accesorios (body desnudo).
-/// Se activa en [useLayeredMode = true].
-const String _kBlinkBase    = 'assets/characters/blink/blink_base.png';
-
-/// Imagen temporal con ropa puesta (hasta que lleguen los PNGs de capas).
-const String _kBlinkDressed = 'assets/characters/blink/blink_dressed.png';
-
-/// Accesorios por defecto — OBLIGATORIOS (siempre equipados si no hay otro).
-const String _kDefaultTop    = 'assets/characters/blink/top/hoodie_azul.png';
-const String _kDefaultBottom = 'assets/characters/blink/bottom/pants_azul.png';
-
-// ─── Bandera de modo ─────────────────────────────────────────────────────────
-/// false → muestra blink_dressed.png (imagen completa, temporal).
-/// true  → renderiza capas: base + bottom + top + head (cuando existan los PNGs).
-const bool _kUseLayeredMode = false;
+// ─── Proporciones naturales de cada recorte ───────────────────────────────────
+// (medidas en píxeles del PNG original; usamos ratios, no px absolutos)
+const _kBodyW  = 1357.0; const _kBodyH  = 1472.0; // referencia
+const _kHeadW  = 1204.0; const _kHeadH  = 1278.0;
+const _kTopW   = 1106.0; const _kTopH   =  729.0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Widget principal
@@ -51,32 +44,28 @@ class BlinkCharacterWidget extends ConsumerWidget {
     this.showSpeechBubble = false,
     this.speechText,
     this.enableBounce = true,
+    this.loadout,
   });
 
-  final double   width;
-  final VoidCallback? onTap;
-  final bool     showSpeechBubble;
-  final String?  speechText;
-  final bool     enableBounce;
+  final double          width;
+  final VoidCallback?   onTap;
+  final bool            showSpeechBubble;
+  final String?         speechText;
+  final bool            enableBounce;
+  /// Loadout externo (vestidor preview). Si null lee equippedLoadoutProvider.
+  final EquippedLoadout? loadout;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final loadoutAsync = ref.watch(equippedLoadoutProvider);
-    final loadout = loadoutAsync.valueOrNull ?? EquippedLoadout.empty;
+    final liveLo = loadout ??
+        (ref.watch(equippedLoadoutProvider).valueOrNull ?? EquippedLoadout.empty);
 
-    Widget character = _kUseLayeredMode
-        ? _LayeredBlink(width: width, loadout: loadout)
-        : _SingleImageBlink(width: width);
+    Widget character = _AssembledBlink(width: width, loadout: liveLo);
 
     if (enableBounce) {
       character = character
           .animate(onPlay: (c) => c.repeat(reverse: true))
-          .moveY(
-            begin: 0,
-            end: -10,
-            duration: 1400.ms,
-            curve: Curves.easeInOut,
-          );
+          .moveY(begin: 0, end: -10, duration: 1400.ms, curve: Curves.easeInOut);
     }
 
     return GestureDetector(
@@ -84,7 +73,6 @@ class BlinkCharacterWidget extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Burbuja de diálogo (opcional)
           if (showSpeechBubble && speechText != null)
             _SpeechBubble(text: speechText!)
                 .animate()
@@ -98,61 +86,91 @@ class BlinkCharacterWidget extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modo imagen única (temporal)
+// Ensamblado de capas con posicionamiento relativo
 // ─────────────────────────────────────────────────────────────────────────────
-class _SingleImageBlink extends StatelessWidget {
-  const _SingleImageBlink({required this.width});
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return Image.asset(
-      _kBlinkDressed,
-      width: width,
-      filterQuality: FilterQuality.high,
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Modo capas (activar cuando lleguen los PNGs separados)
-// ─────────────────────────────────────────────────────────────────────────────
-class _LayeredBlink extends StatelessWidget {
-  const _LayeredBlink({required this.width, required this.loadout});
-  final double        width;
+class _AssembledBlink extends StatelessWidget {
+  const _AssembledBlink({required this.width, required this.loadout});
+  final double          width;
   final EquippedLoadout loadout;
 
   @override
   Widget build(BuildContext context) {
-    // Obtener rutas de los accesorios equipados
-    final topCosmetic    = loadout[CosmeticSlot.top];
-    final bottomCosmetic = loadout[CosmeticSlot.bottom];
+    final W = width; // ancho de referencia = ancho del cuerpo
 
-    final topAsset    = topCosmetic?.assetPath    ?? _kDefaultTop;
-    final bottomAsset = bottomCosmetic?.assetPath ?? _kDefaultBottom;
+    // ── Tamaños de cada pieza (proporcionales a W) ─────────────────────────
+    final bodyH  = W * _kBodyH  / _kBodyW;  // 1.085W
+
+    final headW  = W * _kHeadW  / _kBodyW;  // 0.887W
+    final headH  = headW * _kHeadH / _kHeadW; // 0.941W
+
+    // El cuello de la cabeza (≈28% inferior) encaja sobre el stub gris del cuerpo
+    final neckOverlap = headH * 0.21;
+    final bodyY  = headH - neckOverlap;      // dónde empieza el cuerpo
+    final totalH = bodyY + bodyH;
+
+    // Sudadera: cuello del hoodie alineado con stub del cuerpo
+    final topW   = W * _kTopW  / _kBodyW;   // 0.815W
+    final topX   = (W - topW)  / 1.35;
+    final topY   = bodyY - topW * (_kTopH / _kTopW) * -0.20; // 8% por encima del inicio del cuerpo
+
+    // Pantalón: cintura a 48% de la altura del cuerpo
+    final botRenderW = W * 0.50;
+    final botX   = (W - botRenderW) / 2.2;
+    final botY   = bodyY + bodyH * 0.48;
+
+    // Botas: en los pies (78% de la altura del cuerpo)
+    final bootRenderW = W * 0.82;
+    final bootX  = (W - bootRenderW) / 2;
+    final bootY  = bodyY + bodyH * 0.78;
+
+    // Guantes: a la altura de los puños (28% del cuerpo, al ancho completo)
+    final gloveRenderW = W * 0.82;
+    final gloveX = (W - gloveRenderW) / .85;
+    final gloveY = bodyY + bodyH * 0.15;
+
+    // ── Selectores de asset ────────────────────────────────────────────────
+    final topAsset    = loadout[CosmeticSlot.top]?.equippedAssetPath        ?? _kDefTop;
+    final bottomAsset = loadout[CosmeticSlot.bottom]?.equippedAssetPath     ?? _kDefBot;
+    final helmetAsset = loadout[CosmeticSlot.helmet]?.equippedAssetPath;
+    final bootsAsset  = loadout[CosmeticSlot.boots]?.equippedAssetPath;
+    final accAsset    = loadout[CosmeticSlot.accesorios]?.equippedAssetPath;
 
     return SizedBox(
-      width: width,
+      width: W,
+      height: totalH,
       child: Stack(
-        alignment: Alignment.bottomCenter,
+        clipBehavior: Clip.none,
         children: [
-          // Capa 0: cuerpo base
-          Image.asset(_kBlinkBase,    width: width, filterQuality: FilterQuality.high),
-          // Capa 1: tronco inferior (OBLIGATORIO)
-          Image.asset(bottomAsset,    width: width, filterQuality: FilterQuality.high),
-          // Capa 2: tronco superior (OBLIGATORIO)
-          Image.asset(topAsset,       width: width, filterQuality: FilterQuality.high),
-          // Capa 3: cabeza/sombrero (opcional, solo si está equipado)
-          if (loadout[CosmeticSlot.helmet]?.assetPath != null)
-            Image.asset(
-              loadout[CosmeticSlot.helmet]!.assetPath!,
-              width: width,
-              filterQuality: FilterQuality.high,
-            ),
+          // 1. Cuerpo base
+          _img(_kBody,   left: 0,    top: bodyY,  width: W),
+          // 2. Cabeza (debajo de la ropa — el cuello queda tapado por la sudadera)
+          _img(helmetAsset ?? _kHead, left: (W - headW) / 2 - W * 0.05, top: helmetAsset != null ? -headH * 0.08 : 0, width: headW),
+          // 3. Pantalón (sobre cuerpo y cabeza)
+          _img(bottomAsset, left: botX,  top: botY,   width: botRenderW),
+          // 4. Sudadera (cubre torso, brazos y cuello de la cabeza)
+          _img(topAsset, left: topX,  top: topY,   width: topW),
+          // 5. Botas (pies, sobre pantalón)
+          if (bootsAsset != null)
+            _img(bootsAsset, left: bootX, top: bootY,  width: bootRenderW),
+          // 6. Guantes (puños, encima de todo)
+          if (accAsset != null)
+            _img(accAsset, left: gloveX, top: gloveY, width: gloveRenderW),
         ],
       ),
     );
   }
+
+  Widget _img(String path, {required double left, required double top, required double width}) =>
+      Positioned(
+        left: left,
+        top:  top,
+        child: Image.asset(
+          path,
+          width: width,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+        ),
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -171,9 +189,7 @@ class _SpeechBubble extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3)),
-        ],
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))],
       ),
       child: Text(
         text,

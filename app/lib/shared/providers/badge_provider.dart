@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/badge.dart';
 import '../../data/repositories/badge_repository.dart';
+import 'auth_provider.dart';
 
 final _repo = BadgeRepository();
 
 // ── Medallas del jugador actual ───────────────────────────────────────────────
 final playerBadgesProvider = FutureProvider<List<PlayerBadge>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return [];
   return _repo.getBadges();
 });
 

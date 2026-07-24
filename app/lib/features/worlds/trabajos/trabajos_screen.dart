@@ -5,17 +5,52 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/crafting_job.dart';
 import '../../../data/models/item.dart';
+import '../../../data/repositories/crafting_job_repository.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
 import '../../../shared/providers/character_provider.dart';
+import '../../../shared/providers/demo_progress_provider.dart';
+import '../../../shared/providers/fuel_provider.dart';
 import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/rocket_launch_overlay.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TrabajosScreen
 // ─────────────────────────────────────────────────────────────────────────────
+void showTrabajosDialog(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Trabajos',
+    barrierColor: Colors.black.withOpacity(0.65),
+    transitionDuration: const Duration(milliseconds: 300),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return ScaleTransition(
+        scale: Tween<double>(begin: 0.90, end: 1.0).animate(curved),
+        child: FadeTransition(opacity: anim, child: child),
+      );
+    },
+    pageBuilder: (ctx, _, __) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          width: size.width * 0.94,
+          height: size.height * 0.90,
+          child: const TrabajosScreen(),
+        ),
+      ),
+    ),
+  );
+}
+
 class TrabajosScreen extends ConsumerStatefulWidget {
   const TrabajosScreen({super.key});
 
@@ -24,13 +59,21 @@ class TrabajosScreen extends ConsumerStatefulWidget {
 }
 
 class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
-  Map<String, int> _inventory = {};
+  Map<String, int>   _inventory  = {};
+  List<CraftingJob>? _remoteJobs;   // null = usando hardcoded
   bool _loadingInv = true;
 
   @override
   void initState() {
     super.initState();
     _loadInventory();
+    _loadJobs();
+  }
+
+  Future<void> _loadJobs() async {
+    final worldId = ref.read(currentWorldProvider);
+    final jobs = await CraftingJobRepository.getJobsForWorld(worldId);
+    if (mounted) setState(() => _remoteJobs = jobs);
   }
 
   Future<void> _loadInventory() async {
@@ -69,23 +112,41 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
     try {
       await repo.consumeRequirements(job.requirements);
 
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId != null) {
-        await WalletRepository().awardStarterCoins(userId, job.coinReward);
-        ref.invalidate(currentWalletProvider);
+      if (DemoStore.isActive) {
+        ref.read(demoProgressProvider).addCoins(job.coinReward);
+      } else {
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+        if (userId != null) {
+          await WalletRepository().awardStarterCoins(userId, job.coinReward);
+          ref.invalidate(currentWalletProvider);
+        }
+        // Registrar completion en Supabase
+        await CraftingJobRepository.recordCompletion(
+          jobId:       job.id,
+          coinsEarned: job.coinReward,
+        );
       }
 
       await awardXp(ref, job.xpReward);
+      ref.invalidate(currentCharacterProvider);
 
       if (job.itemReward != null) {
         await repo.addToInventory(job.itemReward!.itemId, job.itemReward!.qty);
+      }
+      var reachedFullFuel = false;
+      if (job.fuelReward > 0) {
+        reachedFullFuel = await ref.read(fuelNotifierProvider.notifier)
+            .addFuel('space', job.fuelReward);
       }
 
       await MissionTracker().recordJob();
       ref.invalidate(inventoryProvider);
       await _loadInventory();
 
-      if (mounted) _showRewardDialog(job);
+      if (mounted) {
+        await _showRewardDialog(job);
+        if (reachedFullFuel && mounted) showRocketLaunchOverlay(context);
+      }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
     }
@@ -100,15 +161,19 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
     ));
   }
 
-  void _showRewardDialog(CraftingJob job) {
-    showDialog<void>(context: context, builder: (_) => _RewardDialog(job: job));
+  Future<void> _showRewardDialog(CraftingJob job) {
+    return showDialog<void>(context: context, builder: (_) => _RewardDialog(job: job));
   }
 
   @override
   Widget build(BuildContext context) {
     final worldId = ref.watch(currentWorldProvider);
-    final coins   = ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0;
-    final jobs    = craftingJobsForWorld(worldId);
+    final coins   = DemoStore.isActive
+        ? ref.watch(demoProgressProvider).coins
+        : (ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0);
+    final jobs    = _remoteJobs ?? craftingJobsForWorld(worldId);
+
+    final completable = jobs.where((j) => _hasAllMaterials(j)).length;
 
     return ScreenTutorial(
       tutorialKey: 'trabajos_v2',
@@ -126,60 +191,42 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
         ),
       ],
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Stack(
+        backgroundColor: const Color(0xFF0A0A18),
+        body: Row(
           children: [
-            // ── Fondo espacial ─────────────────────────────────────────────
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/worlds/space/space_background.png',
-                fit: BoxFit.cover,
-              ),
+            _JobsSidebar(
+              coins: coins,
+              worldId: worldId,
+              jobCount: jobs.length,
+              completable: completable,
+              onBack: () => context.pop(),
             ),
-            Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.55)),
-            ),
-
-            // ── Contenido ──────────────────────────────────────────────────
-            SafeArea(
-              child: Column(
-                children: [
-                  // Header
-                  _JobsHeader(
-                    coins: coins,
-                    onBack: () => context.pop(),
-                  ),
-
-                  // Lista de trabajos
-                  Expanded(
-                    child: _loadingInv
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                                color: Color(0xFF4FC3F7)),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                            itemCount: jobs.length,
-                            itemBuilder: (ctx, i) {
-                              final job   = jobs[i];
-                              final canDo = _hasAllMaterials(job);
-                              return _JobCard(
-                                job:       job,
-                                inventory: _inventory,
-                                canDo:     canDo,
-                                onTap:     () => _doJob(job),
-                              )
-                                  .animate(delay: (80 * i).ms)
-                                  .fadeIn(duration: 350.ms)
-                                  .slideY(
-                                    begin: 0.12, end: 0,
-                                    curve: Curves.easeOut,
-                                  );
-                            },
-                          ),
-                  ),
-                ],
-              ),
+            Expanded(
+              child: _loadingInv
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          color: Color(0xFF4FC3F7)),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      itemCount: jobs.length,
+                      itemBuilder: (ctx, i) {
+                        final job   = jobs[i];
+                        final canDo = _hasAllMaterials(job);
+                        return _JobCard(
+                          job:       job,
+                          inventory: _inventory,
+                          canDo:     canDo,
+                          onTap:     () => _doJob(job),
+                        )
+                            .animate(delay: (80 * i).ms)
+                            .fadeIn(duration: 350.ms)
+                            .slideY(
+                              begin: 0.12, end: 0,
+                              curve: Curves.easeOut,
+                            );
+                      },
+                    ),
             ),
           ],
         ),
@@ -189,129 +236,155 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Header con placa de título + botón volver + monedas
+// Sidebar oscura — mismo estilo que la tienda
 // ─────────────────────────────────────────────────────────────────────────────
-class _JobsHeader extends StatelessWidget {
-  const _JobsHeader({required this.coins, required this.onBack});
+class _JobsSidebar extends StatelessWidget {
+  const _JobsSidebar({
+    required this.coins,
+    required this.worldId,
+    required this.jobCount,
+    required this.completable,
+    required this.onBack,
+  });
+
   final int          coins;
+  final String       worldId;
+  final int          jobCount;
+  final int          completable;
   final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+      width: 170,
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.70),
-            Colors.transparent,
-          ],
+          colors: [Color(0xFF0D0A2A), Color(0xFF08061A)],
+        ),
+        border: Border(
+          right: BorderSide(color: Color(0xFF2A1A5E), width: 1.5),
         ),
       ),
-      child: Row(
-        children: [
-          // Botón volver
-          GestureDetector(
-            onTap: onBack,
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.25),
-                  width: 1,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 12),
+
+            // Botón volver
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: GestureDetector(
+                onTap: onBack,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.20),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ),
-              child: const Icon(
-                Icons.arrow_back_rounded,
-                color: Colors.white,
-                size: 18,
+            ),
+
+            const SizedBox(height: 16),
+
+            // Título
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14),
+              child: Text(
+                'TRABAJOS',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
               ),
             ),
-          ),
 
-          // Placa del título centrada
-          Expanded(
-            child: Center(
+            const SizedBox(height: 14),
+
+            // Pill de monedas
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF0A1835),
-                      Color(0xFF152B5E),
-                      Color(0xFF0A1835),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.amber.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFF4FC3F7).withOpacity(0.50),
-                    width: 1.5,
+                    color: Colors.amber.withOpacity(0.60),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF4FC3F7).withOpacity(0.22),
-                      blurRadius: 14,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const AnimatedCoin(size: 15),
+                    const SizedBox(width: 5),
+                    Text(
+                      '$coins',
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
-                child: Text(
-                  'TRABAJOS ESPACIALES',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.5,
-                    shadows: [
-                      Shadow(
-                        color: const Color(0xFF4FC3F7).withOpacity(0.80),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ),
-          ),
 
-          // Monedas
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.50),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.amber.withOpacity(0.70),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.15),
-                  blurRadius: 8,
-                ),
-              ],
+            const SizedBox(height: 16),
+
+            Divider(
+              color: const Color(0xFF2A1A5E).withOpacity(0.80),
+              indent: 14,
+              endIndent: 14,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🪙', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 5),
-                Text(
-                  '$coins',
-                  style: const TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+
+            const SizedBox(height: 14),
+
+            // Stats
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$jobCount trabajos\ndisponibles',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.65),
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  Text(
+                    '$completable listos\npara hacer',
+                    style: const TextStyle(
+                      color: Color(0xFF69F0AE),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -432,8 +505,10 @@ class _JobCard extends StatelessWidget {
                     spacing: 5,
                     runSpacing: 4,
                     children: [
-                      _RewardChip('🪙 +${job.coinReward}', const Color(0xFFFFD600)),
+                      _RewardChip('+${job.coinReward}', const Color(0xFFFFD600), showCoin: true),
                       _RewardChip('⭐ +${job.xpReward}', Colors.white54),
+                      if (job.fuelReward > 0)
+                        _RewardChip('🚀 +${job.fuelReward}%', const Color(0xFFFF9800)),
                       if (job.itemReward != null)
                         _RewardChip(
                           '${job.itemReward!.item?.emoji ?? '🎁'} ×${job.itemReward!.qty}',
@@ -600,9 +675,10 @@ class _JobCard extends StatelessWidget {
 // Chip de recompensa
 // ─────────────────────────────────────────────────────────────────────────────
 class _RewardChip extends StatelessWidget {
-  const _RewardChip(this.label, this.color);
+  const _RewardChip(this.label, this.color, {this.showCoin = false});
   final String label;
   final Color  color;
+  final bool   showCoin;
 
   @override
   Widget build(BuildContext context) {
@@ -613,13 +689,22 @@ class _RewardChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withOpacity(0.35)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showCoin) ...[
+            const AnimatedCoin(size: 12),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -695,7 +780,7 @@ class _ConfirmJobDialog extends StatelessWidget {
           // Recompensas
           Row(
             children: [
-              const Text('🪙', style: TextStyle(fontSize: 18)),
+              const AnimatedCoin(size: 18),
               const SizedBox(width: 6),
               Text(
                 '+${job.coinReward} monedas',
@@ -715,6 +800,23 @@ class _ConfirmJobDialog extends StatelessWidget {
               ),
             ],
           ),
+          if (job.fuelReward > 0) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Text('🚀', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 6),
+                Text(
+                  '+${job.fuelReward}% combustible',
+                  style: const TextStyle(
+                    color: Color(0xFFFF9800),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (job.itemReward != null) ...[
             const SizedBox(height: 4),
             Row(
@@ -830,9 +932,13 @@ class _RewardDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _RewardBadge('🪙 +${job.coinReward}', const Color(0xFFFFD600)),
+              _RewardBadge('+${job.coinReward}', const Color(0xFFFFD600), showCoin: true),
               const SizedBox(width: 8),
               _RewardBadge('⭐ +${job.xpReward}', Colors.white60),
+              if (job.fuelReward > 0) ...[
+                const SizedBox(width: 8),
+                _RewardBadge('🚀 +${job.fuelReward}%', const Color(0xFFFF9800)),
+              ],
               if (job.itemReward != null) ...[
                 const SizedBox(width: 8),
                 _RewardBadge(
@@ -882,9 +988,10 @@ class _RewardDialog extends StatelessWidget {
 // Badge de recompensa en diálogo
 // ─────────────────────────────────────────────────────────────────────────────
 class _RewardBadge extends StatelessWidget {
-  const _RewardBadge(this.label, this.color);
+  const _RewardBadge(this.label, this.color, {this.showCoin = false});
   final String label;
   final Color  color;
+  final bool   showCoin;
 
   @override
   Widget build(BuildContext context) {
@@ -895,13 +1002,22 @@ class _RewardBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withOpacity(0.40)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w800,
-          fontSize: 13,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showCoin) ...[
+            const AnimatedCoin(size: 14),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
   }

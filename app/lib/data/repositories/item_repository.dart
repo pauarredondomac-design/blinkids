@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/item.dart';
+import '../../shared/providers/demo_progress_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ItemRepository
@@ -17,6 +18,7 @@ class ItemRepository {
   // ── Inventario ──────────────────────────────────────────────────────────
 
   Future<int> countOf(String itemId) async {
+    if (DemoStore.isActive) return DemoStore.instance.countOf(itemId);
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return 0;
@@ -35,6 +37,13 @@ class ItemRepository {
   }
 
   Future<List<InventoryStack>> getInventory() async {
+    if (DemoStore.isActive) {
+      return DemoStore.instance.inventory.entries.map((e) {
+        final item = itemById(e.key);
+        if (item == null) return null;
+        return InventoryStack(item: item, qty: e.value);
+      }).whereType<InventoryStack>().toList();
+    }
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return [];
@@ -57,6 +66,10 @@ class ItemRepository {
 
   /// Agrega qty unidades al inventario usando el RPC add_player_item (atómico).
   Future<void> addToInventory(String itemId, int qty) async {
+    if (DemoStore.isActive) {
+      DemoStore.instance.addItem(itemId, qty);
+      return;
+    }
     await _client.rpc(
       'add_player_item',
       params: {'p_item_id': itemId, 'p_qty': qty},
@@ -66,6 +79,11 @@ class ItemRepository {
   /// Quita qty unidades del inventario usando el RPC remove_player_item (atómico).
   /// Lanza excepción si no hay suficiente.
   Future<void> removeFromInventory(String itemId, int qty) async {
+    if (DemoStore.isActive) {
+      final ok = DemoStore.instance.removeItem(itemId, qty);
+      if (!ok) throw Exception('No hay suficientes materiales');
+      return;
+    }
     await _client.rpc(
       'remove_player_item',
       params: {'p_item_id': itemId, 'p_qty': qty},
@@ -92,6 +110,15 @@ class ItemRepository {
   static const int maxListings = 10;
 
   Future<List<PlayerListing>> getMyListings() async {
+    if (DemoStore.isActive) {
+      return DemoStore.instance.listings.map((l) => PlayerListing(
+        id:           l['id']           as String,
+        itemId:       l['itemId']       as String,
+        qty:          l['qty']          as int,
+        pricePerUnit: l['pricePerUnit'] as int,
+        sellerName:   l['sellerName']   as String,
+      )).toList();
+    }
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return [];
@@ -120,6 +147,16 @@ class ItemRepository {
     required int    pricePerUnit,
     required String sellerName,
   }) async {
+    if (DemoStore.isActive) {
+      final existing = DemoStore.instance.listings;
+      if (existing.length >= maxListings) return false;
+      final ok = DemoStore.instance.removeItem(itemId, qty);
+      if (!ok) throw Exception('No hay suficientes materiales');
+      DemoStore.instance.addListing(
+        itemId: itemId, qty: qty, pricePerUnit: pricePerUnit, sellerName: sellerName,
+      );
+      return true;
+    }
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return false;
 
@@ -141,6 +178,13 @@ class ItemRepository {
   }
 
   Future<void> removeListing(String listingId) async {
+    if (DemoStore.isActive) {
+      final removed = DemoStore.instance.removeListing(listingId);
+      if (removed != null) {
+        DemoStore.instance.addItem(removed['itemId'] as String, removed['qty'] as int);
+      }
+      return;
+    }
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
 

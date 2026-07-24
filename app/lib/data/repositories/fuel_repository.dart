@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/fuel.dart';
+import '../../shared/providers/demo_progress_provider.dart';
 
 class FuelRepository {
   SupabaseClient get _db => Supabase.instance.client;
@@ -21,13 +23,18 @@ class FuelRepository {
 
   /// Suma [amount] al combustible del mundo y devuelve si llegó a 100.
   Future<bool> addFuel(String worldSlug, int amount) async {
+    if (DemoStore.isActive) {
+      DemoStore.instance.addFuelDirect(amount);
+      return DemoStore.instance.fuel >= 100;
+    }
     try {
       final result = await _db.rpc(
         'add_fuel',
         params: {'p_world_slug': worldSlug, 'p_amount': amount},
       );
       return result as bool? ?? false;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[addFuel] ERROR: $e');
       return false;
     }
   }

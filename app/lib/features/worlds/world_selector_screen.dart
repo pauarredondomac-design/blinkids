@@ -1,7 +1,3 @@
-// Pantalla de selección de mundos.
-// Muestra todos los biomas disponibles; permite comprar los bloqueados.
-// Uso: context.push('/worlds', extra: 'forest')  ← ID del mundo actual.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,65 +5,105 @@ import '../../data/models/world.dart';
 import '../../data/repositories/wallet_repository.dart';
 import '../../shared/providers/wallet_provider.dart';
 import '../../shared/providers/world_provider.dart';
+import '../../shared/widgets/coin_display.dart';
+
+void showWorldSelectorDialog(BuildContext context, String currentWorldId) {
+  final size = MediaQuery.of(context).size;
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Cambiar mundo',
+    barrierColor: Colors.black.withOpacity(0.75),
+    transitionDuration: const Duration(milliseconds: 300),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return ScaleTransition(
+        scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+        child: FadeTransition(opacity: anim, child: child),
+      );
+    },
+    pageBuilder: (ctx, _, __) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(
+          width: size.width * 0.92,
+          height: size.height * 0.82,
+          child: WorldSelectorScreen(currentWorldId: currentWorldId),
+        ),
+      ),
+    ),
+  );
+}
 
 class WorldSelectorScreen extends ConsumerStatefulWidget {
-  const WorldSelectorScreen({super.key, this.currentWorldId = 'forest'});
-
-  /// ID del mundo donde está el jugador ahora (para destacarlo).
+  const WorldSelectorScreen({super.key, this.currentWorldId = 'space'});
   final String currentWorldId;
 
   @override
-  ConsumerState<WorldSelectorScreen> createState() =>
-      _WorldSelectorScreenState();
+  ConsumerState<WorldSelectorScreen> createState() => _WorldSelectorScreenState();
+}
+
+const _kWorldsPerPage = 3;
+
+List<List<World>> _chunkWorlds() {
+  final groups = <List<World>>[];
+  for (var i = 0; i < allWorlds.length; i += _kWorldsPerPage) {
+    groups.add(allWorlds.sublist(i, (i + _kWorldsPerPage).clamp(0, allWorlds.length)));
+  }
+  return groups;
 }
 
 class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
   bool _busy = false;
+  late final PageController _pageCtrl;
+  late final List<List<World>> _groups;
 
-  // ── Compra / desbloqueo ──────────────────────────────────────────────
+  @override
+  void initState() {
+    super.initState();
+    _groups = _chunkWorlds();
+    final worldIndex = allWorlds.indexWhere((w) => w.id == widget.currentWorldId);
+    final initialPage = worldIndex < 0 ? 0 : worldIndex ~/ _kWorldsPerPage;
+    _pageCtrl = PageController(initialPage: initialPage);
+  }
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _handlePurchase(World world) async {
-    final coins =
-        ref.read(currentWalletProvider).valueOrNull?.totalCoins ?? 0;
-
+    final coins = ref.read(currentWalletProvider).valueOrNull?.totalCoins ?? 0;
     if (coins < world.unlockCost) {
-      if (!mounted) return;
-      _showSnack(
-        '¡Necesitas ${world.unlockCost} 🪙! Solo tienes $coins.',
-        Colors.red.shade700,
-      );
+      _showSnack('Necesitas ${world.unlockCost} monedas. Solo tienes $coins.', Colors.red.shade700);
       return;
     }
-
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) =>
-          _PurchaseDialog(world: world, currentCoins: coins),
+      builder: (_) => _PurchaseDialog(world: world, currentCoins: coins),
     );
     if (confirm != true || !mounted) return;
 
     setState(() => _busy = true);
     try {
-      // purchaseWorld es atómico (RPC SECURITY DEFINER):
-      // descuenta las monedas y registra el world_progress en una sola
-      // transacción. No puede quedar a medias ni ser explotado con dos
-      // llamadas paralelas.
       await WalletRepository().purchaseWorld(world.id);
-
       ref.invalidate(unlockedWorldsProvider);
       ref.invalidate(currentWalletProvider);
-
-      if (mounted) {
-        _showSnack('🎉 ¡${world.name} desbloqueado!', world.accentColor);
-      }
+      if (mounted) _showSnack('${world.name} desbloqueado', world.accentColor);
     } catch (e) {
       if (mounted) {
         final msg = e.toString();
-        final friendly = msg.contains('insuficiente')
-            ? 'No tienes suficientes monedas 😔'
-            : msg.contains('ya está desbloqueado')
-                ? '¡Ya tienes este mundo! 🌍'
-                : 'Error al comprar. Intenta de nuevo.';
-        _showSnack(friendly, Colors.red.shade700);
+        _showSnack(
+          msg.contains('insuficiente')
+              ? 'No tienes suficientes monedas'
+              : msg.contains('ya está desbloqueado')
+                  ? 'Ya tienes este mundo'
+                  : 'Error al comprar. Intenta de nuevo.',
+          Colors.red.shade700,
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -82,13 +118,17 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
     ));
   }
 
-  // ── Build ────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final unlockedAsync = ref.watch(unlockedWorldsProvider);
     final walletAsync   = ref.watch(currentWalletProvider);
     final coins         = walletAsync.valueOrNull?.totalCoins ?? 0;
-    final unlocked      = unlockedAsync.valueOrNull ?? ['forest'];
+    final unlocked      = unlockedAsync.valueOrNull ?? ['space'];
+    final unlockedCount = allWorlds.where((w) => w.isFree || unlocked.contains(w.id)).length;
+    final current = allWorlds.firstWhere(
+      (w) => w.id == widget.currentWorldId,
+      orElse: () => allWorlds.first,
+    );
 
     return Scaffold(
       body: Container(
@@ -96,26 +136,30 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0A0A20),
-              Color(0xFF12124A),
-              Color(0xFF080E1F),
-            ],
+            colors: [Color(0xFF0A0A20), Color(0xFF12124A), Color(0xFF080E1F)],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // ── Header ─────────────────────────────────────────────
+              // ── Header ──────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 4),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
                 child: Row(
                   children: [
-                    const Text('🌌', style: TextStyle(fontSize: 22)),
-                    const SizedBox(width: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: _WorldImage(world: current, isUnlocked: true),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Text(
                             'Selector de Mundos',
@@ -127,20 +171,18 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                             ),
                           ),
                           Text(
-                            '${unlocked.length} / ${allWorlds.length} desbloqueados',
+                            '$unlockedCount / ${allWorlds.length} desbloqueados',
                             style: const TextStyle(
-                              color: Colors.white38,
-                              fontSize: 10,
+                              color: Colors.white54,
+                              fontSize: 12,
                               fontFamily: 'Nunito',
                             ),
                           ),
                         ],
                       ),
                     ),
-                    // Monedas disponibles
-                    _CoinsChip(coins: coins),
+                    CoinDisplay(coins: coins),
                     const SizedBox(width: 10),
-                    // Cerrar
                     GestureDetector(
                       onTap: () => context.pop(),
                       child: Container(
@@ -150,61 +192,67 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.white24),
                         ),
-                        child: const Icon(
-                          Icons.close_rounded,
-                          color: Colors.white60,
-                          size: 20,
-                        ),
+                        child: const Icon(Icons.close_rounded, color: Colors.white60, size: 20),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // ── Divisor ─────────────────────────────────────────────
+              const SizedBox(height: 8),
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
                 height: 1,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [
-                    Colors.transparent,
-                    Colors.white24,
-                    Colors.transparent,
-                  ]),
-                ),
-              ),
-
-              // ── Tarjetas de mundo ───────────────────────────────────
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  child: Row(
-                    children: allWorlds.map((world) {
-                      final isUnlocked =
-                          world.isFree || unlocked.contains(world.id);
-                      final isCurrent =
-                          world.id == widget.currentWorldId;
-                      final canAfford = coins >= world.unlockCost;
-
-                      return Expanded(
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 5),
-                          child: _WorldCard(
-                            world:      world,
-                            isUnlocked: isUnlocked,
-                            isCurrent:  isCurrent,
-                            canAfford:  canAfford,
-                            busy:       _busy,
-                            onEnter:    () => context.go(world.route),
-                            onBuy:      () => _handlePurchase(world),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Colors.white24, Colors.transparent],
                   ),
                 ),
               ),
+              const SizedBox(height: 6),
+
+              // ── PageView deslizable (3 tarjetas por página) ──────────
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageCtrl,
+                  itemCount: _groups.length,
+                  itemBuilder: (ctx, pageIndex) {
+                    final group = _groups[pageIndex];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final world in group) ...[
+                            if (world != group.first) const SizedBox(width: 10),
+                            Expanded(
+                              child: _WorldCard(
+                                world:      world,
+                                isUnlocked: world.isFree || unlocked.contains(world.id),
+                                isCurrent:  world.id == widget.currentWorldId,
+                                canAfford:  coins >= world.unlockCost,
+                                busy:       _busy,
+                                onEnter:    () => context.go(world.route),
+                                onBuy:      () => _handlePurchase(world),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // ── Dots de página ───────────────────────────────────────
+              if (_groups.length > 1)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14, top: 6),
+                  child: _PageDots(
+                    count:      _groups.length,
+                    controller: _pageCtrl,
+                  ),
+                ),
             ],
           ),
         ),
@@ -214,7 +262,7 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tarjeta individual de mundo
+// Tarjeta de mundo
 // ─────────────────────────────────────────────────────────────────────────────
 class _WorldCard extends StatelessWidget {
   const _WorldCard({
@@ -237,139 +285,148 @@ class _WorldCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dimmed = world.comingSoon || !isUnlocked;
-
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: world.comingSoon
-              ? [const Color(0xFF252535), const Color(0xFF151520)]
-              : [
-                  world.accentColor.withAlpha(isUnlocked ? 210 : 70),
-                  world.accentColor.withAlpha(isUnlocked ? 80 : 25),
-                ],
-        ),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isCurrent
-              ? Colors.white
-              : world.comingSoon
-                  ? Colors.white12
-                  : world.accentColor
-                      .withAlpha(isUnlocked ? 220 : 70),
-          width: isCurrent ? 2.5 : 1.5,
+          color: isCurrent ? Colors.white : world.accentColor.withAlpha(140),
+          width: isCurrent ? 3 : 1.5,
         ),
-        boxShadow: isCurrent && isUnlocked
-            ? [
-                BoxShadow(
-                  color: world.accentColor.withAlpha(90),
-                  blurRadius: 18,
-                  spreadRadius: 3,
-                )
-              ]
-            : null,
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // ── Emoji ────────────────────────────────────────────────
-            Text(
-              dimmed && !world.comingSoon ? '🔒' : (world.comingSoon ? '🔒' : world.emoji),
-              style: const TextStyle(fontSize: 42),
+            // ── Fondo del mapa del mundo ──────────────────────
+            if (world.backgroundImagePath != null)
+              Image.asset(
+                world.backgroundImagePath!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: world.accentColor.withAlpha(60)),
+              )
+            else
+              Container(color: world.accentColor.withAlpha(60)),
+
+            // ── Velo oscuro para legibilidad ──────────────────
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black.withAlpha(80), Colors.black.withAlpha(160)],
+                ),
+              ),
             ),
 
-            // ── Info ─────────────────────────────────────────────────
-            Column(
-              children: [
-                if (isCurrent && isUnlocked) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      '📍 AQUÍ',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Nunito',
-                      ),
+            // ── Contenido ──────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final side = constraints.maxWidth < constraints.maxHeight
+                            ? constraints.maxWidth
+                            : constraints.maxHeight;
+                        return Center(
+                          child: SizedBox(
+                            width: side,
+                            height: side,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(18),
+                              child: _WorldImage(world: world, isUnlocked: isUnlocked),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 10),
+                  _buildStatus(),
+                  const SizedBox(height: 6),
+                  Text(
+                    world.name,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: world.comingSoon ? Colors.white54 : Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
                 ],
-                Text(
-                  world.name,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color:
-                        world.comingSoon ? Colors.white30 : Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Nunito',
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  world.description,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: world.comingSoon
-                        ? Colors.white24
-                        : (isUnlocked ? Colors.white60 : Colors.white38),
-                    fontSize: 10,
-                    fontFamily: 'Nunito',
-                    height: 1.35,
-                  ),
-                ),
-              ],
+              ),
             ),
-
-            // ── Botón ────────────────────────────────────────────────
-            _buildButton(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildButton() {
+  Widget _buildStatus() {
     if (world.comingSoon) {
-      return _Pill(
-        label: '🔒 Próximamente',
-        bg: Colors.white10,
-        fg: Colors.white24,
-      );
+      return _Pill(label: 'Próximamente', bg: Colors.white24, fg: Colors.white70);
     }
     if (isUnlocked) {
+      if (isCurrent) {
+        return _Pill(label: 'Aquí', bg: Colors.white, fg: world.accentColor);
+      }
       return _Pill(
-        label: isCurrent ? '✅ Estás aquí' : '🚀 Entrar',
-        bg: isCurrent ? Colors.white : world.accentColor,
-        fg: isCurrent ? Colors.black : Colors.white,
+        label: 'Entrar',
+        bg: Colors.white,
+        fg: world.accentColor,
         onTap: busy ? null : onEnter,
       );
     }
-    // Bloqueado + comprable
     return _Pill(
-      label: canAfford
-          ? '🔓 ${world.unlockCost} 🪙'
-          : '🔒 ${world.unlockCost} 🪙',
-      bg: canAfford ? Colors.amber : Colors.grey.shade800,
-      fg: canAfford ? Colors.black : Colors.white38,
+      label: '${world.unlockCost} monedas',
+      bg: canAfford ? Colors.white : Colors.white24,
+      fg: canAfford ? world.accentColor : Colors.white38,
       onTap: (busy || !canAfford) ? null : onBuy,
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Widgets de apoyo
+// Imagen del mundo con fallback
+// ─────────────────────────────────────────────────────────────────────────────
+class _WorldImage extends StatelessWidget {
+  const _WorldImage({required this.world, required this.isUnlocked});
+  final World world;
+  final bool  isUnlocked;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = isUnlocked
+        ? (world.unlockedImagePath ?? world.lockedImagePath)
+        : world.lockedImagePath;
+
+    if (path != null) {
+      return Image.asset(
+        path,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallback(),
+      );
+    }
+    return _fallback();
+  }
+
+  Widget _fallback() => Container(
+        color: world.accentColor.withAlpha(40),
+        child: Center(
+          child: Text(
+            isUnlocked ? world.emoji : '🔒',
+            style: const TextStyle(fontSize: 52),
+          ),
+        ),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Botón pill
 // ─────────────────────────────────────────────────────────────────────────────
 class _Pill extends StatelessWidget {
   const _Pill({
@@ -377,66 +434,97 @@ class _Pill extends StatelessWidget {
     required this.bg,
     required this.fg,
     this.onTap,
+    this.icon,
   });
   final String        label;
   final Color         bg;
   final Color         fg;
   final VoidCallback? onTap;
+  final IconData?     icon;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: fg,
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: fg, size: 13),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: fg,
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _CoinsChip extends StatelessWidget {
-  const _CoinsChip({required this.coins});
-  final int coins;
+// ─────────────────────────────────────────────────────────────────────────────
+// Dots de paginación
+// ─────────────────────────────────────────────────────────────────────────────
+class _PageDots extends StatefulWidget {
+  const _PageDots({required this.count, required this.controller});
+  final int            count;
+  final PageController controller;
+
+  @override
+  State<_PageDots> createState() => _PageDotsState();
+}
+
+class _PageDotsState extends State<_PageDots> {
+  double _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _page = widget.controller.initialPage.toDouble();
+    widget.controller.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (mounted) setState(() => _page = widget.controller.page ?? _page);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onScroll);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black38,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.amber.withAlpha(100)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('🪙', style: TextStyle(fontSize: 15)),
-          const SizedBox(width: 4),
-          Text(
-            '$coins',
-            style: const TextStyle(
-              color: Color(0xFFFFD600),
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w800,
-              fontSize: 14,
-            ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(widget.count, (i) {
+        final active = ((_page - i).abs() < 0.5);
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width:  active ? 22 : 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: active ? Colors.white : Colors.white30,
+            borderRadius: BorderRadius.circular(4),
           ),
-        ],
-      ),
+        );
+      }),
     );
   }
 }
@@ -445,10 +533,7 @@ class _CoinsChip extends StatelessWidget {
 // Diálogo de confirmación de compra
 // ─────────────────────────────────────────────────────────────────────────────
 class _PurchaseDialog extends StatelessWidget {
-  const _PurchaseDialog({
-    required this.world,
-    required this.currentCoins,
-  });
+  const _PurchaseDialog({required this.world, required this.currentCoins});
   final World world;
   final int   currentCoins;
 
@@ -462,7 +547,7 @@ class _PurchaseDialog extends StatelessWidget {
         side: BorderSide(color: world.accentColor.withAlpha(160)),
       ),
       title: Text(
-        '${world.emoji} Desbloquear ${world.name}',
+        'Desbloquear ${world.name}',
         style: const TextStyle(
           color: Colors.white,
           fontFamily: 'Nunito',
@@ -474,20 +559,16 @@ class _PurchaseDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            '¿Gastar ${world.unlockCost} 🪙 para acceder a este mundo\npara siempre?',
+            'Gastar ${world.unlockCost} monedas para acceder a este mundo para siempre.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontFamily: 'Nunito',
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: Colors.white70, fontFamily: 'Nunito', fontSize: 13),
           ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '$currentCoins 🪙',
+                '$currentCoins monedas',
                 style: const TextStyle(
                   color: Color(0xFFFFD600),
                   fontFamily: 'Nunito',
@@ -497,17 +578,12 @@ class _PurchaseDialog extends StatelessWidget {
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(
-                  Icons.arrow_forward_rounded,
-                  color: Colors.white38,
-                  size: 16,
-                ),
+                child: Icon(Icons.arrow_forward_rounded, color: Colors.white38, size: 16),
               ),
               Text(
-                '$after 🪙',
+                '$after monedas',
                 style: TextStyle(
-                  color:
-                      after >= 0 ? Colors.greenAccent : Colors.redAccent,
+                  color: after >= 0 ? Colors.greenAccent : Colors.redAccent,
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -520,28 +596,16 @@ class _PurchaseDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text(
-            'Cancelar',
-            style:
-                TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
-          ),
+          child: const Text('Cancelar', style: TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, true),
           style: ElevatedButton.styleFrom(
             backgroundColor: world.accentColor,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          child: const Text(
-            '¡Comprar!',
-            style: TextStyle(
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          child: const Text('Comprar', style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
         ),
       ],
     );

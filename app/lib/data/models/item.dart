@@ -13,6 +13,7 @@ class Item {
     required this.shopPrice,
     required this.source,
     this.isRare = false,
+    this.imagePath,
   });
 
   final String     id;
@@ -25,8 +26,25 @@ class Item {
   final int        shopPrice;
   final ItemSource source;
   final bool       isRare;
+  /// Nombre de archivo en assets/items/ (ej: 'llave_inglesa.png'). null = usar emoji.
+  final String?    imagePath;
 
   bool get availableInShop => shopPrice > 0;
+
+  factory Item.fromJson(Map<String, dynamic> j) {
+    final price = j['shop_price'] as int? ?? 0;
+    return Item(
+      id:          j['item_id']     as String,
+      emoji:       j['emoji']       as String,
+      name:        j['name']        as String,
+      description: j['description'] as String? ?? '',
+      world:       j['world']       as String? ?? 'any',
+      shopPrice:   price,
+      source:      price > 0 ? ItemSource.shop : ItemSource.mission,
+      isRare:      j['is_rare']     as bool? ?? false,
+      imagePath:   j['image_name']  as String?,
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,16 +97,6 @@ const allItems = <Item>[
     shopPrice: 30,
     source: ItemSource.shop,
   ),
-  Item(
-    id: 'forest_gem',
-    emoji: '💎',
-    name: 'Gema del Bosque',
-    description: 'Piedra preciosa muy rara. Solo se obtiene completando misiones.',
-    world: 'forest',
-    shopPrice: 0, // solo misiones
-    source: ItemSource.mission,
-    isRare: true,
-  ),
 
   // ── ESPACIO ──────────────────────────────────────────────────────────────
   Item(
@@ -124,8 +132,8 @@ const allItems = <Item>[
     name: 'Cápsula de Combustible',
     description: 'Combustible concentrado para naves espaciales y robots.',
     world: 'space',
-    shopPrice: 140,
-    source: ItemSource.shop,
+    shopPrice: 0,
+    source: ItemSource.mission,
   ),
   Item(
     id: 'lunar_circuit',
@@ -135,16 +143,6 @@ const allItems = <Item>[
     world: 'space',
     shopPrice: 120,
     source: ItemSource.shop,
-  ),
-  Item(
-    id: 'star_crystal',
-    emoji: '🔮',
-    name: 'Cristal Estelar',
-    description: 'Cristal rarísimo que solo cae de las estrellas. Misiones exclusivas.',
-    world: 'space',
-    shopPrice: 0, // solo misiones
-    source: ItemSource.mission,
-    isRare: true,
   ),
 ];
 

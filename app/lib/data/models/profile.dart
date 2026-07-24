@@ -16,7 +16,7 @@ extension UserRoleX on UserRole {
   bool get isChild => this == UserRole.child;
 }
 
-enum AccountType { demo, full }
+enum AccountType { demo, limited, full }
 
 class Profile {
   final String id;
@@ -54,9 +54,11 @@ class Profile {
       displayName: json['display_name'] as String,
       avatarUrl: json['avatar_url'] as String?,
       worldName: json['world_name'] as String?,
-      accountType: (json['account_type'] as String?) == 'demo'
-          ? AccountType.demo
-          : AccountType.full,
+      accountType: switch (json['account_type'] as String? ?? 'full') {
+        'demo'    => AccountType.demo,
+        'limited' => AccountType.limited,
+        _         => AccountType.full,
+      },
       pinHash: json['pin_hash'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),

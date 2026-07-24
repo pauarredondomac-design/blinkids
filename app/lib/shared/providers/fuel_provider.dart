@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/fuel.dart';
 import '../../data/repositories/fuel_repository.dart';
+import 'auth_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FuelRepository singleton
@@ -13,6 +14,8 @@ final fuelRepositoryProvider = Provider<FuelRepository>(
 // Fuel del mundo espacio (el que usa la barra de combustible en el HUD)
 // ─────────────────────────────────────────────────────────────────────────────
 final spaceFuelProvider = FutureProvider<WorldFuel?>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return null;
   return ref.read(fuelRepositoryProvider).getFuel('space');
 });
 

@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/models/wallet.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/coin_display.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC API
@@ -40,7 +41,7 @@ class BancoEstelarScreen extends StatelessWidget {
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/worlds/space/space_background.png',
+              'assets/worlds/space/space_background.png',
               fit: BoxFit.cover,
             ),
           ),
@@ -374,18 +375,40 @@ class _BELeftCol extends StatelessWidget {
                         ),
                         const Padding(
                           padding: EdgeInsets.only(bottom: 3, left: 5),
-                          child: Text('🪙', style: TextStyle(fontSize: 18)),
+                          child: AnimatedCoin(size: 18),
                         ),
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      balance > 0 ? '+5 🪙 esta semana' : 'Empieza a invertir hoy',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.45),
-                        fontSize: 10,
-                      ),
-                    ),
+                    balance > 0
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '+5',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.45),
+                                  fontSize: 10,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              const AnimatedCoin(size: 10),
+                              Text(
+                                ' esta semana',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.45),
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            'Empieza a invertir hoy',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.45),
+                              fontSize: 10,
+                            ),
+                          ),
                   ],
                 ),
               ],
@@ -580,7 +603,7 @@ class _BERightCol extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: Image.asset(
-                  'assets/images/worlds/space/building_bolsa.png',
+                  'assets/worlds/space/building_bolsa.png',
                   fit: BoxFit.contain,
                 )
                     .animate(onPlay: (c) => c.repeat(reverse: true))
@@ -648,13 +671,20 @@ class _BERightCol extends StatelessWidget {
             color: Colors.white.withOpacity(0.06),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Text(
-            'Saldo: $balance 🪙',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Saldo: $balance',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const AnimatedCoin(size: 13),
+            ],
           ),
         ),
 

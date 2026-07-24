@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/mission.dart' show MissionObjectiveType;
+import '../../shared/providers/demo_progress_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MissionTracker
@@ -22,6 +23,10 @@ class MissionTracker {
   Future<void> recordPurchase() => _increment('purchase');
 
   Future<void> _increment(String type) async {
+    if (DemoStore.isActive) {
+      DemoStore.instance.recordMissionAction(type);
+      return;
+    }
     try {
       await _client.rpc(
         'increment_mission_action',
@@ -42,6 +47,14 @@ class MissionTracker {
 
   /// Devuelve el progreso actual para todos los tipos.
   Future<Map<MissionObjectiveType, int>> allProgress() async {
+    if (DemoStore.isActive) {
+      final s = DemoStore.instance;
+      return {
+        MissionObjectiveType.completeQuizzes: s.progressFor('quiz'),
+        MissionObjectiveType.completeJobs:    s.progressFor('job'),
+        MissionObjectiveType.buyFromShop:     s.progressFor('purchase'),
+      };
+    }
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return _zero();
@@ -74,6 +87,7 @@ class MissionTracker {
 
   /// Devuelve true si la misión ya fue reclamada por el usuario actual.
   Future<bool> isClaimed(String missionId) async {
+    if (DemoStore.isActive) return DemoStore.instance.isMissionClaimed(missionId);
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return false;
@@ -94,6 +108,10 @@ class MissionTracker {
   /// Marca una misión como reclamada. La PK (user_id, mission_id) en la tabla
   /// garantiza que no se puede reclamar dos veces aunque el cliente lo intente.
   Future<void> markClaimed(String missionId) async {
+    if (DemoStore.isActive) {
+      DemoStore.instance.markMissionClaimed(missionId);
+      return;
+    }
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return;

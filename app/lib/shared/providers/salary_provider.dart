@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/salary.dart';
 import '../../data/repositories/salary_repository.dart';
+import 'auth_provider.dart';
 
 final salaryRepositoryProvider = Provider<SalaryRepository>(
   (_) => SalaryRepository(),
@@ -8,11 +9,15 @@ final salaryRepositoryProvider = Provider<SalaryRepository>(
 
 // ─── Estado del salario para el niño ─────────────────────────────────────────
 final mySalaryStatusProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return {};
   return ref.read(salaryRepositoryProvider).getMyStatus();
 });
 
 // ─── Lista de salarios asignados por el padre ─────────────────────────────────
 final parentSalariesProvider = FutureProvider<List<WeeklySalary>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return [];
   return ref.read(salaryRepositoryProvider).getSalariesByParent();
 });
 

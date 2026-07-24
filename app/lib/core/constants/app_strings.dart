@@ -11,7 +11,7 @@ abstract class AppStrings {
   static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   // Deep link para OAuth (configura en AndroidManifest.xml e Info.plist)
-  static const oauthRedirectUrl = 'finquest://callback';
+  static const oauthRedirectUrl = 'blinkids://callback';
 
   // App
   static const appName = 'Blinkids';

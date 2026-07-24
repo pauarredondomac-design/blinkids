@@ -1,10 +1,11 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/providers/profile_provider.dart';
+import '../../../shared/providers/character_provider.dart';
 import '../../../data/models/profile.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/fuel_provider.dart';
@@ -12,7 +13,20 @@ import '../../../shared/widgets/profile_bottom_sheet.dart';
 import '../../../shared/widgets/blink_character.dart';
 import '../../../shared/widgets/child_notification_bell.dart';
 import '../../../shared/helpers/notification_helper.dart';
+import '../../../shared/providers/demo_progress_provider.dart';
+import '../../../shared/providers/world_provider.dart';
+import '../../../shared/providers/auth_provider.dart';
+import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/providers/blink_ambient_provider.dart';
+import '../../../shared/helpers/blink_ambient_helper.dart';
 import 'banco_estelar_screen.dart';
+import '../trabajos/trabajos_screen.dart';
+import '../misiones/misiones_screen.dart';
+import '../tienda/tienda_screen.dart';
+import '../mercado/mercado_screen.dart';
+import '../vestidor/vestidor_screen.dart';
+import '../../wallet/screens/wallet_screen.dart';
+import '../world_selector_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SpaceWorldMap — Mundo único por ahora
@@ -43,14 +57,17 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       NotificationHelper.checkEngagement();
+      BlinkAmbientHelper.maybeGreet(ref);
       ref.listenManual<AsyncValue<Profile?>>(
         currentProfileProvider,
         (prev, next) {
           next.whenData((profile) {
             if (_worldNameChecked) return;
             _worldNameChecked = true;
-            // No pedir nombre de galaxia a usuarios demo
-            if (profile?.isDemo == true) return;
+            // No pedir nombre de galaxia a usuarios demo (ni con perfil isDemo, ni sin sesión)
+            final isDemoUser = profile?.isDemo == true ||
+                Supabase.instance.client.auth.currentUser == null;
+            if (isDemoUser) return;
             final name = profile?.worldName ?? '';
             if (name.isEmpty && mounted) {
               _showWorldNameDialog();
@@ -58,6 +75,18 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
           });
         },
         fireImmediately: true,
+      );
+
+      ref.listenManual<DemoStore>(
+        demoProgressProvider,
+        (prev, next) {
+          if (next.pendingMessage != null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(next.pendingMessage!), duration: const Duration(seconds: 3)),
+            );
+            ref.read(demoProgressProvider.notifier).clearPendingMessage();
+          }
+        },
       );
     });
   }
@@ -126,13 +155,20 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
   Widget build(BuildContext context) {
     final profile   = ref.watch(currentProfileProvider).value;
     final wallet    = ref.watch(currentWalletProvider).value;
-    final fuelAsync = ref.watch(fuelNotifierProvider);
-    final fuelLevel = (fuelAsync is AsyncData<int> ? fuelAsync.value : null) ?? 0;
-    final coins     = wallet?.totalCoins ?? 0;
-    final worldName = _localWorldName ?? profile?.worldName ?? 'Mi Galaxia';
-    final isDemo    = profile?.isDemo ?? false;
+    final worldName   = _localWorldName ?? profile?.worldName ?? 'Mi Galaxia';
+    // Demo = sin sesión real. Un niño con PIN tiene sesión real → no es demo.
+    final supaUser    = Supabase.instance.client.auth.currentUser;
+    final isDemo      = supaUser == null || (supaUser.isAnonymous == true);
+    final demoState   = ref.watch(demoProgressProvider);
+    final spaceFuel   = ref.watch(spaceFuelProvider).valueOrNull;
+    // En demo, monedas/combustible viven solo en memoria — nunca en Supabase.
+    final coins       = isDemo ? demoState.coins : (wallet?.totalCoins ?? 0);
+    final fuelLevel   = isDemo ? demoState.fuel : (spaceFuel?.fuel ?? 0);
+    final ambientMessage = ref.watch(blinkAmbientMessageProvider);
+
 
     return Scaffold(
+      backgroundColor: const Color(0xFF020A18),
       body: LayoutBuilder(
         builder: (ctx, constraints) {
           final w      = constraints.maxWidth;
@@ -141,40 +177,25 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
           return Stack(
             children: [
-              // ── Fondo espacial ────────────────────────────────────────────
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/worlds/space/space_background.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-
-              // ── Overlay oscuro sutil ──────────────────────────────────────
-              Positioned.fill(
-                child: Container(color: Colors.black.withOpacity(0.15)),
-              ),
+              // ── Fondo estático (RepaintBoundary = no se repinta en rebuilds) ──
+              const Positioned.fill(child: RepaintBoundary(child: _StaticBackground())),
 
               // ── Partículas ambientales flotantes ──────────────────────────
               const Positioned.fill(child: _SpaceParticles()),
 
-              // ── Órbita elíptica (con glow) ────────────────────────────────
-              Positioned.fill(
-                child: CustomPaint(painter: _OrbitPainter(w: w, h: h)),
-              ),
-
               // ── Estrellas fugaces ─────────────────────────────────────────
               const Positioned.fill(child: _ShootingStars()),
 
-              // ── Planeta Marte ─────────────────────────────────────────────
-              Positioned(
-                right: w * -0.15,
-                top: h * 0.06,
-                child: Image.asset(
-                  'assets/images/worlds/space/planet_mars.png',
-                  width: w * 0.65,
-                ).animate(onPlay: (c) => c.repeat(reverse: true))
-                  .moveY(begin: 0, end: -10, duration: 3.seconds,
-                         curve: Curves.easeInOut),
+              // ── Plataforma base (edificios se renderizan encima) ──────────
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Image.asset(
+                    'assets/worlds/space/estructuras.png',
+                    height: h * 0.90,
+                    fit: BoxFit.fitHeight,
+                  ),
+                ),
               ),
 
               // ── Edificios ─────────────────────────────────────────────────
@@ -202,13 +223,25 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
               // ── Blink ─────────────────────────────────────────────────────
               Positioned(
-                left: w * 0.5 - (h * 0.42) / 2,
-                top:  h * 0.25,
+                left: w * 0.5 - (h * 0.20) / 3.2,
+                top:  h * 0.29,
                 child: BlinkCharacterWidget(
-                  width: h * 0.35,
+                  width: h * 0.15,
                   enableBounce: false,
                 ),
               ),
+
+              // ── Burbuja ambiental de Blink ───────────────────────────────
+              if (ambientMessage != null)
+                Positioned(
+                  left: w * 0.5 - (h * 0.20) / 3.2 + h * 0.14,
+                  top:  h * 0.29 - h * 0.02,
+                  child: _AmbientBubble(
+                    text: ambientMessage,
+                    onDismiss: () =>
+                        ref.read(blinkAmbientMessageProvider.notifier).state = null,
+                  ),
+                ),
 
               // ── Nombre del mundo (watermark central) ──────────────────────
               Positioned(
@@ -244,47 +277,8 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
               ),
 
               // ── HUD central superior ──────────────────────────────────────
-              _buildCenterHud(context, ref, coins, panelW),
+              _buildCenterHud(context, ref, coins, panelW, demoMode: isDemo),
 
-              // ── Badge demo (esquina inferior izquierda, compacto) ─────────
-              if (isDemo)
-                Positioned(
-                  bottom: 14,
-                  left: panelW + 10,
-                  child: GestureDetector(
-                    onTap: () => context.push('/demo-end'),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: const [
-                          BoxShadow(color: Color(0x55FFD700), blurRadius: 10, offset: Offset(0, 3)),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.star_rounded, color: Colors.white, size: 13),
-                          SizedBox(width: 5),
-                          Text(
-                            'Demo',
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scaleXY(begin: 1.0, end: 1.04, duration: 1400.ms, curve: Curves.easeInOut),
-                ),
             ],
           );
         },
@@ -292,69 +286,102 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
     );
   }
 
-  // ── Edificios posicionados en la órbita ────────────────────────────────────
+  // ── Edificios posicionados sobre las estructuras ───────────────────────────
+  // fx/fy = fracción del rect de estructuras.png (no de la pantalla).
+  // Así los edificios escalan y se mueven junto con la imagen de islas.
+  //
+  // estructuras.png: 3954×1767 px → aspect 2.237
+  //   rendered width  = w * 0.80
+  //   rendered height = (w * 0.80) / 2.237  ≈  w * 0.3576
+  //   left            = w * 0.10  (centrada horizontalmente)
+  //   top             = h - renderedHeight   (anclada al fondo)
+  //
+  // Para mover un edificio: cambia islandFx / islandFy.
+  // Para cambiar tamaño:    cambia el campo size (fracción de imgW).
   List<Widget> _buildBuildings(double w, double h, {bool demoMode = false}) {
-    final cx    = w * 0.5;
-    final cy    = h * 0.54;   // bajado para dar aire arriba (HUD)
-    final rx    = w * 0.34;   // órbita más ajustada
-    final ry    = h * 0.27;   // órbita más ajustada
-    final bSize = h * 0.22;   // edificios ligeramente más pequeños
+    // Rect de la imagen estructuras.png en coordenadas de pantalla
+    const double _natW = 3954, _natH = 1767;
+    final imgH    = h * 0.90;
+    final imgW    = imgH * _natW / _natH;   // ancho derivado del alto
+    final imgLeft = (w - imgW) / 2;         // centrada horizontalmente
+    final imgTop  = (h - imgH) / 2;         // centrada verticalmente
 
+    // Tamaño base de edificios como fracción del ancho de la imagen
+    final bSize = imgW * 0.10;   // ~20% del ancho de la imagen
+
+    final demoState = ref.read(demoProgressProvider);
+    bool locked(String id) => demoMode && !demoState.isUnlocked(id);
+
+    // islandFx/islandFy: posición del centro de la isla en estructuras.png (0..1)
+    // El edificio se centra horizontalmente y su base toca el centro de la isla.
     final buildings = [
       _BuildingData(
-        angle: 120,
-        asset: 'assets/images/worlds/space/building_misiones.png',
-        label: 'Misiones',
-        route: '/space/misiones',
-        size: bSize,
-        badgeCount: 3,
-      ),
-      _BuildingData(
-        angle: 245,
-        asset: 'assets/images/worlds/space/building_bolsa.png',
+        id: 'banco',
+        asset: 'assets/worlds/space/building_bolsa.png',
         label: 'Banco Estelar',
         openAsDialog: true,
-        size: bSize,
+        dialogBuilder: showBancoEstelarDialog,
+        demoRoute: '/demo/banco',
+        size: bSize ,
+        locked: locked('banco'),
+        islandFx: 0.31, islandFy: 0.39,
       ),
       _BuildingData(
-        angle: 200,          // ignorado — posición libre activa
-        asset: 'assets/images/worlds/space/building_trabajos.png',
+        id: 'trabajos',
+        asset: 'assets/worlds/space/building_trabajos.png',
         label: 'Trabajos',
-        route: '/space/trabajos',
+        openAsDialog: true,
+        dialogBuilder: showTrabajosDialog,
+        demoRoute: '/demo/trabajos',
         size: bSize,
         badgeCount: 1,
-        //freeLeft: 0.165,   // justo fuera del panel izquierdo
-        //freeTop:  0.410,   // debajo de Banco Estelar, a la altura de Marte
+        locked: locked('trabajos'),
+        islandFx: 0.66, islandFy: 0.23,
       ),
       _BuildingData(
-        angle: 295,
-        asset: 'assets/images/worlds/space/building_mercado.png',
-        label: 'Mercado',
-        route: '/space/mercado',
+        id: 'misiones',
+        asset: 'assets/worlds/space/building_misiones.png',
+        label: 'Misiones',
+        openAsDialog: true,
+        dialogBuilder: showMisionesDialog,
+        demoRoute: '/demo/misiones',
         size: bSize,
+        badgeCount: 3,
+        locked: locked('misiones'),
+        islandFx: 0.34, islandFy: 0.82,
       ),
       _BuildingData(
-        angle: 60,
-        asset: 'assets/images/worlds/space/building_tienda.png',
+        id: 'tienda',
+        asset: 'assets/worlds/space/building_tienda.png',
         label: 'Tienda',
-        route: '/space/tienda',
+        openAsDialog: true,
+        dialogBuilder: showTiendaDialog,
+        demoRoute: '/demo/tienda',
         size: bSize,
-        locked: false,
+        locked: locked('tienda'),
+        islandFx: 0.78, islandFy: 0.60,
       ),
+      _BuildingData(
+        id: 'alcancia',
+        asset: 'assets/worlds/space/alcancia.png',
+        label: 'Mi Bolsa',
+        openAsDialog: true,
+        dialogBuilder: showWalletDialog,
+        demoRoute: '/demo/bolsa',
+        size: bSize,
+        locked: locked('alcancia'),
+        islandFx: 0.64, islandFy: 0.81,
+      ),
+      // _BuildingData(id: 'mercado', ..., islandFx: 0.72, islandFy: 0.48),
     ];
 
     return buildings.map((b) {
-      final double bx;
-      final double by;
-      if (b.freeLeft != null && b.freeTop != null) {
-        // Posición libre — no usa la órbita
-        bx = b.freeLeft! * w;
-        by = b.freeTop!  * h;
-      } else {
-        final rad = b.angle * pi / 180;
-        bx = cx + rx * cos(rad) - b.size / 2;
-        by = cy + ry * sin(rad) - b.size / 2;
-      }
+      // Centro de la isla en coordenadas de pantalla
+      final cx = imgLeft + b.islandFx! * imgW;
+      final cy = imgTop  + b.islandFy! * imgH;
+      // Edificio centrado horizontalmente; base del edificio en el centro de la isla
+      final bx = cx - b.size / 2;
+      final by = cy - b.size;
       return Positioned(
         left: bx,
         top:  by,
@@ -371,8 +398,9 @@ Widget _buildCenterHud(
   BuildContext context,
   WidgetRef ref,
   int coins,
-  double panelW,
-) {
+  double panelW, {
+  bool demoMode = false,
+}) {
   return Positioned(
     top: 0,
     left: panelW,
@@ -410,7 +438,7 @@ Widget _buildCenterHud(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🪙', style: TextStyle(fontSize: 20))
+                const AnimatedCoin(size: 20)
                     .animate(onPlay: (c) => c.repeat(reverse: true))
                     .scale(begin: const Offset(1, 1), end: const Offset(1.15, 1.15),
                            duration: 1800.ms, curve: Curves.easeInOut),
@@ -432,58 +460,27 @@ Widget _buildCenterHud(
 
           const Spacer(),
 
-          // ── Botón "Mis Créditos" ──────────────────────────────────────────
-          GestureDetector(
-            onTap: () => context.push('/space/bolsa'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF6B00), Color(0xFFFFB300)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFF8C00).withOpacity(0.55),
-                    blurRadius: 16,
-                    spreadRadius: 2,
-                  ),
-                ],
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.25),
-                  width: 1,
-                ),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('💰', style: TextStyle(fontSize: 16)),
-                  SizedBox(width: 7),
-                  Text(
-                    'Mis Créditos',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                      letterSpacing: 0.5,
-                      shadows: [Shadow(color: Colors.black38, blurRadius: 4)],
-                    ),
-                  ),
-                ],
-              ),
-            )
-            .animate(onPlay: (c) => c.repeat(reverse: true))
-            .scale(
-              begin: const Offset(1.00, 1.00),
-              end:   const Offset(1.03, 1.03),
-              duration: 2200.ms,
-              curve: Curves.easeInOut,
-            ),
-          ),
 
           const Spacer(),
+
+          // ── Mercado ───────────────────────────────────────────────────────
+          GestureDetector(
+            onTap: () => showMercadoDialog(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(100),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: const Icon(
+                Icons.storefront_rounded,
+                color: Colors.white54,
+                size: 20,
+              ),
+            ),
+          ),
 
           // ── Campana ───────────────────────────────────────────────────────
           ChildNotificationBell(),
@@ -494,14 +491,157 @@ Widget _buildCenterHud(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Panel izquierdo — Perfil de Blink + botón Papá Comandante
+// Burbuja de diálogo ambiental de Blink
 // ─────────────────────────────────────────────────────────────────────────────
-class _LeftPanel extends StatelessWidget {
-  const _LeftPanel({required this.profile});
-  final Profile? profile;
+class _AmbientBubble extends StatelessWidget {
+  const _AmbientBubble({required this.text, required this.onDismiss});
+  final String       text;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onDismiss,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 210),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(color: Colors.black38, blurRadius: 14, offset: Offset(0, 4)),
+            ],
+          ),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              color: Color(0xFF1A1A2E),
+              height: 1.3,
+            ),
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 250.ms)
+        .slideY(begin: 0.2, end: 0, duration: 250.ms, curve: Curves.easeOut);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pantalla de carga mientras se precachean las imágenes del mapa
+// ─────────────────────────────────────────────────────────────────────────────
+class _WorldLoadingOverlay extends StatelessWidget {
+  const _WorldLoadingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF060618),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/blink/blink_base.png',
+              width: 100,
+              height: 100,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 20),
+            const SizedBox(
+              width: 100,
+              child: LinearProgressIndicator(
+                backgroundColor: Colors.white12,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                minHeight: 3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fondo estático — aislado en RepaintBoundary para no repintarse en rebuilds
+// ─────────────────────────────────────────────────────────────────────────────
+class _StaticBackground extends StatelessWidget {
+  const _StaticBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Image.asset(
+            'assets/worlds/space/space_background.png',
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+          ),
+        ),
+        Positioned.fill(
+          child: ColoredBox(color: Colors.black.withOpacity(0.15)),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Panel izquierdo — Perfil de Blink (tap→vestuario) + tuerca de opciones
+// ─────────────────────────────────────────────────────────────────────────────
+class _LeftPanel extends ConsumerWidget {
+  const _LeftPanel({required this.profile});
+  final Profile? profile;
+
+  void _showWardrobeDialog(BuildContext context) {
+    showVestidorDialog(context);
+  }
+
+  void _showOptionsMenu(BuildContext context, WidgetRef ref) {
+    final supaUser = Supabase.instance.client.auth.currentUser;
+    final isDemo   = supaUser == null || (supaUser.isAnonymous == true);
+    final profile  = ref.read(currentProfileProvider).valueOrNull;
+    final isChild  = !isDemo && (profile?.role == UserRole.child);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => _OptionsDialog(
+        isDemo: isDemo,
+        isChild: isChild,
+        onSignIn: () { Navigator.pop(ctx); context.push('/child-login'); },
+        onLinkParent: () {
+          Navigator.pop(ctx);
+          showDialog(context: context, builder: (_) => const _RedeemCodeDialog());
+        },
+        onSignOut: () async {
+          Navigator.pop(ctx);
+          await ref.read(authRepositoryProvider).signOut();
+          if (context.mounted) context.go('/world');
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final liveProfile  = ref.watch(currentProfileProvider).valueOrNull ?? profile;
+    final character    = ref.watch(currentCharacterProvider).valueOrNull;
+    final demoState    = ref.watch(demoProgressProvider);
+    final isDemo       = DemoStore.isActive;
+    final xp           = isDemo ? demoState.xp              : (character?.xp    ?? 0);
+    final level        = isDemo ? (demoState.xp ~/ 500) + 1 : (character?.level ?? 1);
+    const xpPerLevel   = 500;
+    final xpProgress   = (xp % xpPerLevel) / xpPerLevel;
+    final xpInLevel    = xp % xpPerLevel;
+    final filledStars  = (xpProgress * 5).floor().clamp(0, 5);
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -519,178 +659,94 @@ class _LeftPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Card de perfil ─────────────────────────────────────────────
-          _PanelCard(
-            borderColor: const Color(0xFF4FC3F7).withOpacity(0.55),
-            glowColor: const Color(0xFF4FC3F7).withOpacity(0.12),
-            child: Column(
-              children: [
-                // Avatar con glow — círculo más grande, Blink completo
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF4FC3F7).withOpacity(0.70),
-                      width: 2,
+          // ── Card de perfil — tap abre vestuario ───────────────────────
+          GestureDetector(
+            onTap: () => _showWardrobeDialog(context),
+            child: _PanelCard(
+              borderColor: const Color(0xFF4FC3F7).withOpacity(0.55),
+              glowColor: const Color(0xFF4FC3F7).withOpacity(0.12),
+              child: Column(
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF4FC3F7).withOpacity(0.70), width: 2),
+                      color: const Color(0xFF0D1B3E),
+                      boxShadow: [BoxShadow(color: const Color(0xFF4FC3F7).withOpacity(0.30), blurRadius: 10, spreadRadius: 1)],
                     ),
-                    color: const Color(0xFF0D1B3E),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF4FC3F7).withOpacity(0.30),
-                        blurRadius: 10,
-                        spreadRadius: 1,
+                    clipBehavior: Clip.antiAlias,
+                    child: OverflowBox(
+                      maxWidth: 70,
+                      maxHeight: 220,
+                      alignment: const Alignment(0.05, -0.70),
+                      child: const BlinkCharacterWidget(
+                        width: 70,
+                        enableBounce: false,
                       ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Image.asset(
-                      'assets/characters/blink/blink_dressed.png',
-                      fit: BoxFit.contain,
                     ),
                   ),
-                ),
-                const SizedBox(height: 6),
-
-                // Nombre — hasta 2 líneas para nombres largos
-                Text(
-                  profile?.displayName ?? 'Blink',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 6),
+                  Text(
+                    liveProfile?.displayName ?? 'Blink',
+                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 1),
-
-                // Nivel con badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF0277BD), Color(0xFF01579B)],
+                  const SizedBox(height: 1),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFF0277BD), Color(0xFF01579B)]),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    child: Text('Nivel $level', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                   ),
-                  child: const Text(
-                    'Nivel 1',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
+                  const SizedBox(height: 7),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (i) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                      child: Icon(
+                        i < filledStars ? Icons.star_rounded : Icons.star_outline_rounded,
+                        color: i < filledStars ? Colors.amber : Colors.white24,
+                        size: 13,
+                      ),
+                    )),
+                  ),
+                  const SizedBox(height: 5),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: xpProgress,
+                      backgroundColor: Colors.white.withOpacity(0.10),
+                      valueColor: const AlwaysStoppedAnimation(Color(0xFF4FC3F7)),
+                      minHeight: 5,
                     ),
                   ),
-                ),
-                const SizedBox(height: 7),
-
-                // Estrellas XP
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (i) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                    child: Icon(
-                      i < 2
-                          ? Icons.star_rounded
-                          : Icons.star_outline_rounded,
-                      color: i < 2 ? Colors.amber : Colors.white24,
-                      size: 13,
-                    ),
-                  )),
-                ),
-                const SizedBox(height: 5),
-
-                // Barra de progreso XP
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: 0.40,  // 200/500 XP (mockup)
-                    backgroundColor: Colors.white.withOpacity(0.10),
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFF4FC3F7)),
-                    minHeight: 5,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '200 / 500 XP',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.40),
-                    fontSize: 9,
-                  ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Text('$xpInLevel / $xpPerLevel XP', style: TextStyle(color: Colors.white.withOpacity(0.40), fontSize: 9)),
+                ],
+              ),
             ),
           ),
 
           const Spacer(),
 
-          // ── Botón Papá Comandante ──────────────────────────────────────
+          // ── Botón tuerca de opciones ───────────────────────────────────
           GestureDetector(
-            onTap: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => const ProfileBottomSheet(
-                accentColor: Color(0xFF00BCD4),
-              ),
-            ),
+            onTap: () => _showOptionsMenu(context, ref),
             child: _PanelCard(
               borderColor: const Color(0xFF4FC3F7).withOpacity(0.30),
               glowColor: Colors.transparent,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF4FC3F7).withOpacity(0.25),
-                          const Color(0xFF4FC3F7).withOpacity(0.10),
-                        ],
-                      ),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF4FC3F7).withOpacity(0.40),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Icon(Icons.person_rounded,
-                        color: Color(0xFF4FC3F7), size: 17),
-                  ),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Papá Comandante',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'Ver progreso',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.45),
-                            fontSize: 9,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right_rounded,
-                      color: const Color(0xFF4FC3F7).withOpacity(0.60), size: 15),
+                  Icon(Icons.settings_rounded, color: const Color(0xFF4FC3F7).withOpacity(0.80), size: 20),
+                  const SizedBox(width: 6),
+                  Text('Opciones', style: TextStyle(color: Colors.white.withOpacity(0.70), fontSize: 10, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
@@ -701,15 +757,310 @@ class _LeftPanel extends StatelessWidget {
   }
 }
 
+// Diálogo de opciones — carga el nombre del papá vinculado de forma asíncrona
+class _OptionsDialog extends StatefulWidget {
+  const _OptionsDialog({
+    required this.isDemo,
+    required this.isChild,
+    required this.onSignIn,
+    required this.onLinkParent,
+    required this.onSignOut,
+  });
+  final bool isDemo;
+  final bool isChild;
+  final VoidCallback onSignIn;
+  final VoidCallback onLinkParent;
+  final VoidCallback onSignOut;
+
+  @override
+  State<_OptionsDialog> createState() => _OptionsDialogState();
+}
+
+class _OptionsDialogState extends State<_OptionsDialog> {
+  String? _parentName;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isChild) _loadParentLink();
+    else _loaded = true;
+  }
+
+  Future<void> _loadParentLink() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) { if (mounted) setState(() => _loaded = true); return; }
+    try {
+      final link = await Supabase.instance.client
+          .from('parent_child')
+          .select('parent_id')
+          .eq('child_id', userId)
+          .maybeSingle();
+      if (link != null) {
+        final parentId = link['parent_id'] as String?;
+        if (parentId != null) {
+          final p = await Supabase.instance.client
+              .from('profiles')
+              .select('display_name')
+              .eq('id', parentId)
+              .maybeSingle();
+          if (mounted) setState(() { _parentName = p?['display_name'] as String?; });
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loaded = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF0D1B3E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Row(
+        children: [
+          Icon(Icons.settings_rounded, color: Color(0xFF4FC3F7), size: 20),
+          SizedBox(width: 8),
+          Text('Opciones', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.isDemo)
+            _OptionItem(icon: Icons.login_rounded, label: 'Iniciar sesión', onTap: widget.onSignIn),
+          if (!widget.isDemo) ...[
+            if (widget.isChild) ...[
+              if (!_loaded)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: SizedBox(height: 20, width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4FC3F7))),
+                )
+              else if (_parentName != null)
+                _OptionItem(
+                  icon: Icons.verified_user_rounded,
+                  label: 'Vinculado con $_parentName',
+                  color: const Color(0xFF4CAF50),
+                  onTap: () {},
+                )
+              else
+                _OptionItem(
+                  icon: Icons.link_rounded,
+                  label: 'Vincular a papás',
+                  onTap: widget.onLinkParent,
+                ),
+            ],
+            _OptionItem(
+              icon: Icons.logout_rounded,
+              label: 'Cerrar sesión',
+              color: const Color(0xFFEF4444),
+              onTap: widget.onSignOut,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// Ítem de opción reutilizable para el menú de opciones
+class _OptionItem extends StatelessWidget {
+  const _OptionItem({required this.icon, required this.label, required this.onTap, this.color});
+  final IconData icon;
+  final String   label;
+  final VoidCallback onTap;
+  final Color?   color;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? Colors.white;
+    return ListTile(
+      leading: Icon(icon, color: c, size: 20),
+      title: Text(label, style: TextStyle(color: c, fontSize: 13, fontWeight: FontWeight.w600)),
+      onTap: onTap,
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Panel derecho — Destino Marte + combustible + Hangar de Despegue
+// Diálogo para que el hijo ingrese el código de invitación del padre
 // ─────────────────────────────────────────────────────────────────────────────
-class _RightPanel extends StatelessWidget {
+class _RedeemCodeDialog extends StatefulWidget {
+  const _RedeemCodeDialog();
+
+  @override
+  State<_RedeemCodeDialog> createState() => _RedeemCodeDialogState();
+}
+
+class _RedeemCodeDialogState extends State<_RedeemCodeDialog> {
+  final _ctrl    = TextEditingController();
+  bool  _loading = false;
+  String? _error;
+  bool  _success = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _redeem() async {
+    final code = _ctrl.text.trim().toUpperCase().replaceAll(' ', '');
+    if (code.length != 6) {
+      setState(() => _error = 'El código tiene 6 letras. Revísalo e inténtalo de nuevo.');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      await Supabase.instance.client.rpc('redeem_invite_code', params: {'p_code': code});
+      if (mounted) setState(() { _success = true; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() {
+        _error = e.toString().contains('inválido')
+            ? '❌ Código inválido o expirado. Pide uno nuevo a tu papá/mamá.'
+            : e.toString().contains('vinculado')
+                ? '✅ ¡Ya estás vinculado con ese papá/mamá!'
+                : '⚠️ No se pudo procesar. Verifica tu conexión.';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardH = MediaQuery.of(context).viewInsets.bottom;
+    return Dialog(
+      backgroundColor: const Color(0xFF0D1230),
+      insetPadding: EdgeInsets.fromLTRB(24, 40, 24, keyboardH + 24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: _success
+              ? _RedeemSuccessView(onClose: () => Navigator.pop(context))
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(children: [
+                      const Text('🔗 Vincularme',
+                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w800, fontSize: 18)),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded, color: Colors.white38),
+                      ),
+                    ]),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Escribe el código de 6 letras que te dio tu papá o mamá.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white54, fontFamily: 'Nunito',
+                          fontSize: 13, height: 1.5),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _ctrl,
+                      textAlign: TextAlign.center,
+                      autocorrect: false,
+                      textCapitalization: TextCapitalization.characters,
+                      maxLength: 6,
+                      style: const TextStyle(color: Colors.white, fontFamily: 'Courier',
+                          fontWeight: FontWeight.w900, fontSize: 32, letterSpacing: 8),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: 'XXXXXX',
+                        hintStyle: const TextStyle(color: Colors.white24, fontFamily: 'Courier',
+                            fontSize: 32, letterSpacing: 8),
+                        filled: true,
+                        fillColor: Colors.white.withAlpha(10),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Colors.white10)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Colors.white10)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFF7C3AED), width: 2)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      onSubmitted: (_) => _redeem(),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(_error!, textAlign: TextAlign.center,
+                          style: const TextStyle(color: Color(0xFFFBBF24), fontFamily: 'Nunito', fontSize: 13)),
+                    ],
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: _loading ? null : _redeem,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF7C3AED),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: _loading
+                            ? const SizedBox(width: 20, height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text('¡Vincularme! 🎉',
+                                style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 15)),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RedeemSuccessView extends StatelessWidget {
+  const _RedeemSuccessView({required this.onClose});
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('🎉', style: TextStyle(fontSize: 48)),
+        const SizedBox(height: 12),
+        const Text('¡Vinculado!', style: TextStyle(color: Colors.white, fontFamily: 'Nunito',
+            fontWeight: FontWeight.w800, fontSize: 20)),
+        const SizedBox(height: 8),
+        const Text('Ya estás conectado con tu papá o mamá.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white54, fontFamily: 'Nunito', fontSize: 13)),
+        const SizedBox(height: 20),
+        FilledButton(
+          onPressed: onClose,
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF4ADE80),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+          child: const Text('¡Perfecto! ✓', style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Panel derecho — Destino Marte + combustible + Hangar de Despegue + Cambiar mundo
+// ─────────────────────────────────────────────────────────────────────────────
+class _RightPanel extends ConsumerWidget {
   const _RightPanel({required this.fuel});
   final int fuel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final world         = ref.watch(currentWorldProvider);
     final weeksLeft     = ((100 - fuel) / 7.0).ceil().clamp(1, 20);
     const totalSegments = 5;
     final filledSegs    = (fuel / 100 * totalSegments).round();
@@ -905,6 +1256,25 @@ class _RightPanel extends StatelessWidget {
               ],
             ),
           ),
+
+          const Spacer(),
+
+          // ── Cambiar mundo ──────────────────────────────────────────────
+          GestureDetector(
+            onTap: () => showWorldSelectorDialog(context, world),
+            child: _PanelCard(
+              borderColor: const Color(0xFF4FC3F7).withOpacity(0.30),
+              glowColor: Colors.transparent,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.public_rounded, color: const Color(0xFF4FC3F7).withOpacity(0.80), size: 18),
+                  const SizedBox(width: 6),
+                  Text('Cambiar mundo', style: TextStyle(color: Colors.white.withOpacity(0.70), fontSize: 10, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -947,16 +1317,74 @@ class _PanelCard extends StatelessWidget {
   }
 }
 
+// Abre la pantalla demo (banco) como diálogo avanzando el stage al cerrar
+void _showDemoDialog(BuildContext context, WidgetRef ref, String demoRoute) {
+  // Mapeo demoRoute → widget
+  final configs = <String, (Widget, int, String)>{
+    '/demo/banco':    (const BancoEstelarScreen(), 0, '🔓 ¡Desbloqueaste Trabajos!'),
+    '/demo/trabajos': (const TrabajosScreen(),     1, '🔓 ¡Desbloqueaste Misiones!'),
+    '/demo/misiones': (const MisionesScreen(),     2, '🔓 ¡Desbloqueaste Mi Bolsa!'),
+    '/demo/bolsa':    (const WalletScreen(),       3, '🔓 ¡Desbloqueaste la Tienda!'),
+    '/demo/tienda':   (const TiendaScreen(),       4, '🎉 ¡Has completado la demo!'),
+  };
+  final cfg    = configs[demoRoute] ?? configs['/demo/banco']!;
+  final screen = cfg.$1;
+  final atStage   = cfg.$2;
+  final unlockMsg = cfg.$3;
+
+  final size = MediaQuery.of(context).size;
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: demoRoute,
+    barrierColor: Colors.black.withOpacity(0.65),
+    transitionDuration: const Duration(milliseconds: 300),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return ScaleTransition(
+        scale: Tween<double>(begin: 0.90, end: 1.0).animate(curved),
+        child: FadeTransition(opacity: anim, child: child),
+      );
+    },
+    pageBuilder: (ctx, _, __) {
+      final store = ref.read(demoProgressProvider);
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: SizedBox(
+            width: size.width * 0.92,
+            height: size.height * 0.88,
+            child: PopScope(
+              canPop: true,
+              onPopInvokedWithResult: (didPop, _) {
+                if (!didPop) return;
+                if (store.stage == atStage) {
+                  store.addXp(50);
+                  store.advanceStage();
+                  store.setPendingMessage(unlockMsg);
+                }
+              },
+              child: screen,
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Botón de edificio — con glow base, animación flotante, label, badge, candado
 // ─────────────────────────────────────────────────────────────────────────────
-class _BuildingButton extends StatelessWidget {
+class _BuildingButton extends ConsumerWidget {
   const _BuildingButton({required this.data, this.demoMode = false});
   final _BuildingData data;
   final bool          demoMode;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // ── Imagen base (grises si bloqueado) ──────────────────────────────────
     Widget image = Image.asset(data.asset, width: data.size);
     if (data.locked) {
@@ -997,10 +1425,7 @@ class _BuildingButton extends StatelessWidget {
       ],
     );
 
-    // ── Animación de flotación ─────────────────────────────────────────────
-    Widget building = imageWithShadow
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .moveY(begin: 0, end: -6, duration: 2500.ms, curve: Curves.easeInOut);
+    Widget building = imageWithShadow;
 
     // ── Overlay: candado ───────────────────────────────────────────────────
     if (data.locked) {
@@ -1101,15 +1526,12 @@ class _BuildingButton extends StatelessWidget {
       onTap: data.locked
           ? null
           : () {
-              if (demoMode) {
-                context.push('/demo-end');
+              if (demoMode && data.demoRoute.isNotEmpty) {
+                // Demo: abrir como diálogo con DemoStageGate envolviendo la pantalla
+                _showDemoDialog(context, ref, data.demoRoute);
                 return;
               }
-              if (data.openAsDialog) {
-                showBancoEstelarDialog(context);
-              } else if (data.route.isNotEmpty) {
-                context.push(data.route);
-              }
+              data.dialogBuilder?.call(context);
             },
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1127,30 +1549,33 @@ class _BuildingButton extends StatelessWidget {
 // Data de cada edificio
 // ─────────────────────────────────────────────────────────────────────────────
 class _BuildingData {
+  final String id;
   final double angle;
   final String asset;
   final String label;
-  final String route;
+  final String demoRoute;
   final bool   openAsDialog;
+  final void Function(BuildContext)? dialogBuilder;
   final double size;
   final int    badgeCount;
   final bool   locked;
-  /// Posición libre (fracción de w/h). Cuando se define, ignora el ángulo
-  /// orbital y posiciona el edificio directamente en estas coordenadas.
-  final double? freeLeft;
-  final double? freeTop;
+  // Posición como fracción del rect de estructuras.png (0..1)
+  final double? islandFx;
+  final double? islandFy;
 
   const _BuildingData({
-    required this.angle,
+    required this.id,
+    this.angle = 0,
     required this.asset,
     required this.label,
-    this.route = '',
+    this.demoRoute = '',
     this.openAsDialog = false,
+    this.dialogBuilder,
     required this.size,
     this.badgeCount = 0,
     this.locked = false,
-    this.freeLeft,
-    this.freeTop,
+    this.islandFx,
+    this.islandFy,
   });
 }
 
@@ -1352,9 +1777,9 @@ class _ShootingStarsState extends State<_ShootingStars>
   }
 
   _StarData _randomStar() => _StarData(
-        startX:   0.08 + _rng.nextDouble() * 0.65,
-        startY:   0.01 + _rng.nextDouble() * 0.30,
-        angleDeg: 18.0 + _rng.nextDouble() * 28.0,
+        startX:   _rng.nextDouble() * 0.90,
+        startY:   _rng.nextDouble() * 0.80,
+        angleDeg: 15.0 + _rng.nextDouble() * 35.0,
         length:   0.12 + _rng.nextDouble() * 0.14,
         width:    1.2  + _rng.nextDouble() * 1.2,
       );
@@ -1468,100 +1893,6 @@ class _ShootingStarPainter extends CustomPainter {
   bool shouldRepaint(_ShootingStarPainter old) => true;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Nave de Blink — cohete pintado con Canvas (reservado para uso futuro)
-// ─────────────────────────────────────────────────────────────────────────────
-class _BlinkShipPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size s) {
-    final w = s.width;
-    final h = s.height;
-
-    canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(w * .5, h * .88), width: w * .45, height: h * .18),
-      Paint()
-        ..color = const Color(0xFFFF6E40).withOpacity(0.55)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9),
-    );
-
-    final lw = Path()
-      ..moveTo(w * .28, h * .58)
-      ..lineTo(w * .02, h * .80)
-      ..lineTo(w * .28, h * .74)
-      ..close();
-    canvas.drawPath(lw, Paint()..color = const Color(0xFF01579B));
-    canvas.drawPath(lw, Paint()
-      ..color = const Color(0xFF4FC3F7).withOpacity(.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1);
-
-    final rw = Path()
-      ..moveTo(w * .72, h * .58)
-      ..lineTo(w * .98, h * .80)
-      ..lineTo(w * .72, h * .74)
-      ..close();
-    canvas.drawPath(rw, Paint()..color = const Color(0xFF01579B));
-    canvas.drawPath(rw, Paint()
-      ..color = const Color(0xFF4FC3F7).withOpacity(.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1);
-
-    final bodyR = RRect.fromLTRBR(
-        w * .24, h * .20, w * .76, h * .84, const Radius.circular(16));
-    canvas.drawRRect(bodyR, Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFF4FC3F7), Color(0xFF0277BD)],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, w, h)));
-    canvas.drawRRect(bodyR, Paint()
-      ..color = const Color(0xFF81D4FA)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2);
-
-    final nose = Path()
-      ..moveTo(w * .5, h * .04)
-      ..lineTo(w * .73, h * .22)
-      ..lineTo(w * .27, h * .22)
-      ..close();
-    canvas.drawPath(nose, Paint()..color = const Color(0xFF0288D1));
-    canvas.drawPath(nose, Paint()
-      ..color = const Color(0xFF4FC3F7).withOpacity(.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1);
-
-    canvas.drawCircle(Offset(w * .5, h * .40), w * .13, Paint()
-      ..color = const Color(0xFFE1F5FE).withOpacity(.9)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
-    canvas.drawCircle(Offset(w * .5, h * .40), w * .11,
-        Paint()..color = const Color(0xFF81D4FA));
-    canvas.drawCircle(Offset(w * .43, h * .36), w * .04,
-        Paint()..color = Colors.white.withOpacity(.75));
-
-    canvas.drawOval(
-        Rect.fromCenter(
-            center: Offset(w * .5, h * .87), width: w * .22, height: h * .10),
-        Paint()..color = const Color(0xFFFFCC02));
-    canvas.drawOval(
-        Rect.fromCenter(
-            center: Offset(w * .5, h * .86), width: w * .12, height: h * .06),
-        Paint()..color = Colors.white);
-
-    for (int i = 0; i < 2; i++) {
-      canvas.drawLine(
-        Offset(w * .30, h * (.52 + i * .12)),
-        Offset(w * .70, h * (.52 + i * .12)),
-        Paint()
-          ..color = const Color(0xFF4FC3F7).withOpacity(.35)
-          ..strokeWidth = 1,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Botón del diálogo de nombre del mundo

@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/character.dart';
 import '../../data/repositories/character_repository.dart';
 import 'auth_provider.dart';
 import 'badge_provider.dart';
+import 'demo_progress_provider.dart';
 
 final characterRepositoryProvider = Provider<CharacterRepository>(
   (_) => CharacterRepository(),
@@ -21,6 +23,10 @@ final currentCharacterProvider = FutureProvider<Character?>((ref) async {
 /// Devuelve los IDs de las medallas recién ganadas (lista vacía si ninguna).
 Future<List<String>> awardXp(WidgetRef ref, int amount) async {
   if (amount <= 0) return [];
+  if (DemoStore.isActive) {
+    DemoStore.instance.addXp(amount);
+    return [];
+  }
   final userId = Supabase.instance.client.auth.currentUser?.id;
   if (userId == null) return [];
   try {
@@ -28,7 +34,8 @@ Future<List<String>> awardXp(WidgetRef ref, int amount) async {
     ref.invalidate(currentCharacterProvider);
     // Comprobar si se ganaron nuevas medallas tras el XP
     return await ref.read(badgeCheckerProvider.notifier).check();
-  } catch (_) {
+  } catch (e) {
+    debugPrint('[awardXp] ERROR: $e');
     return [];
   }
 }

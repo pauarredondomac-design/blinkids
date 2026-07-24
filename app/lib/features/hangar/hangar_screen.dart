@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/providers/fuel_provider.dart';
 import '../../shared/providers/wallet_provider.dart';
+import '../../shared/widgets/coin_display.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HangarScreen  — Pantalla de celebración al llegar a 100% de combustible
@@ -274,7 +275,9 @@ class _RewardChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 20)),
+          emoji == '🪙'
+              ? const AnimatedCoin(size: 20)
+              : Text(emoji, style: const TextStyle(fontSize: 20)),
           const SizedBox(width: 8),
           Text(
             label,

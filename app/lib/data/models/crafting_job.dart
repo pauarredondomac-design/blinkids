@@ -16,6 +16,7 @@ class CraftingJob {
     required this.coinReward,
     required this.xpReward,
     this.itemReward,
+    this.fuelReward = 0,
   });
 
   final String              id;
@@ -31,6 +32,8 @@ class CraftingJob {
   final int                 xpReward;
   /// Ítem opcional de recompensa (además de monedas)
   final ItemReward?         itemReward;
+  /// Combustible directo (0-100) que se suma a la barra al completar
+  final int                 fuelReward;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,7 +57,6 @@ const allCraftingJobs = <CraftingJob>[
     ],
     coinReward: 250,
     xpReward:   40,
-    itemReward: ItemReward(itemId: 'forest_gem', qty: 1),
   ),
   CraftingJob(
     id: 'heal_fox',
@@ -108,7 +110,7 @@ const allCraftingJobs = <CraftingJob>[
     ],
     coinReward: 300,
     xpReward:   50,
-    itemReward: ItemReward(itemId: 'star_crystal', qty: 1),
+    fuelReward: 10,
   ),
   CraftingJob(
     id: 'power_station',
@@ -144,7 +146,7 @@ const allCraftingJobs = <CraftingJob>[
     ],
     coinReward: 350,
     xpReward:   60,
-    itemReward: ItemReward(itemId: 'star_crystal', qty: 1),
+    fuelReward: 10,
   ),
 ];
 

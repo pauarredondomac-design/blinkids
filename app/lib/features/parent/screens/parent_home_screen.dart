@@ -11,9 +11,11 @@ import '../../../data/models/profile.dart';
 import '../../../data/repositories/parent_repository.dart';
 import '../../../data/repositories/salary_repository.dart';
 import '../../../shared/providers/auth_provider.dart';
+import '../../../shared/providers/parent_mission_provider.dart';
 import '../../../shared/providers/parent_provider.dart';
 import '../../../shared/providers/profile_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
+import '../../../shared/widgets/coin_display.dart';
 import 'child_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,6 +46,24 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
       parent: _notifCtrl,
       curve:  Curves.easeOut,
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _grantWeeklyAllowance());
+  }
+
+  Future<void> _grantWeeklyAllowance() async {
+    try {
+      final granted = await ref.read(parentMissionRepositoryProvider).grantWeeklyAllowanceIfDue();
+      if (granted > 0 && mounted) {
+        ref.invalidate(currentWalletProvider);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('¡Recibiste tu recarga semanal de $granted monedas! 🎉'),
+          backgroundColor: const Color(0xFF2E7D32),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    } catch (_) {
+      // Silencioso — no interrumpir el panel de padres
+    }
   }
 
   @override
@@ -84,6 +104,15 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
     final unreadAsync  = ref.watch(unreadCountProvider);
     final unreadCount  = unreadAsync.valueOrNull ?? 0;
 
+    // Redirigir si el usuario no es padre
+    final profileValue = profile.valueOrNull;
+    if (profile.hasValue && profileValue != null && profileValue.role != UserRole.parent) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/world');
+      });
+      return const Scaffold(backgroundColor: Color(0xFF06091A));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF06091A),
       body: Stack(
@@ -105,7 +134,7 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
                   onSignOut:    () async {
                     await ref.read(authRepositoryProvider).signOut();
                     if (!context.mounted) return;
-                    context.go('/login');
+                    context.go('/world');
                   },
                 ),
 
@@ -358,9 +387,8 @@ class _LeftPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w           = wallet.valueOrNull;
-    final realBalance = w?.realBalanceCents ?? 0;
-    final coins       = w?.totalCoins ?? 0;
+    final w     = wallet.valueOrNull;
+    final coins = w?.totalCoins ?? 0;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.only(top: 16),
@@ -396,38 +424,12 @@ class _LeftPanel extends StatelessWidget {
                   ),
                 ]),
                 const SizedBox(height: 16),
-                // Saldo real
-                _BalanceChip(
-                  label: 'Saldo real',
-                  value: '\$${(realBalance / 100).toStringAsFixed(2)} MXN',
-                  color: AppColors.secondary,
-                  icon:  '💵',
-                ),
-                const SizedBox(height: 8),
                 // Monedas del juego
                 _BalanceChip(
                   label: 'Monedas juego',
-                  value: '$coins 🪙',
+                  value: '$coins',
                   color: const Color(0xFFFFD600),
                   icon:  '🪙',
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    label: const Text(
-                      'Recargar saldo',
-                      style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700, fontSize: 12),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.secondary,
-                      side: const BorderSide(color: AppColors.secondary),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -550,7 +552,9 @@ class _BalanceChip extends StatelessWidget {
         border:       Border.all(color: color.withAlpha(60)),
       ),
       child: Row(children: [
-        Text(icon, style: const TextStyle(fontSize: 16)),
+        icon == '🪙'
+            ? const AnimatedCoin(size: 16)
+            : Text(icon, style: const TextStyle(fontSize: 16)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -858,7 +862,7 @@ class _ChildCardFull extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  _MiniChip('🪙 ${stats.totalCoins}',  const Color(0xFFFFD600)),
+                  _MiniChip('${stats.totalCoins}',  const Color(0xFFFFD600), showCoin: true),
                   _MiniChip('🏆 ${stats.missionsJoined}', const Color(0xFF10B981)),
                   _MiniChip('⭐ ${stats.xp} XP',       const Color(0xFFBB86FC)),
                 ],
@@ -930,9 +934,10 @@ class _ChildCardFull extends StatelessWidget {
 }
 
 class _MiniChip extends StatelessWidget {
-  const _MiniChip(this.label, this.color);
+  const _MiniChip(this.label, this.color, {this.showCoin = false});
   final String label;
   final Color  color;
+  final bool   showCoin;
 
   @override
   Widget build(BuildContext context) {
@@ -943,14 +948,23 @@ class _MiniChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border:       Border.all(color: color.withAlpha(70)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color:      color,
-          fontFamily: 'Nunito',
-          fontWeight: FontWeight.w700,
-          fontSize:   11,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showCoin) ...[
+            const AnimatedCoin(size: 11),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color:      color,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w700,
+              fontSize:   11,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1566,14 +1580,21 @@ class _SalaryDialogState extends State<_SalaryDialog> {
               const SizedBox(height: 20),
 
               // Valor actual grande
-              Text(
-                '🪙 $_amount',
-                style: const TextStyle(
-                  color: Color(0xFFFFD600),
-                  fontFamily: 'Nunito',
-                  fontWeight: FontWeight.w900,
-                  fontSize: 40,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AnimatedCoin(size: 32),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$_amount',
+                    style: const TextStyle(
+                      color: Color(0xFFFFD600),
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w900,
+                      fontSize: 40,
+                    ),
+                  ),
+                ],
               ),
               const Text(
                 'monedas / semana',

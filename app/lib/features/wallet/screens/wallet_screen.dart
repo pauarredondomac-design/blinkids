@@ -7,6 +7,38 @@ import '../../../data/models/wallet.dart';
 import '../../../shared/providers/fuel_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/rocket_launch_overlay.dart';
+
+void showWalletDialog(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Mi Bolsa',
+    barrierColor: Colors.black.withOpacity(0.65),
+    transitionDuration: const Duration(milliseconds: 300),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return ScaleTransition(
+        scale: Tween<double>(begin: 0.90, end: 1.0).animate(curved),
+        child: FadeTransition(opacity: anim, child: child),
+      );
+    },
+    pageBuilder: (ctx, _, __) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: SizedBox(
+          width: size.width * 0.92,
+          height: size.height * 0.88,
+          child: const WalletScreen(),
+        ),
+      ),
+    ),
+  );
+}
 
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
@@ -103,7 +135,7 @@ class _Header extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            onPressed: () => context.go('/world'),
+            onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
           ),
           const SizedBox(width: AppSizes.xs),
@@ -167,7 +199,7 @@ class _Header extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🪙', style: TextStyle(fontSize: 18)),
+                const AnimatedCoin(size: 18),
                 const SizedBox(width: AppSizes.xs),
                 Text(
                   '$available disponibles',
@@ -261,9 +293,12 @@ class _CategoriesRow extends StatelessWidget {
                                           cat == WalletCategoryType.guardar)
                           ? 5
                           : 3;
-                      await ref
+                      final reachedFullFuel = await ref
                           .read(fuelNotifierProvider.notifier)
                           .addFuel('space', fuelAmount);
+                      if (reachedFullFuel && context.mounted) {
+                        showRocketLaunchOverlay(context);
+                      }
                     }
                   },
                 )
@@ -391,7 +426,7 @@ class _CategoryCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('🪙', style: TextStyle(fontSize: 16)),
+                  const AnimatedCoin(size: 16),
                   const SizedBox(width: 4),
                   Text(
                     '${category.balance}',
@@ -532,26 +567,38 @@ class _AdjustDialogState extends State<_AdjustDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Actual: ${widget.category.balance} 🪙',
+                  Text('Actual: ${widget.category.balance}',
                       style: TextStyle(
                           color: Colors.grey[600], fontSize: AppSizes.fontSm)),
+                  const SizedBox(width: 3),
+                  AnimatedCoin(size: AppSizes.fontSm),
                   const SizedBox(width: AppSizes.sm),
-                  if (widget.available > 0)
-                    Text('• Disponible: ${widget.available} 🪙',
+                  if (widget.available > 0) ...[
+                    Text('• Disponible: ${widget.available}',
                         style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: AppSizes.fontSm)),
+                    const SizedBox(width: 3),
+                    AnimatedCoin(size: AppSizes.fontSm),
+                  ],
                 ],
               ),
               const SizedBox(height: AppSizes.sm),
               // New balance big display
-              Text(
-                '🪙 $_newBalance',
-                style: const TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                  fontFamily: 'Nunito',
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const AnimatedCoin(size: 28),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$_newBalance',
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ],
               ),
               // Delta indicator
               Text(

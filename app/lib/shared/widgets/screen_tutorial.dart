@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'blink_character.dart';
+import '../../data/repositories/blink_dialogues_repository.dart';
+import '../providers/demo_progress_provider.dart';
 
 class TutorialStep {
   const TutorialStep({required this.title, required this.body});
@@ -11,7 +12,8 @@ class TutorialStep {
 
 /// Muestra un tutorial la primera vez que el usuario entra a una pantalla.
 /// El estado se guarda en Supabase (columna tutorials_seen de profiles).
-/// Layout: Blink esquina inferior-izquierda + globo de texto a la derecha.
+/// Los textos se cargan desde Supabase (tabla blink_dialogues) con fallback hardcodeado.
+/// Layout: imagen "dialogo blink.png" esquina inferior-izquierda + globo a la derecha.
 class ScreenTutorial extends StatefulWidget {
   const ScreenTutorial({
     super.key,
@@ -21,7 +23,7 @@ class ScreenTutorial extends StatefulWidget {
   });
 
   final String             tutorialKey;
-  final List<TutorialStep> steps;
+  final List<TutorialStep> steps;   // fallback hardcodeado
   final Widget             child;
 
   @override
@@ -29,21 +31,34 @@ class ScreenTutorial extends StatefulWidget {
 }
 
 class _ScreenTutorialState extends State<ScreenTutorial> {
-  int   _step      = 0;
-  bool? _show;          // null = cargando
+  int   _step       = 0;
+  bool? _show;
   bool  _typingDone = false;
+  late List<TutorialStep> _steps;
 
   @override
   void initState() {
     super.initState();
+    _steps = widget.steps;
     _load();
   }
 
   Future<void> _load() async {
+    // Cargar textos desde Supabase (nunca escribe, solo lee)
+    final remoteDialogues = await BlinkDialoguesRepository.getSteps(widget.tutorialKey);
+    if (remoteDialogues.isNotEmpty && mounted) {
+      setState(() {
+        _steps = remoteDialogues
+            .map((d) => TutorialStep(title: d.title, body: d.body))
+            .toList();
+      });
+    }
+
     final client = Supabase.instance.client;
     final userId = client.auth.currentUser?.id;
     if (userId == null) {
-      if (mounted) setState(() => _show = false);
+      final seen = DemoStore.instance.isTutorialSeen(widget.tutorialKey);
+      if (mounted) setState(() => _show = !seen);
       return;
     }
     try {
@@ -63,7 +78,10 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
   Future<void> _dismiss() async {
     if (mounted) setState(() => _show = false);
     final client = Supabase.instance.client;
-    if (client.auth.currentUser == null) return;
+    if (client.auth.currentUser == null) {
+      DemoStore.instance.markTutorialSeen(widget.tutorialKey);
+      return;
+    }
     try {
       await client.rpc('mark_tutorial_seen', params: {'p_key': widget.tutorialKey});
     } catch (_) {}
@@ -74,7 +92,7 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
       setState(() => _typingDone = true);
       return;
     }
-    if (_step < widget.steps.length - 1) {
+    if (_step < _steps.length - 1) {
       setState(() { _step++; _typingDone = false; });
     } else {
       _dismiss();
@@ -85,14 +103,14 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
   Widget build(BuildContext context) {
     if (_show != true) return widget.child;
 
-    final step   = widget.steps[_step];
-    final isLast = _step == widget.steps.length - 1;
+    final step   = _steps[_step];
+    final isLast = _step == _steps.length - 1;
 
     return Stack(
+      clipBehavior: Clip.none,
       children: [
         widget.child,
 
-        // Fondo oscuro semitransparente
         Positioned.fill(
           child: GestureDetector(
             onTap: _advance,
@@ -101,42 +119,48 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
           ),
         ),
 
-        // Blink esquina inferior-izquierda + globo a la derecha
+        // Globo de diálogo — esquina inferior derecha, deja espacio para Blink
         Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: 16,
+          left: 160,
+          right: 24,
           child: GestureDetector(
             onTap: _advance,
             behavior: HitTestBehavior.opaque,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Blink
-                BlinkCharacterWidget(
-                  width: 140,
-                  enableBounce: true,
-                ),
+            child: _Bubble(
+              key: ValueKey('${widget.tutorialKey}_$_step'),
+              step: step,
+              stepIndex: _step,
+              totalSteps: _steps.length,
+              isLast: isLast,
+              typingDone: _typingDone,
+              onTypingDone: () {
+                if (mounted) setState(() => _typingDone = true);
+              },
+              onAdvance: _advance,
+            ),
+          ),
+        ),
 
-                // Globo a la derecha
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 24, bottom: 52),
-                    child: _Bubble(
-                      key: ValueKey('${widget.tutorialKey}_$_step'),
-                      step: step,
-                      stepIndex: _step,
-                      totalSteps: widget.steps.length,
-                      isLast: isLast,
-                      typingDone: _typingDone,
-                      onTypingDone: () {
-                        if (mounted) setState(() => _typingDone = true);
-                      },
-                      onAdvance: _advance,
-                    ),
-                  ),
-                ),
-              ],
+        // Blink pegado al borde inferior.
+        // SizedBox recorta el espacio transparente inferior de la imagen
+        // para que los pies queden en el borde de la pantalla.
+        Positioned(
+          bottom: 0,
+          left: 0,
+          child: GestureDetector(
+            onTap: _advance,
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(
+              width: 170,
+              height: 145,
+              child: Image.asset(
+                'assets/blink/poses/dialogo.png',
+                width: 170,
+                fit: BoxFit.fitWidth,
+                alignment: Alignment.topCenter,
+                filterQuality: FilterQuality.high,
+              ),
             ),
           ),
         ),
@@ -145,8 +169,6 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Globo con texto tipo máquina de escribir
 // ─────────────────────────────────────────────────────────────────────────────
 class _Bubble extends StatefulWidget {
   const _Bubble({
@@ -186,7 +208,6 @@ class _BubbleState extends State<_Bubble> {
   @override
   void didUpdateWidget(_Bubble old) {
     super.didUpdateWidget(old);
-    // Si el padre forzó typingDone, mostrar texto completo
     if (!old.typingDone && widget.typingDone && _charIndex < _fullText.length) {
       setState(() {
         _displayed = _fullText;
@@ -217,7 +238,6 @@ class _BubbleState extends State<_Bubble> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // Cola apuntando a la izquierda (hacia Blink)
         Positioned(
           left: -13,
           bottom: 20,
@@ -227,7 +247,6 @@ class _BubbleState extends State<_Bubble> {
           ),
         ),
 
-        // Globo
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -235,18 +254,13 @@ class _BubbleState extends State<_Bubble> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             boxShadow: const [
-              BoxShadow(
-                color: Colors.black38,
-                blurRadius: 20,
-                offset: Offset(0, 6),
-              ),
+              BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(0, 6)),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Dots de paso
               if (widget.totalSteps > 1)
                 Row(
                   children: List.generate(widget.totalSteps, (i) {
@@ -266,7 +280,6 @@ class _BubbleState extends State<_Bubble> {
                 ),
               if (widget.totalSteps > 1) const SizedBox(height: 10),
 
-              // Título
               if (title.isNotEmpty)
                 Text(
                   title,
@@ -292,53 +305,6 @@ class _BubbleState extends State<_Bubble> {
                   ),
                 ),
               ],
-
-              const SizedBox(height: 14),
-
-              // Botón
-              AnimatedOpacity(
-                opacity: widget.typingDone ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 350),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: GestureDetector(
-                    onTap: widget.typingDone ? widget.onAdvance : null,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF2563EB), Color(0xFF1A237E)],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 8,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        widget.isLast ? '¡Entendido!' : 'Siguiente →',
-                        style: const TextStyle(
-                          fontFamily: 'Nunito',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  )
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scaleXY(
-                        begin: 1.0,
-                        end: 1.04,
-                        duration: 900.ms,
-                        curve: Curves.easeInOut,
-                      ),
-                ),
-              ),
             ],
           ),
         ),
@@ -350,7 +316,6 @@ class _BubbleState extends State<_Bubble> {
   }
 }
 
-// Cola apuntando a la izquierda
 class _TailPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

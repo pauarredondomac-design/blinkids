@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/profile.dart';
+import 'blink_character.dart';
 import '../providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../providers/wallet_provider.dart';
 import '../providers/character_provider.dart';
 import '../providers/world_provider.dart';
+import '../providers/cosmetic_provider.dart';
+import 'coin_display.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProfileBottomSheet
@@ -26,14 +29,20 @@ class ProfileBottomSheet extends ConsumerWidget {
     final wallet    = ref.watch(currentWalletProvider).valueOrNull;
     final world     = ref.watch(currentWorldProvider);
 
-    final name    = profile?.displayName ?? 'Aventurero';
+    final supaUser = Supabase.instance.client.auth.currentUser;
+    final isDemo   = supaUser == null || (supaUser.isAnonymous == true);
+
+    // Si hay sesión real pero el profile aún carga, mostrar datos parciales
+    final name    = profile?.displayName ?? (isDemo ? 'Blink' : '...');
     final xp      = character?.xp    ?? 0;
     final level   = character?.level ?? 1;
     final coins   = wallet?.totalCoins ?? 0;
     final emoji   = _characterEmoji(xp);
     final xpPct   = _xpProgress(xp);
     final xpLbl   = _xpLabel(xp);
-    final isChild = profile?.role == UserRole.child;
+    // isChild: verdadero si el perfil lo dice, O si hay sesión real y el perfil aún carga
+    final isChild = profile?.role == UserRole.child ||
+        (!isDemo && profile == null);
 
     final bottomPad = MediaQuery.of(context).padding.bottom;
     final maxH      = MediaQuery.of(context).size.height * 0.80;
@@ -91,10 +100,9 @@ class ProfileBottomSheet extends ConsumerWidget {
                                 alignment: Alignment.topCenter,
                                 child: Transform.translate(
                                   offset: const Offset(0, -6),
-                                  child: Image.asset(
-                                    'assets/characters/blink/blink_dressed.png',
+                                  child: const BlinkCharacterWidget(
                                     width: 130,
-                                    filterQuality: FilterQuality.high,
+                                    enableBounce: false,
                                   ),
                                 ),
                               ),
@@ -136,8 +144,10 @@ class ProfileBottomSheet extends ConsumerWidget {
                                       ),
                                     ),
                                     const SizedBox(width: 10),
+                                    const AnimatedCoin(size: 13),
+                                    const SizedBox(width: 4),
                                     Text(
-                                      '🪙 $coins monedas',
+                                      '$coins monedas',
                                       style: const TextStyle(
                                         color:      Colors.white54,
                                         fontFamily: 'Nunito',
@@ -223,17 +233,30 @@ class ProfileBottomSheet extends ConsumerWidget {
                         onTap: () => Navigator.pop(context),
                       ),
 
+
                       const SizedBox(height: 4),
                       const Divider(color: Colors.white10),
                       const SizedBox(height: 4),
 
-                      // ── Cerrar sesión ──────────────────────────────
-                      _OptionTile(
-                        icon:  '🚪',
-                        label: 'Cerrar sesión',
-                        color: const Color(0xFFEF4444),
-                        onTap: () => _confirmLogout(context, ref),
-                      ),
+                      // ── Demo: Iniciar sesión ───────────────────────
+                      if (isDemo)
+                        _OptionTile(
+                          icon:  '🚀',
+                          label: 'Iniciar sesión',
+                          color: const Color(0xFF4FC3F7),
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push('/child-login');
+                          },
+                        )
+                      else
+                        // ── Cerrar sesión ──────────────────────────────
+                        _OptionTile(
+                          icon:  '🚪',
+                          label: 'Cerrar sesión',
+                          color: const Color(0xFFEF4444),
+                          onTap: () => _confirmLogout(context, ref),
+                        ),
 
                     ], // children del Column interior
                   ),
@@ -284,7 +307,9 @@ class ProfileBottomSheet extends ConsumerWidget {
               Navigator.pop(ctx);       // cierra diálogo
               Navigator.pop(context);   // cierra bottom sheet
               await ref.read(authRepositoryProvider).signOut();
-              if (context.mounted) context.go('/login');
+              ref.invalidate(equippedLoadoutProvider);
+              ref.invalidate(ownedCosmeticsProvider);
+              if (context.mounted) context.go('/world');
             },
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),

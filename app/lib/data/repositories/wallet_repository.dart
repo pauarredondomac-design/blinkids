@@ -1,5 +1,6 @@
 import '../models/wallet.dart';
 import '../services/supabase_service.dart';
+import '../../shared/providers/demo_progress_provider.dart';
 
 class WalletRepository {
   /// Crea la cartera y las 5 categorías del niño en una sola operación.
@@ -75,6 +76,10 @@ class WalletRepository {
     required String walletId,
     required int newWalletTotal,
   }) async {
+    if (DemoStore.isActive) {
+      DemoStore.instance.distributeCoins(categoryId, newCategoryBalance, newWalletTotal);
+      return;
+    }
     await supabase
         .from('wallet_categories')
         .update({'balance': newCategoryBalance})

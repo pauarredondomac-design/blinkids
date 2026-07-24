@@ -5,12 +5,45 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/item.dart';
 import '../../../data/repositories/wallet_repository.dart';
+import '../../../shared/providers/demo_progress_provider.dart';
 import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/profile_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../shared/widgets/coin_display.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+void showMercadoDialog(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Mercado',
+    barrierColor: Colors.black.withOpacity(0.75),
+    transitionDuration: const Duration(milliseconds: 280),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return ScaleTransition(
+        scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+        child: FadeTransition(opacity: anim, child: child),
+      );
+    },
+    pageBuilder: (ctx, _, __) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          width: size.width * 0.94,
+          height: size.height * 0.90,
+          child: const MercadoScreen(),
+        ),
+      ),
+    ),
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MercadoScreen — 3 pestañas: Mi Inventario | Mi Tienda | Explorar
@@ -42,68 +75,46 @@ class _MercadoScreenState extends ConsumerState<MercadoScreen>
   @override
   Widget build(BuildContext context) {
     final worldId = ref.watch(currentWorldProvider);
-    final coins   = ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0;
+    final coins   = DemoStore.isActive
+        ? ref.watch(demoProgressProvider).coins
+        : (ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0);
 
-    return ScreenTutorial(
-      tutorialKey: 'mercado_v2',
-      steps: const [
-        TutorialStep(
-          title: '¡Mercado Galáctico! 🛒',
-          body: 'Aquí tienes 3 secciones: ver lo que tienes, '
-              'poner cosas a la venta, y explorar lo que venden otros jugadores.',
-        ),
-        TutorialStep(
-          title: 'Tu Tienda Personal 🏪',
-          body: 'Puedes poner hasta 10 artículos a la venta. '
-              'Otros jugadores pueden comprártelos. ¡Pon un precio justo!',
-        ),
-        TutorialStep(
-          title: 'Explorar el Mercado 🔍',
-          body: 'Aquí ves lo que venden otros jugadores. '
-              'Si encuentras algo que necesitas para un trabajo, ¡cómpralo aquí!',
-        ),
-      ],
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Stack(
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A18),
+      body: ScreenTutorial(
+        tutorialKey: 'mercado_v2',
+        steps: const [
+          TutorialStep(
+            title: '¡Mercado Galáctico! 🛒',
+            body: 'Aquí tienes 3 secciones: ver lo que tienes, '
+                'poner cosas a la venta, y explorar lo que venden otros jugadores.',
+          ),
+          TutorialStep(
+            title: 'Tu Tienda Personal 🏪',
+            body: 'Puedes poner hasta 10 artículos a la venta. '
+                'Otros jugadores pueden comprártelos. ¡Pon un precio justo!',
+          ),
+          TutorialStep(
+            title: 'Explorar el Mercado 🔍',
+            body: 'Aquí ves lo que venden otros jugadores. '
+                'Si encuentras algo que necesitas para un trabajo, ¡cómpralo aquí!',
+          ),
+        ],
+        child: Row(
           children: [
-            // ── Fondo espacial ─────────────────────────────────────────────
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/worlds/space/space_background.png',
-                fit: BoxFit.cover,
-              ),
+            _MercadoSidebar(
+              coins: coins,
+              selectedTab: _tabCtrl.index,
+              onBack: () => context.pop(),
+              onSelectTab: (i) => _tabCtrl.animateTo(i),
             ),
-            Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.55)),
-            ),
-
-            // ── Contenido ──────────────────────────────────────────────────
-            SafeArea(
-              child: Column(
+            Expanded(
+              child: TabBarView(
+                controller: _tabCtrl,
                 children: [
-                  // Header
-                  _MercadoHeader(
-                    coins: coins,
-                    onBack: () => context.pop(),
-                  ),
-
-                  // Tab bar personalizado
-                  _SpaceTabBar(controller: _tabCtrl),
-
-                  const SizedBox(height: 4),
-
-                  // Contenido de la pestaña activa
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabCtrl,
-                      children: [
-                        _InventoryTab(),
-                        _MyShopTab(coins: coins),
-                        _ExploreTab(coins: coins, worldId: worldId),
-                      ],
-                    ),
-                  ),
+                  _InventoryTab(),
+                  _MyShopTab(coins: coins),
+                  _ExploreTab(coins: coins, worldId: worldId),
                 ],
               ),
             ),
@@ -115,222 +126,230 @@ class _MercadoScreenState extends ConsumerState<MercadoScreen>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Header con placa "MERCADO GALÁCTICO" + volver + monedas
+// Sidebar oscura del Mercado
 // ─────────────────────────────────────────────────────────────────────────────
-class _MercadoHeader extends StatelessWidget {
-  const _MercadoHeader({required this.coins, required this.onBack});
-  final int          coins;
-  final VoidCallback onBack;
+class _MercadoSidebar extends StatelessWidget {
+  const _MercadoSidebar({
+    required this.coins,
+    required this.selectedTab,
+    required this.onBack,
+    required this.onSelectTab,
+  });
+  final int           coins;
+  final int           selectedTab;
+  final VoidCallback  onBack;
+  final ValueChanged<int> onSelectTab;
+
+  static const _tabs = [
+    ('🎒', 'INVENTARIO'),
+    ('🏪', 'MI TIENDA'),
+    ('🔍', 'EXPLORAR'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+      width: 170,
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.70),
-            Colors.transparent,
-          ],
+          colors: [Color(0xFF0D0A2A), Color(0xFF08061A)],
+        ),
+        border: Border(
+          right: BorderSide(color: Color(0xFF2A1A5E), width: 1.5),
         ),
       ),
-      child: Row(
-        children: [
-          // Botón volver
-          GestureDetector(
-            onTap: onBack,
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.25),
-                  width: 1,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 12),
+
+            // Botón volver
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: GestureDetector(
+                onTap: onBack,
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.18),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ),
-              child: const Icon(
-                Icons.arrow_back_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
             ),
-          ),
 
-          // Placa del título (acento naranja/ámbar para el mercado)
-          Expanded(
-            child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF1A1005),
-                      Color(0xFF2E1A00),
-                      Color(0xFF1A1005),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFFFFB300).withOpacity(0.55),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFB300).withOpacity(0.22),
-                      blurRadius: 14,
+            const SizedBox(height: 14),
+
+            // Título
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Text(
+                'MERCADO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
+                  shadows: [
+                    Shadow(
+                      color: const Color(0xFFFFB300).withOpacity(0.60),
+                      blurRadius: 8,
                     ),
                   ],
                 ),
-                child: Text(
-                  'MERCADO GALÁCTICO',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.5,
-                    shadows: [
-                      Shadow(
-                        color: const Color(0xFFFFB300).withOpacity(0.80),
-                        blurRadius: 10,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Coins pill
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.amber.withOpacity(0.55)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const AnimatedCoin(size: 14),
+                    const SizedBox(width: 5),
+                    Text(
+                      '$coins',
+                      style: const TextStyle(
+                        color: Colors.amber,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
 
-          // Monedas
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.50),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.amber.withOpacity(0.70)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.15),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('🪙', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 5),
-                Text(
-                  '$coins',
-                  style: const TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+            const SizedBox(height: 18),
+
+            // Divider con label
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      color: const Color(0xFF2A1A5E),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 6),
+                  Text(
+                    'SECCIONES',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.35),
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      color: const Color(0xFF2A1A5E),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 8),
+
+            // Nav items
+            ..._tabs.asMap().entries.map((entry) {
+              final i = entry.key;
+              final (emoji, label) = entry.value;
+              final isSelected = selectedTab == i;
+              return _MercadoSidebarItem(
+                emoji: emoji,
+                label: label,
+                isSelected: isSelected,
+                onTap: () => onSelectTab(i),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TabBar espacial personalizado (3 pestañas en píldora)
-// ─────────────────────────────────────────────────────────────────────────────
-class _SpaceTabBar extends StatelessWidget {
-  const _SpaceTabBar({required this.controller});
-  final TabController controller;
-
-  static const _tabs = [
-    ('🎒', 'Inventario'),
-    ('🏪', 'Mi Tienda'),
-    ('🔍', 'Explorar'),
-  ];
+class _MercadoSidebarItem extends StatelessWidget {
+  const _MercadoSidebarItem({
+    required this.emoji,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+  final String       emoji;
+  final String       label;
+  final bool         isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: controller,
-      builder: (ctx, _) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-          padding: const EdgeInsets.all(3),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withOpacity(0.10)),
-          ),
-          child: Row(
-            children: _tabs.asMap().entries.map((entry) {
-              final i = entry.key;
-              final (emoji, label) = entry.value;
-              final isSelected = controller.index == i;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => controller.animateTo(i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 7),
-                    decoration: BoxDecoration(
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              colors: [
-                                Color(0xFF1565C0),
-                                Color(0xFF1976D2),
-                              ],
-                            )
-                          : null,
-                      borderRadius: BorderRadius.circular(11),
-                      border: isSelected
-                          ? Border.all(
-                              color: const Color(0xFF4FC3F7).withOpacity(0.40),
-                            )
-                          : null,
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFF4FC3F7).withOpacity(0.18),
-                                blurRadius: 8,
-                              )
-                            ]
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(emoji,
-                            style: TextStyle(
-                                fontSize: isSelected ? 15 : 13)),
-                        const SizedBox(width: 5),
-                        Text(
-                          label,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.white.withOpacity(0.42),
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF7B2FBE).withOpacity(0.25)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: isSelected
+              ? const Border(
+                  left: BorderSide(color: Color(0xFF7B2FBE), width: 3),
+                )
+              : null,
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: TextStyle(fontSize: isSelected ? 16 : 14)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.45),
+                  fontSize: 11,
+                  fontWeight:
+                      isSelected ? FontWeight.w700 : FontWeight.normal,
+                  letterSpacing: 0.5,
                 ),
-              );
-            }).toList(),
-          ),
-        );
-      },
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -692,12 +711,24 @@ class _ListingCard extends StatelessWidget {
                       fontSize: 13,
                     ),
                   ),
-                  Text(
-                    '× ${listing.qty}  •  🪙 ${listing.pricePerUnit} c/u',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.50),
-                      fontSize: 11,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        '× ${listing.qty}  •  ',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.50),
+                          fontSize: 11,
+                        ),
+                      ),
+                      const AnimatedCoin(size: 11),
+                      Text(
+                        ' ${listing.pricePerUnit} c/u',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.50),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -774,14 +805,22 @@ class _ExploreTabState extends ConsumerState<_ExploreTab> {
 
     setState(() => _buying = true);
     try {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId != null) {
-        final ok = await WalletRepository().spendCoins(userId, total);
+      if (DemoStore.isActive) {
+        final ok = ref.read(demoProgressProvider).spendCoins(total);
         if (!ok) {
           _snack('No tienes suficientes monedas 😔', Colors.red.shade700);
           return;
         }
-        ref.invalidate(currentWalletProvider);
+      } else {
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+        if (userId != null) {
+          final ok = await WalletRepository().spendCoins(userId, total);
+          if (!ok) {
+            _snack('No tienes suficientes monedas 😔', Colors.red.shade700);
+            return;
+          }
+          ref.invalidate(currentWalletProvider);
+        }
       }
       await ref.read(itemRepositoryProvider).addToInventory(
           listing.itemId, listing.qty);
@@ -896,15 +935,31 @@ class _MarketListingCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    '🪙 ${listing.pricePerUnit} c/u  •  Total: 🪙 $total',
-                    style: TextStyle(
-                      color: canAfford
-                          ? const Color(0xFFFFB300)
-                          : Colors.red.shade300,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
+                  Row(
+                    children: [
+                      const AnimatedCoin(size: 12),
+                      Text(
+                        ' ${listing.pricePerUnit} c/u  •  Total: ',
+                        style: TextStyle(
+                          color: canAfford
+                              ? const Color(0xFFFFB300)
+                              : Colors.red.shade300,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const AnimatedCoin(size: 12),
+                      Text(
+                        ' $total',
+                        style: TextStyle(
+                          color: canAfford
+                              ? const Color(0xFFFFB300)
+                              : Colors.red.shade300,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1086,8 +1141,10 @@ class _AddListingDialogState extends State<_AddListingDialog> {
                     fontSize: 12,
                   ),
                 ),
+                const AnimatedCoin(size: 14),
+                const SizedBox(width: 4),
                 Text(
-                  '🪙 ${_qty * _price}',
+                  '${_qty * _price}',
                   style: const TextStyle(
                     color: Color(0xFFFFD600),
                     fontWeight: FontWeight.w800,
@@ -1253,26 +1310,30 @@ class _BuyMarketDialog extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '$coins 🪙',
+                '$coins',
                 style: const TextStyle(
                   color: Color(0xFFFFD600),
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
               ),
+              const SizedBox(width: 4),
+              const AnimatedCoin(size: 14),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Icon(Icons.arrow_forward_rounded,
                     color: Colors.white.withOpacity(0.35), size: 16),
               ),
               Text(
-                '$after 🪙',
+                '$after',
                 style: TextStyle(
                   color: after >= 0 ? Colors.greenAccent : Colors.redAccent,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
               ),
+              const SizedBox(width: 4),
+              const AnimatedCoin(size: 14),
             ],
           ),
         ],

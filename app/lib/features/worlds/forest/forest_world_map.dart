@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +16,7 @@ import '../../../shared/helpers/notification_helper.dart';
 import '../../../shared/widgets/profile_bottom_sheet.dart';
 import '../../../shared/widgets/fuel_bar.dart';
 import '../../../shared/widgets/blink_character.dart';
+import '../../../shared/widgets/coin_display.dart';
 
 // ─────────────────────────────────────────────
 // Tamaño real de la imagen de fondo
@@ -84,7 +85,7 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
   static const _buildings = [
     // ── FILA SUPERIOR ─────────────────────────
     _BuildingData(
-      asset:    'assets/images/worlds/forest/building_misiones.png',
+      asset:    'assets/worlds/forest/building_misiones.png',
       name:     'Misiones',
       emoji:    '⚔️',
       imgX:     450,
@@ -93,7 +94,7 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
       route:    '/world/misiones',
     ),
     _BuildingData(
-      asset:    'assets/images/worlds/forest/building_preguntas.png',
+      asset:    'assets/worlds/forest/building_preguntas.png',
       name:     'Preguntas',
       emoji:    '❓',
       imgX:     1120,
@@ -102,7 +103,7 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
       route:    '/world/preguntas',
     ),
     _BuildingData(
-      asset:    'assets/images/worlds/forest/building_tienda.png',
+      asset:    'assets/worlds/forest/building_tienda.png',
       name:     'Tienda',
       emoji:    '🔮',
       imgX:     1780,
@@ -112,7 +113,7 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
     ),
     // ── FILA INFERIOR ─────────────────────────
     _BuildingData(
-      asset:    'assets/images/worlds/forest/building_bolsa.png',
+      asset:    'assets/worlds/forest/building_bolsa.png',
       name:     'Mi Bolsa',
       emoji:    '🎒',
       imgX:     850,
@@ -121,7 +122,7 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
       route:    '/wallet',
     ),
     _BuildingData(
-      asset:    'assets/images/worlds/forest/building_mercado.png',
+      asset:    'assets/worlds/forest/building_mercado.png',
       name:     'Mercado',
       emoji:    '🛒',
       imgX:     1600,
@@ -130,7 +131,7 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
       route:    '/world/mercado',
     ),
     _BuildingData(
-      asset:    'assets/images/worlds/forest/building_trabajos.png',
+      asset:    'assets/worlds/forest/building_trabajos.png',
       name:     'Trabajos',
       emoji:    '🔨',
       imgX:     2200,
@@ -260,7 +261,7 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
                       // ── Fondo ──────────────────────
                       Positioned.fill(
                         child: Image.asset(
-                          'assets/images/worlds/forest/forest_background.png',
+                          'assets/worlds/forest/forest_background.png',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -405,10 +406,9 @@ class _ForestHeader extends StatelessWidget {
                   alignment: Alignment.topCenter,
                   child: Transform.translate(
                     offset: const Offset(0, -6),
-                    child: Image.asset(
-                      'assets/characters/blink/blink_dressed.png',
+                    child: const BlinkCharacterWidget(
                       width: 84,
-                      filterQuality: FilterQuality.high,
+                      enableBounce: false,
                     ),
                   ),
                 ),
@@ -569,7 +569,7 @@ class _ForestHeader extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('🪙', style: TextStyle(fontSize: 20)),
+              const AnimatedCoin(size: 20),
               const SizedBox(width: 6),
               Text(
                 '$coins',

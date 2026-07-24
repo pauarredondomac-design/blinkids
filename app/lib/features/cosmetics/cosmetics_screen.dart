@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/cosmetic.dart';
 import '../../shared/providers/cosmetic_provider.dart';
 import '../../shared/providers/wallet_provider.dart';
+import '../../shared/widgets/coin_display.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CosmeticsScreen — Vestuario del personaje
@@ -138,7 +139,7 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Row(children: [
-              const Text('🪙', style: TextStyle(fontSize: 18)),
+              const AnimatedCoin(size: 18),
               const SizedBox(width: 4),
               Text('$coins',
                   style: const TextStyle(
@@ -479,14 +480,21 @@ class _CosmeticCard extends StatelessWidget {
 
             // Precio
             if (!isOwned)
-              Text(
-                '🪙 ${cosmetic.price}',
-                style: const TextStyle(
-                  color:      Color(0xFFFFD600),
-                  fontFamily: 'Nunito',
-                  fontWeight: FontWeight.w800,
-                  fontSize:   12,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AnimatedCoin(size: 12),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${cosmetic.price}',
+                    style: const TextStyle(
+                      color:      Color(0xFFFFD600),
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800,
+                      fontSize:   12,
+                    ),
+                  ),
+                ],
               )
             else
               const SizedBox(height: 14),
@@ -569,24 +577,28 @@ class _BuyDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('$coins 🪙',
+              Text('$coins',
                   style: const TextStyle(
                     color:      Color(0xFFFFD600),
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.bold,
                     fontSize:   14,
                   )),
+              const SizedBox(width: 4),
+              const AnimatedCoin(size: 14),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Icon(Icons.arrow_forward_rounded, color: Colors.white38, size: 16),
               ),
-              Text('$after 🪙',
+              Text('$after',
                   style: TextStyle(
                     color:      after >= 0 ? Colors.greenAccent : Colors.redAccent,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.bold,
                     fontSize:   14,
                   )),
+              const SizedBox(width: 4),
+              const AnimatedCoin(size: 14),
             ],
           ),
         ],

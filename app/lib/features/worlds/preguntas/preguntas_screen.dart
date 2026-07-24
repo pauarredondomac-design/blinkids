@@ -5,14 +5,48 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/question.dart';
+import '../../../data/models/world.dart';
 import '../../../data/repositories/question_repository.dart';
 import '../../../data/repositories/wallet_repository.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../shared/providers/question_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/character_provider.dart';
+import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/coin_display.dart';
 import '../../../core/constants/app_sizes.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+void showPreguntasDialog(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Preguntas',
+    barrierColor: Colors.black.withOpacity(0.65),
+    transitionDuration: const Duration(milliseconds: 280),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return ScaleTransition(
+        scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+        child: FadeTransition(opacity: anim, child: child),
+      );
+    },
+    pageBuilder: (ctx, _, __) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          width: size.width * 0.94,
+          height: size.height * 0.90,
+          child: const PreguntasScreen(),
+        ),
+      ),
+    ),
+  );
+}
 
 // Estado de cada pregunta individual
 enum _AnswerState { unanswered, correct, wrong }
@@ -40,7 +74,11 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final questionsAsync = ref.watch(forestQuestionsProvider);
+    final worldId = ref.watch(currentWorldProvider);
+    final questionsAsync = ref.watch(questionsForWorldProvider(worldId));
+    final worldName = allWorlds
+        .firstWhere((w) => w.id == worldId, orElse: () => allWorlds.first)
+        .shortName;
 
     return ScreenTutorial(
       tutorialKey: 'preguntas',
@@ -67,9 +105,9 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () => context.pop(),
           ),
-          title: const Text(
-            '❓ Preguntas del Bosque',
-            style: TextStyle(
+          title: Text(
+            '❓ Preguntas: $worldName',
+            style: const TextStyle(
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w800,
               fontSize: 20,
@@ -84,7 +122,7 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
                 padding: const EdgeInsets.only(right: 16),
                 child: Row(
                   children: [
-                    const Text('🪙', style: TextStyle(fontSize: 18)),
+                    const AnimatedCoin(size: 18),
                     const SizedBox(width: 4),
                     Text(
                       '$coins',
@@ -106,7 +144,7 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
             child: CircularProgressIndicator(color: Colors.white),
           ),
           error: (e, _) => _ErrorView(
-            onRetry: () => ref.invalidate(forestQuestionsProvider),
+            onRetry: () => ref.invalidate(questionsForWorldProvider(worldId)),
           ),
           data: (questions) {
             if (questions.isEmpty) {
@@ -117,7 +155,7 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
                 correctCount: _correctCount,
                 totalCount: questions.length,
                 coinsEarned: _coinsEarned,
-                onFinish: () => context.go('/world'),
+                onFinish: () => context.pop(),
               );
             }
             final q = questions[_currentIndex];
@@ -466,14 +504,21 @@ class _QuestionCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFFFD600)),
             ),
-            child: Text(
-              '+${question.coinReward} 🪙',
-              style: const TextStyle(
-                color: Color(0xFFE65100),
-                fontFamily: 'Nunito',
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '+${question.coinReward}',
+                  style: const TextStyle(
+                    color: Color(0xFFE65100),
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const AnimatedCoin(size: 14),
+              ],
             ),
           ),
         ],
@@ -698,7 +743,8 @@ class _SummaryView extends StatelessWidget {
                             const SizedBox(width: 12),
                             _StatChip(
                               label: 'Ganadas',
-                              value: '🪙 $coinsEarned',
+                              value: '$coinsEarned',
+                              showCoin: true,
                               color: const Color(0xFFE65100),
                             ),
                           ],
@@ -748,10 +794,12 @@ class _StatChip extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.showCoin = false,
   });
   final String label;
   final String value;
   final Color  color;
+  final bool   showCoin;
 
   @override
   Widget build(BuildContext context) {
@@ -764,14 +812,23 @@ class _StatChip extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w800,
-              fontSize: 18,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                ),
+              ),
+              if (showCoin) ...[
+                const SizedBox(width: 5),
+                const AnimatedCoin(size: 18),
+              ],
+            ],
           ),
           Text(
             label,

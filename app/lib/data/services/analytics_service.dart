@@ -35,6 +35,7 @@ class AnalyticsService {
     String eventName, {
     Map<String, dynamic> properties = const {},
   }) async {
+    if (kIsWeb) return; // Analytics no disponible en web
     try {
       final uid = Supabase.instance.client.auth.currentUser?.id;
       await Supabase.instance.client.from('analytics_events').insert({

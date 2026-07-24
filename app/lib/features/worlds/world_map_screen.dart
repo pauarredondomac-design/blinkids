@@ -6,6 +6,7 @@ import '../../core/constants/app_sizes.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/wallet_provider.dart';
 import '../../shared/widgets/screen_tutorial.dart';
+import '../../shared/widgets/coin_display.dart';
 import 'widgets/space_buildings.dart';
 
 class WorldMapScreen extends ConsumerWidget {
@@ -242,7 +243,7 @@ class _SpaceHud extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Text('🪙', style: TextStyle(fontSize: 16)),
+                const AnimatedCoin(size: 16),
                 const SizedBox(width: 4),
                 Text('$coins',
                     style: const TextStyle(

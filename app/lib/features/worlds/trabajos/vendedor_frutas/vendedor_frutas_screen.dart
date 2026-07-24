@@ -10,6 +10,7 @@ import '../../../../data/repositories/wallet_repository.dart';
 import '../../../../shared/providers/wallet_provider.dart';
 import '../../../../shared/providers/character_provider.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../shared/widgets/coin_display.dart';
 
 // ─── Denominaciones de monedas/billetes disponibles ──────────────────────────
 class _Denom {
@@ -301,7 +302,7 @@ class _TopBar extends StatelessWidget {
           // Recompensa
           Row(
             children: [
-              const Text('🪙', style: TextStyle(fontSize: 18)),
+              const AnimatedCoin(size: 18),
               const SizedBox(width: 4),
               Text(
                 '+$coinReward',
@@ -795,14 +796,21 @@ class _WonView extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: const Color(0xFFFFD600)),
                 ),
-                child: Text(
-                  '🪙 +$coinReward monedas ganadas',
-                  style: const TextStyle(
-                    color: Color(0xFFFFD600),
-                    fontFamily: 'Nunito',
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const AnimatedCoin(size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      '+$coinReward monedas ganadas',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD600),
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSizes.lg),

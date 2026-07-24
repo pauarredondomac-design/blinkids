@@ -5,9 +5,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/profile.dart';
 import '../../../data/repositories/parent_repository.dart';
 import '../../../data/repositories/wallet_repository.dart';
+import '../../../shared/providers/parent_mission_provider.dart';
 import '../../../shared/providers/parent_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/widgets/badges_row.dart';
+import '../../../shared/widgets/coin_display.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ChildDetailScreen — Registro de actividad del hijo
@@ -23,6 +25,7 @@ class ChildDetailScreen extends ConsumerStatefulWidget {
 class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
   bool _sending = false;
   int  _sendAmount = 50;
+  bool _creatingMission = false;
 
   Future<void> _handleSendCoins(int parentCoinsAvail) async {
     if (_sending) return;
@@ -72,6 +75,36 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
     return 'Intenta de nuevo';
   }
 
+  Future<void> _handleCreateMission(int parentCoinsAvail) async {
+    if (_creatingMission) return;
+
+    final result = await showDialog<_NewMissionData>(
+      context: context,
+      builder: (_) => _CreateMissionDialog(
+        child: widget.child,
+        parentBalance: parentCoinsAvail,
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() => _creatingMission = true);
+    try {
+      await ref.read(parentMissionRepositoryProvider).createMission(
+            childId:     widget.child.id,
+            title:       result.title,
+            description: result.description,
+            coinReward:  result.coinReward,
+          );
+      ref.invalidate(missionsCreatedForChildProvider(widget.child.id));
+      _snack('¡Misión creada para ${widget.child.displayName}! 🎯',
+          const Color(0xFF2E7D32));
+    } catch (e) {
+      _snack('Error: ${_friendlyError(e)}', Colors.red.shade700);
+    } finally {
+      if (mounted) setState(() => _creatingMission = false);
+    }
+  }
+
   void _snack(String msg, Color bg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -108,10 +141,25 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
         ]),
         actions: [
           Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: OutlinedButton.icon(
+              onPressed: _creatingMission ? null : () => _handleCreateMission(parentCoins),
+              icon: const Icon(Icons.add_task_rounded, size: 18),
+              label: const Text(
+                'Crear misión',
+                style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF7C3AED),
+                side: const BorderSide(color: Color(0xFF7C3AED)),
+              ),
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.only(right: 16),
             child: FilledButton.icon(
               onPressed: _sending ? null : () => _handleSendCoins(parentCoins),
-              icon: const Text('🪙', style: TextStyle(fontSize: 16)),
+              icon: const AnimatedCoin(size: 16),
               label: const Text(
                 'Enviar monedas',
                 style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700),
@@ -303,7 +351,9 @@ class _StatRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
+          emoji == '🪙'
+              ? const AnimatedCoin(size: 18)
+              : Text(emoji, style: const TextStyle(fontSize: 18)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -497,14 +547,21 @@ class _ActivityCard extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              '+$coins 🪙',
-              style: const TextStyle(
-                color: Color(0xFFFFD600),
-                fontFamily: 'Nunito',
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '+$coins',
+                  style: const TextStyle(
+                    color: Color(0xFFFFD600),
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                const AnimatedCoin(size: 12),
+              ],
             ),
             Text(
               '+$xp ⭐',
@@ -563,6 +620,190 @@ class _EmptyActivity extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Diálogo para crear una misión de papá
+// ─────────────────────────────────────────────────────────────────────────────
+class _NewMissionData {
+  const _NewMissionData({required this.title, this.description, required this.coinReward});
+  final String  title;
+  final String? description;
+  final int     coinReward;
+}
+
+class _CreateMissionDialog extends StatefulWidget {
+  const _CreateMissionDialog({required this.child, required this.parentBalance});
+  final Profile child;
+  final int     parentBalance;
+
+  @override
+  State<_CreateMissionDialog> createState() => _CreateMissionDialogState();
+}
+
+class _CreateMissionDialogState extends State<_CreateMissionDialog> {
+  final _titleCtrl = TextEditingController();
+  final _descCtrl  = TextEditingController();
+  final _steps     = [10, 20, 50, 100];
+  int _reward = 20;
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final titleOk = _titleCtrl.text.trim().isNotEmpty;
+    final canAfford = _reward <= widget.parentBalance;
+
+    return AlertDialog(
+      backgroundColor: const Color(0xFF0D1230),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
+      ),
+      title: Row(children: [
+        const Text('👨‍👩‍👧', style: TextStyle(fontSize: 26)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            'Misión para\n${widget.child.displayName}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ]),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _titleCtrl,
+              maxLength: 60,
+              style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+              decoration: const InputDecoration(
+                labelText: 'Título de la misión',
+                labelStyle: TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
+                counterStyle: TextStyle(color: Colors.white30),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C3AED))),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _descCtrl,
+              maxLines: 2,
+              maxLength: 140,
+              style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 13),
+              decoration: const InputDecoration(
+                labelText: 'Descripción (opcional)',
+                labelStyle: TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
+                counterStyle: TextStyle(color: Colors.white30),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C3AED))),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Tu saldo: ${widget.parentBalance}',
+                  style: const TextStyle(color: Colors.white54, fontFamily: 'Nunito', fontSize: 13),
+                ),
+                const SizedBox(width: 4),
+                const AnimatedCoin(size: 13),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Recompensa',
+              style: TextStyle(color: Colors.white38, fontFamily: 'Nunito', fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _steps.map((s) {
+                final selected = s == _reward;
+                final affordable = s <= widget.parentBalance;
+                return GestureDetector(
+                  onTap: affordable ? () => setState(() => _reward = s) : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFFFFD600)
+                          : affordable
+                              ? Colors.white10
+                              : Colors.white.withAlpha(10),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: selected ? const Color(0xFFFFD600) : Colors.white24,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$s',
+                          style: TextStyle(
+                            color: selected
+                                ? Colors.black87
+                                : affordable
+                                    ? Colors.white
+                                    : Colors.white24,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        const AnimatedCoin(size: 13),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar', style: TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
+        ),
+        FilledButton(
+          onPressed: (titleOk && canAfford)
+              ? () => Navigator.pop(
+                    context,
+                    _NewMissionData(
+                      title: _titleCtrl.text.trim(),
+                      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+                      coinReward: _reward,
+                    ),
+                  )
+              : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF7C3AED),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: const Text('Crear misión', style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Diálogo para enviar monedas
 // ─────────────────────────────────────────────────────────────────────────────
 class _SendCoinsDialog extends StatefulWidget {
@@ -600,7 +841,7 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
         side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
       ),
       title: Row(children: [
-        const Text('🪙', style: TextStyle(fontSize: 28)),
+        const AnimatedCoin(size: 28),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -617,13 +858,20 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Tu saldo: ${widget.parentBalance} 🪙',
-            style: const TextStyle(
-              color: Colors.white54,
-              fontFamily: 'Nunito',
-              fontSize: 13,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Tu saldo: ${widget.parentBalance}',
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontFamily: 'Nunito',
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const AnimatedCoin(size: 13),
+            ],
           ),
           const SizedBox(height: 16),
           // Cantidad seleccionada
@@ -673,18 +921,27 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
                       color: selected ? const Color(0xFFFFD600) : Colors.white24,
                     ),
                   ),
-                  child: Text(
-                    '$s 🪙',
-                    style: TextStyle(
-                      color: selected
-                          ? Colors.black87
-                          : canAfford
-                              ? Colors.white
-                              : Colors.white24,
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$s',
+                        style: TextStyle(
+                          color: selected
+                              ? Colors.black87
+                              : canAfford
+                                  ? Colors.white
+                                  : Colors.white24,
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      AnimatedCoin(
+                        size: 13,
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -709,12 +966,26 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
             foregroundColor: Colors.black87,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          child: Text(
-            '¡Enviar $_amount 🪙!',
-            style: const TextStyle(
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w800,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '¡Enviar $_amount',
+                style: const TextStyle(
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const AnimatedCoin(size: 15),
+              const Text(
+                '!',
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
         ),
       ],

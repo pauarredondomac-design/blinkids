@@ -232,4 +232,15 @@ class ParentRepository {
       missionsJoined: missionsJoined,
     );
   }
+
+  // ── Genera un código de invitación para que el niño vincule su cuenta ────────
+  Future<String> generateInviteCode() async {
+    final result = await _db.rpc('generate_invite_code');
+    return result as String;
+  }
+
+  // ── Canjea un código de invitación (lo llama el niño) ────────────────────────
+  Future<void> redeemInviteCode(String code) async {
+    await _db.rpc('redeem_invite_code', params: {'p_code': code.toUpperCase()});
+  }
 }

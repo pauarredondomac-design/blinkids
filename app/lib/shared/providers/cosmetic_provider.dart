@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/cosmetic.dart';
 import '../../data/repositories/cosmetic_repository.dart';
+import 'auth_provider.dart';
 
 final _repo = CosmeticRepository();
 
@@ -9,18 +10,30 @@ final cosmeticCatalogProvider = FutureProvider<List<CosmeticDefinition>>((ref) a
   return _repo.getAll();
 });
 
+// ── Solo cosméticos vendibles en la tienda ────────────────────────────────────
+final cosmeticsInShopProvider = FutureProvider<List<CosmeticDefinition>>((ref) async {
+  ref.keepAlive();
+  return _repo.getInShop();
+});
+
 // ── Cosméticos que el jugador posee ───────────────────────────────────────────
 final ownedCosmeticsProvider = FutureProvider<List<CosmeticDefinition>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return [];
   return _repo.getOwned();
 });
 
 // ── IDs de cosméticos poseídos (para chequeo rápido) ──────────────────────────
 final ownedCosmeticIdsProvider = FutureProvider<Set<String>>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return {};
   return _repo.getOwnedIds();
 });
 
 // ── Equipamiento actual del jugador ───────────────────────────────────────────
 final equippedLoadoutProvider = FutureProvider<EquippedLoadout>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return EquippedLoadout.empty;
   return _repo.getEquipped();
 });
 

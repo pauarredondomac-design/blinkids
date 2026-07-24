@@ -112,6 +112,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -123,14 +124,14 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               // Blink
-              BlinkCharacterWidget(width: 110, enableBounce: true)
+              BlinkCharacterWidget(width: 90, enableBounce: true)
                   .animate()
                   .scale(duration: 600.ms, curve: Curves.elasticOut),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // Saludo personalizado
               AnimatedSwitcher(
@@ -151,7 +152,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               // Dots del PIN con shake si hay error
               _PinDots(
@@ -160,7 +161,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                 shaking: _shaking,
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // Mensaje de error
               AnimatedSwitcher(

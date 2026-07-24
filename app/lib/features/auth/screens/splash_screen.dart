@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,8 +20,27 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _precacheWorldAssets();
       Future.delayed(_navDelay, _navigate);
     });
+  }
+
+  // Precachea los assets del mapa durante el splash para evitar parpadeo al cargar
+  void _precacheWorldAssets() {
+    const worldAssets = [
+      'assets/worlds/space/space_background.png',
+      'assets/worlds/space/estructuras.png',
+      'assets/worlds/space/building_bolsa.png',
+      'assets/worlds/space/building_trabajos.png',
+      'assets/worlds/space/building_misiones.png',
+      'assets/worlds/space/building_tienda.png',
+      'assets/worlds/space/alcancia.png',
+      'assets/blink/blink_dressed.png',
+      'assets/blink/blink_base.png',
+    ];
+    for (final a in worldAssets) {
+      precacheImage(AssetImage(a), context);
+    }
   }
 
   Future<void> _navigate() async {
@@ -30,56 +49,48 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final client = Supabase.instance.client;
     final user   = client.auth.currentUser;
 
+    // Sin sesión → modo demo: mostrar tutorial la primera vez
     if (user == null) {
-      context.go('/adventurer-name');
+      final prefs = await SharedPreferences.getInstance();
+      final tutorialSeen = prefs.getBool('tutorial_seen') ?? false;
+      if (mounted) context.go(tutorialSeen ? '/world' : '/tutorial');
       return;
     }
 
     try {
       final profileData = await client
           .from('profiles')
-          .select('account_type, pin_hash')
+          .select('role, account_type')
           .eq('id', user.id)
           .maybeSingle();
 
       if (!mounted) return;
 
       if (profileData == null) {
-        await client.auth.signOut();
-        if (mounted) context.go('/adventurer-name');
+        // Perfil no encontrado — puede ser padre recién registrado sin perfil
+        // o RLS bloqueando la lectura. Ir al mundo en demo.
+        if (mounted) context.go('/world');
         return;
       }
 
-      final accountType = profileData['account_type'] as String? ?? 'demo';
-      final pinHash     = profileData['pin_hash']     as String?;
+      final role = profileData['role'] as String? ?? 'child';
 
-      if (accountType == 'demo') {
-        final tutorialRecord = await client
-            .from('tutorial_progress')
-            .select('is_completed')
-            .eq('user_id', user.id)
-            .maybeSingle();
-        if (!mounted) return;
-        final tutorialDone = tutorialRecord?['is_completed'] == true;
-        context.go(tutorialDone ? '/world' : '/tutorial');
-      } else {
-        final hasPinLocal = await _hasPinLocal();
-        if (!mounted) return;
-        final hasPin = hasPinLocal || (pinHash != null && pinHash.isNotEmpty);
-        context.go(!hasPin ? '/setup-pin' : '/enter-pin');
+      if (role == 'parent') {
+        context.go('/parent');
+        return;
       }
-    } catch (_) {
-      if (mounted) context.go('/adventurer-name');
-    }
-  }
 
-  Future<bool> _hasPinLocal() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final pin   = prefs.getString('child_pin');
-      return pin != null && pin.isNotEmpty;
+      // Niño con sesión → revisar tutorial
+      final tutorialRecord = await client
+          .from('tutorial_progress')
+          .select('is_completed')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      if (!mounted) return;
+      final tutorialDone = tutorialRecord?['is_completed'] == true;
+      context.go(tutorialDone ? '/world' : '/tutorial');
     } catch (_) {
-      return false;
+      if (mounted) context.go('/world');
     }
   }
 
@@ -184,7 +195,7 @@ class _BlinkHero extends StatelessWidget {
       width: 220,
       height: 220,
       child: Image.asset(
-        'assets/characters/blink/blink_base.png',
+        'assets/blink/blink_base.png',
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => Container(
             decoration: BoxDecoration(

@@ -24,6 +24,23 @@ class CosmeticRepository {
     }
   }
 
+  /// Solo los cosméticos marcados como vendibles en la tienda.
+  Future<List<CosmeticDefinition>> getInShop() async {
+    try {
+      final rows = await _db
+          .from('cosmetic_definitions')
+          .select()
+          .eq('in_shop', true)
+          .order('slot')
+          .order('price');
+      return (rows as List)
+          .map((r) => CosmeticDefinition.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<List<CosmeticDefinition>> getForSlot(CosmeticSlot slot) async {
     try {
       final rows = await _db

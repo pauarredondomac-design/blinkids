@@ -4,19 +4,56 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/mission.dart';
+import '../../../data/models/parent_mission.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
+import '../../../shared/providers/demo_progress_provider.dart';
+import '../../../shared/providers/fuel_provider.dart';
 import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/mission_provider.dart';
+import '../../../shared/providers/parent_mission_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/character_provider.dart';
 import '../../../shared/providers/world_provider.dart';
+import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/rocket_launch_overlay.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../preguntas/preguntas_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MisionesScreen
 // ─────────────────────────────────────────────────────────────────────────────
+void showMisionesDialog(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Misiones',
+    barrierColor: Colors.black.withOpacity(0.65),
+    transitionDuration: const Duration(milliseconds: 300),
+    transitionBuilder: (ctx, anim, _, child) {
+      final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
+      return ScaleTransition(
+        scale: Tween<double>(begin: 0.90, end: 1.0).animate(curved),
+        child: FadeTransition(opacity: anim, child: child),
+      );
+    },
+    pageBuilder: (ctx, _, __) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          width: size.width * 0.94,
+          height: size.height * 0.90,
+          child: const MisionesScreen(),
+        ),
+      ),
+    ),
+  );
+}
+
 class MisionesScreen extends ConsumerStatefulWidget {
   const MisionesScreen({super.key});
 
@@ -24,11 +61,14 @@ class MisionesScreen extends ConsumerStatefulWidget {
   ConsumerState<MisionesScreen> createState() => _MisionesScreenState();
 }
 
+enum _MissionCategory { historia, diarias, papas }
+
 class _MisionesScreenState extends ConsumerState<MisionesScreen> {
   Map<MissionObjectiveType, int> _progress = {};
   Set<String> _claimed  = {};
   Set<String> _claiming = {};
   bool _loadingProgress = true;
+  _MissionCategory _category = _MissionCategory.historia;
 
   @override
   void initState() {
@@ -67,14 +107,19 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
   Future<void> _handleClaim(Mission mission) async {
     if (_claiming.contains(mission.id)) return;
     setState(() => _claiming.add(mission.id));
+    var reachedFullFuel = false;
 
     try {
       await MissionTracker().markClaimed(mission.id);
 
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId != null) {
-        await WalletRepository().awardStarterCoins(userId, mission.coinReward);
-        ref.invalidate(currentWalletProvider);
+      if (DemoStore.isActive) {
+        ref.read(demoProgressProvider).addCoins(mission.coinReward);
+      } else {
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+        if (userId != null) {
+          await WalletRepository().awardStarterCoins(userId, mission.coinReward);
+          ref.invalidate(currentWalletProvider);
+        }
       }
 
       await awardXp(ref, mission.xpReward);
@@ -86,6 +131,10 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
           mission.itemReward!.qty,
         );
         ref.invalidate(inventoryProvider);
+        if (mission.itemReward!.itemId == 'fuel_capsule') {
+          reachedFullFuel = await ref.read(fuelNotifierProvider.notifier)
+              .addFuel('space', mission.itemReward!.qty * 10);
+        }
       }
 
       if (mounted) {
@@ -93,7 +142,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
           _claiming.remove(mission.id);
           _claimed.add(mission.id);
         });
-        _showClaimDialog(mission);
+        await _showClaimDialog(mission);
+        if (reachedFullFuel && mounted) showRocketLaunchOverlay(context);
       }
     } catch (e) {
       if (mounted) {
@@ -108,8 +158,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
     }
   }
 
-  void _showClaimDialog(Mission mission) {
-    showDialog<void>(
+  Future<void> _showClaimDialog(Mission mission) {
+    return showDialog<void>(
       context: context,
       builder: (_) => _ClaimDialog(mission: mission),
     );
@@ -119,123 +169,113 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
   Widget build(BuildContext context) {
     final worldId       = ref.watch(currentWorldProvider);
     final missionsAsync = ref.watch(activeMissionsProvider);
-    final coins         = ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0;
 
-    return ScreenTutorial(
-      tutorialKey: 'misiones_v2',
-      steps: const [
-        TutorialStep(
-          title: '¡Misiones del Espacio! ⚔️',
-          body: 'Las misiones te dan retos especiales que debes completar '
-              'jugando en el mundo. ¡Gana monedas y objetos raros al terminarlas!',
-        ),
-        TutorialStep(
-          title: 'Cómo completar una misión 🗺️',
-          body: 'Cada misión tiene un objetivo: responder preguntas, '
-              'completar trabajos o comprar en la tienda. La barra te muestra cuánto llevas.',
-        ),
-        TutorialStep(
-          title: '¡Reclamar la recompensa! 🎁',
-          body: 'Cuando la barra llegue al 100% aparece el botón "¡Reclamar!". '
-              '¡Tócalo para recibir tus monedas y objetos!',
-        ),
-      ],
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Stack(
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A18),
+      body: ScreenTutorial(
+        tutorialKey: 'misiones_v2',
+        steps: const [
+          TutorialStep(
+            title: '¡Misiones del Espacio! ⚔️',
+            body: 'Las misiones te dan retos especiales que debes completar '
+                'jugando en el mundo. ¡Gana monedas y objetos raros al terminarlas!',
+          ),
+          TutorialStep(
+            title: 'Cómo completar una misión 🗺️',
+            body: 'Cada misión tiene un objetivo: responder preguntas, '
+                'completar trabajos o comprar en la tienda. La barra te muestra cuánto llevas.',
+          ),
+          TutorialStep(
+            title: '¡Reclamar la recompensa! 🎁',
+            body: 'Cuando la barra llegue al 100% aparece el botón "¡Reclamar!". '
+                '¡Tócalo para recibir tus monedas y objetos!',
+          ),
+        ],
+        child: Row(
           children: [
-            // ── Fondo espacial ─────────────────────────────────────────────
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/worlds/space/space_background.png',
-                fit: BoxFit.cover,
-              ),
+            _MisionesSidebar(
+              category: _category,
+              onSelectCategory: (c) => setState(() => _category = c),
+              onOpenPreguntas: () => showPreguntasDialog(context),
+              onBack: () => context.pop(),
             ),
-            Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.55)),
-            ),
-
-            // ── Contenido ──────────────────────────────────────────────────
-            SafeArea(
-              child: Column(
-                children: [
-                  _MisionesHeader(
-                    coins: coins,
-                    onBack: () => context.pop(),
-                  ),
-                  Expanded(
-                    child: _loadingProgress
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                                color: Color(0xFF4FC3F7)),
-                          )
-                        : missionsAsync.when(
-                            loading: () => const Center(
-                              child: CircularProgressIndicator(
-                                  color: Color(0xFF4FC3F7)),
-                            ),
-                            error: (_, __) => _ErrorView(
-                              onRetry: () {
-                                ref.invalidate(activeMissionsProvider);
-                                _loadProgress();
-                              },
-                            ),
-                            data: (missions) {
-                              if (missions.isEmpty) {
-                                return Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text('🌌',
-                                          style:
-                                              TextStyle(fontSize: 64)),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'No hay misiones activas\npor ahora. ¡Vuelve pronto!',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color:
-                                              Colors.white.withOpacity(0.65),
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ],
+            Expanded(
+              child: _category == _MissionCategory.papas
+                  ? const _ParentMissionsPanel()
+                  : _loadingProgress
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                          color: Color(0xFF4FC3F7)),
+                    )
+                  : missionsAsync.when(
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(
+                            color: Color(0xFF4FC3F7)),
+                      ),
+                      error: (_, __) => _ErrorView(
+                        onRetry: () {
+                          ref.invalidate(activeMissionsProvider);
+                          _loadProgress();
+                        },
+                      ),
+                      data: (allMissions) {
+                        final missions = allMissions.where((m) {
+                          return _category == _MissionCategory.diarias
+                              ? m.endsAt != null
+                              : m.endsAt == null;
+                        }).toList();
+                        if (missions.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('🌌',
+                                    style:
+                                        TextStyle(fontSize: 64)),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No hay misiones activas\npor ahora. ¡Vuelve pronto!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color:
+                                        Colors.white.withOpacity(0.65),
+                                    fontSize: 16,
                                   ),
-                                );
-                              }
-                              return ListView.builder(
-                                padding:
-                                    const EdgeInsets.all(AppSizes.md),
-                                itemCount: missions.length,
-                                itemBuilder: (ctx, i) {
-                                  final m        = missions[i];
-                                  final progress = _progressFor(m.objectiveType);
-                                  final complete = _isComplete(m);
-                                  final claimed  = _claimed.contains(m.id);
-                                  final claiming = _claiming.contains(m.id);
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return ListView.builder(
+                          padding:
+                              const EdgeInsets.all(AppSizes.md),
+                          itemCount: missions.length,
+                          itemBuilder: (ctx, i) {
+                            final m        = missions[i];
+                            final progress = _progressFor(m.objectiveType);
+                            final complete = _isComplete(m);
+                            final claimed  = _claimed.contains(m.id);
+                            final claiming = _claiming.contains(m.id);
 
-                                  return _MissionCard(
-                                    mission:  m,
-                                    progress: progress,
-                                    complete: complete,
-                                    claimed:  claimed,
-                                    claiming: claiming,
-                                    onClaim:  () => _handleClaim(m),
-                                  )
-                                      .animate(delay: (80 * i).ms)
-                                      .fadeIn(duration: 350.ms)
-                                      .slideY(
-                                        begin: 0.12,
-                                        end: 0,
-                                        curve: Curves.easeOut,
-                                      );
-                                },
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
+                            return _MissionCard(
+                              mission:  m,
+                              progress: progress,
+                              complete: complete,
+                              claimed:  claimed,
+                              claiming: claiming,
+                              onClaim:  () => _handleClaim(m),
+                            )
+                                .animate(delay: (80 * i).ms)
+                                .fadeIn(duration: 350.ms)
+                                .slideY(
+                                  begin: 0.12,
+                                  end: 0,
+                                  curve: Curves.easeOut,
+                                );
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -245,128 +285,430 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Header con placa "MISIONES ESPACIALES" + volver + monedas
+// Sidebar oscura — estilo consistente con la tienda
 // ─────────────────────────────────────────────────────────────────────────────
-class _MisionesHeader extends StatelessWidget {
-  const _MisionesHeader({required this.coins, required this.onBack});
-  final int          coins;
-  final VoidCallback onBack;
+class _MisionesSidebar extends StatelessWidget {
+  const _MisionesSidebar({
+    required this.category,
+    required this.onSelectCategory,
+    required this.onOpenPreguntas,
+    required this.onBack,
+  });
+  final _MissionCategory                 category;
+  final ValueChanged<_MissionCategory>   onSelectCategory;
+  final VoidCallback                     onOpenPreguntas;
+  final VoidCallback                     onBack;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
+      width: 170,
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.70),
-            Colors.transparent,
+          colors: [Color(0xFF0D0A2A), Color(0xFF08061A)],
+        ),
+        border: Border(
+          right: BorderSide(color: Color(0xFF2A1A5E), width: 1.5),
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Botón volver
+              GestureDetector(
+                onTap: onBack,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.20),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Título
+              const Text(
+                'MISIONES',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.5,
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              // Divider con label
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      color: const Color(0xFF2A1A5E),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      'CATEGORÍAS',
+                      style: TextStyle(
+                        color: Color(0xFF6B5B9E),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 1,
+                      color: const Color(0xFF2A1A5E),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              _CategoryItem(
+                emoji:    '📖',
+                label:    'MISIONES HISTORIA',
+                active:   category == _MissionCategory.historia,
+                onTap:    () => onSelectCategory(_MissionCategory.historia),
+              ),
+              const SizedBox(height: 6),
+              _CategoryItem(
+                emoji:    '🔁',
+                label:    'MISIONES DIARIAS',
+                active:   category == _MissionCategory.diarias,
+                onTap:    () => onSelectCategory(_MissionCategory.diarias),
+              ),
+              const SizedBox(height: 6),
+              _CategoryItem(
+                emoji:    '👨‍👩‍👧',
+                label:    'MISIONES DE PAPÁS',
+                active:   category == _MissionCategory.papas,
+                onTap:    () => onSelectCategory(_MissionCategory.papas),
+              ),
+              const SizedBox(height: 6),
+              _CategoryItem(
+                emoji:    '❓',
+                label:    'PREGUNTAS',
+                active:   false,
+                onTap:    onOpenPreguntas,
+                trailing: true,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Item de categoría en el sidebar
+// ─────────────────────────────────────────────────────────────────────────────
+class _CategoryItem extends StatelessWidget {
+  const _CategoryItem({
+    required this.emoji,
+    required this.label,
+    required this.active,
+    required this.onTap,
+    this.trailing = false,
+  });
+  final String       emoji;
+  final String       label;
+  final bool         active;
+  final VoidCallback onTap;
+  final bool         trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? const Color(0xFF3D1E8F).withOpacity(0.35) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: active ? const Color(0xFF7C4DFF).withOpacity(0.55) : Colors.transparent,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: active ? Colors.white : Colors.white.withOpacity(0.55),
+                  fontSize: 11,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w700,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            if (trailing)
+              Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.45), size: 16),
           ],
         ),
       ),
-      child: Row(
-        children: [
-          // Botón volver
-          GestureDetector(
-            onTap: onBack,
-            child: Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.25),
-                  width: 1,
-                ),
-              ),
-              child: const Icon(
-                Icons.arrow_back_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
+    );
+  }
+}
 
-          // Placa del título
-          Expanded(
-            child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF0A1835),
-                      Color(0xFF152B5E),
-                      Color(0xFF0A1835),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: const Color(0xFF4FC3F7).withOpacity(0.50),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF4FC3F7).withOpacity(0.22),
-                      blurRadius: 14,
-                    ),
-                  ],
-                ),
-                child: Text(
-                  'MISIONES ESPACIALES',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.5,
-                    shadows: [
-                      Shadow(
-                        color: const Color(0xFF4FC3F7).withOpacity(0.80),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+// ─────────────────────────────────────────────────────────────────────────────
+// Estado vacío: aún no hay misiones de papás
+// ─────────────────────────────────────────────────────────────────────────────
+class _ParentMissionsPanel extends ConsumerStatefulWidget {
+  const _ParentMissionsPanel();
 
-          // Monedas
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.50),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.amber.withOpacity(0.70)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.15),
-                  blurRadius: 8,
+  @override
+  ConsumerState<_ParentMissionsPanel> createState() => _ParentMissionsPanelState();
+}
+
+class _ParentMissionsPanelState extends ConsumerState<_ParentMissionsPanel> {
+  final Set<String> _completing = {};
+
+  Future<void> _handleComplete(ParentMission mission) async {
+    if (_completing.contains(mission.id)) return;
+    setState(() => _completing.add(mission.id));
+    try {
+      await ref.read(parentMissionRepositoryProvider).completeMission(mission.id);
+      ref.invalidate(childParentMissionsProvider);
+      ref.invalidate(currentWalletProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('¡Ganaste ${mission.coinReward} monedas! 🎉'),
+          backgroundColor: const Color(0xFF2E7D32),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('$e'.replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _completing.remove(mission.id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final missionsAsync = ref.watch(childParentMissionsProvider);
+
+    return missionsAsync.when(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF4FC3F7)),
+      ),
+      error: (_, __) => _ErrorView(
+        onRetry: () => ref.invalidate(childParentMissionsProvider),
+      ),
+      data: (missions) {
+        if (missions.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('👨‍👩‍👧', style: TextStyle(fontSize: 64)),
+                const SizedBox(height: 16),
+                Text(
+                  'Aún no tienes misiones de papás',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 16),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Cuando tu papá o mamá te asigne una,\naparecerá aquí.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 13),
                 ),
               ],
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(AppSizes.md),
+          itemCount: missions.length,
+          itemBuilder: (ctx, i) {
+            final m = missions[i];
+            return _ParentMissionCard(
+              mission: m,
+              completing: _completing.contains(m.id),
+              onComplete: () => _handleComplete(m),
+            )
+                .animate(delay: (80 * i).ms)
+                .fadeIn(duration: 350.ms)
+                .slideY(begin: 0.12, end: 0, curve: Curves.easeOut);
+          },
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tarjeta de misión de papá
+// ─────────────────────────────────────────────────────────────────────────────
+class _ParentMissionCard extends StatelessWidget {
+  const _ParentMissionCard({
+    required this.mission,
+    required this.completing,
+    required this.onComplete,
+  });
+  final ParentMission mission;
+  final bool          completing;
+  final VoidCallback  onComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = mission.isCompleted;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF12122A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: done
+              ? Colors.greenAccent.withOpacity(0.35)
+              : const Color(0xFF7C4DFF).withOpacity(0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C4DFF).withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Center(child: Text('👨‍👩‍👧', style: TextStyle(fontSize: 18))),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('🪙', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 5),
                 Text(
-                  '$coins',
+                  mission.title,
                   style: const TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
                     fontSize: 15,
                   ),
+                ),
+                if (mission.description != null && mission.description!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    mission.description!,
+                    style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 12),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const AnimatedCoin(size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          '+${mission.coinReward}',
+                          style: const TextStyle(
+                            color: Color(0xFFFFD600),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    if (done)
+                      const _StatusChip(label: '✓ Completada', color: Colors.greenAccent)
+                    else
+                      GestureDetector(
+                        onTap: completing ? null : onComplete,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: completing
+                              ? const SizedBox(
+                                  width: 14, height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Completar',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label, required this.color});
+  final String label;
+  final Color  color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12),
       ),
     );
   }
@@ -519,8 +861,8 @@ class _MissionCard extends StatelessWidget {
                       spacing: 5,
                       runSpacing: 4,
                       children: [
-                        _Pill('🪙 +${mission.coinReward}',
-                            const Color(0xFFFFD600)),
+                        _Pill('+${mission.coinReward}',
+                            const Color(0xFFFFD600), showCoin: true),
                         _Pill('⭐ +${mission.xpReward}', Colors.white54),
                         if (mission.itemReward != null)
                           _Pill(
@@ -711,9 +1053,10 @@ class _MissionCard extends StatelessWidget {
 // Chip de recompensa
 // ─────────────────────────────────────────────────────────────────────────────
 class _Pill extends StatelessWidget {
-  const _Pill(this.label, this.color);
+  const _Pill(this.label, this.color, {this.showCoin = false});
   final String label;
   final Color  color;
+  final bool   showCoin;
 
   @override
   Widget build(BuildContext context) {
@@ -724,13 +1067,22 @@ class _Pill extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withOpacity(0.38)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showCoin) ...[
+            const AnimatedCoin(size: 12),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -800,8 +1152,8 @@ class _ClaimDialog extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               _ClaimBadge(
-                  '🪙 +${mission.coinReward} monedas',
-                  const Color(0xFFFFD600)),
+                  '+${mission.coinReward} monedas',
+                  const Color(0xFFFFD600), showCoin: true),
               _ClaimBadge(
                   '⭐ +${mission.xpReward} XP', Colors.white70),
               if (mission.itemReward != null)
@@ -851,9 +1203,10 @@ class _ClaimDialog extends StatelessWidget {
 }
 
 class _ClaimBadge extends StatelessWidget {
-  const _ClaimBadge(this.label, this.color);
+  const _ClaimBadge(this.label, this.color, {this.showCoin = false});
   final String label;
   final Color  color;
+  final bool   showCoin;
 
   @override
   Widget build(BuildContext context) {
@@ -864,13 +1217,22 @@ class _ClaimBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.42)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w800,
-          fontSize: 13,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showCoin) ...[
+            const AnimatedCoin(size: 14),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
   }

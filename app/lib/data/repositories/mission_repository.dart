@@ -103,7 +103,7 @@ class MissionRepository {
       createdAt: DateTime.now(),
       objectiveType:   MissionObjectiveType.completeJobs,
       objectiveTarget: 3,
-      itemReward: ItemReward(itemId: 'forest_gem', qty: 1),
+      itemReward: ItemReward(itemId: 'fuel_capsule', qty: 2),
     ),
     Mission(
       id: 'forest-shop-3',
@@ -157,7 +157,7 @@ class MissionRepository {
       createdAt: DateTime.now(),
       objectiveType:   MissionObjectiveType.completeJobs,
       objectiveTarget: 3,
-      itemReward: ItemReward(itemId: 'star_crystal', qty: 1),
+      itemReward: ItemReward(itemId: 'fuel_capsule', qty: 2),
     ),
     Mission(
       id: 'space-shop-3',
