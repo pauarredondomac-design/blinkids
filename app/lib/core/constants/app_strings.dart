@@ -1,14 +1,23 @@
 abstract class AppStrings {
   // ── Credenciales de Supabase ───────────────────────────────────────────────
-  // Se inyectan en tiempo de compilación mediante --dart-define-from-file.
-  // Crea el archivo dart_defines/local.json (está en .gitignore) con el
-  // formato que muestra dart_defines/local.json.example y ejecuta:
+  // La anon key de Supabase está diseñada para ir embebida en apps cliente
+  // (no es secreta — la protección real la da Row Level Security, no ocultar
+  // esta llave). Por eso va como valor por defecto aquí: así "flutter run" o
+  // compilar directo en Xcode funciona sin configuración extra tras clonar.
   //
+  // Si alguna vez necesitas apuntar a OTRO proyecto de Supabase (staging,
+  // por ejemplo), puedes seguir sobreescribiendo estos valores con:
   //   flutter run --dart-define-from-file=dart_defines/local.json
-  //
-  // NUNCA commits dart_defines/local.json al repositorio.
-  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  // (ese archivo sigue en .gitignore; solo hace falta si quieres el override).
+  static const supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://mzwvazjofbdelsejxoqi.supabase.co',
+  );
+  static const supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16d3ZhempvZmJkZWxzZWp4b3FpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1OTk1NzcsImV4cCI6MjA5NDE3NTU3N30.xYCpnIC9CdfemaoWrGAdsJDfBfubXWmL23OV6ZQjjas',
+  );
 
   // Deep link para OAuth (configura en AndroidManifest.xml e Info.plist)
   static const oauthRedirectUrl = 'blinkids://callback';
