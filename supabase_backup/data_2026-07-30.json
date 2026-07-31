@@ -1,0 +1,4112 @@
+{
+  "profiles": [
+    {
+      "id": "451ff74a-f017-4b4c-b62d-b79cfdd5e756",
+      "role": "admin",
+      "display_name": "Administrador",
+      "avatar_url": null,
+      "created_at": "2026-07-14T00:13:40.733585+00:00",
+      "updated_at": "2026-07-14T00:13:40.733585+00:00",
+      "last_active": "2026-07-14T00:13:40.733585+00:00",
+      "tutorials_seen": {},
+      "world_name": null,
+      "account_type": "full",
+      "pin_hash": null
+    },
+    {
+      "id": "b6f37f99-192c-4266-94fe-a0cf02136c45",
+      "role": "child",
+      "display_name": "diana",
+      "avatar_url": null,
+      "created_at": "2026-06-30T19:22:40.597352+00:00",
+      "updated_at": "2026-06-30T19:23:17.594402+00:00",
+      "last_active": "2026-06-30T19:23:17.594402+00:00",
+      "tutorials_seen": {
+        "banco_estelar": true
+      },
+      "world_name": "dianas",
+      "account_type": "limited",
+      "pin_hash": "58dfba1a1e8c9799a2c2d8ad5abe9ca9d2668eb468298aea97e6bfd8dfff9de9"
+    },
+    {
+      "id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "role": "child",
+      "display_name": "chencho",
+      "avatar_url": null,
+      "created_at": "2026-06-30T18:54:14.858421+00:00",
+      "updated_at": "2026-07-14T00:43:52.964938+00:00",
+      "last_active": "2026-07-14T00:43:52.964938+00:00",
+      "tutorials_seen": {
+        "wallet": true,
+        "tienda_v2": true,
+        "mercado_v2": true,
+        "misiones_v2": true,
+        "trabajos_v2": true,
+        "banco_estelar": true
+      },
+      "world_name": "chencho",
+      "account_type": "limited",
+      "pin_hash": "58dfba1a1e8c9799a2c2d8ad5abe9ca9d2668eb468298aea97e6bfd8dfff9de9"
+    },
+    {
+      "id": "aaccdb1d-0014-4c29-a18a-25feaa149c4c",
+      "role": "child",
+      "display_name": "superman",
+      "avatar_url": null,
+      "created_at": "2026-07-10T16:09:57.04099+00:00",
+      "updated_at": "2026-07-14T02:50:01.238374+00:00",
+      "last_active": "2026-07-14T02:50:01.238374+00:00",
+      "tutorials_seen": {
+        "wallet": true,
+        "misiones_v2": true,
+        "trabajos_v2": true,
+        "banco_estelar": true
+      },
+      "world_name": "Mexico",
+      "account_type": "limited",
+      "pin_hash": "58dfba1a1e8c9799a2c2d8ad5abe9ca9d2668eb468298aea97e6bfd8dfff9de9"
+    },
+    {
+      "id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "role": "child",
+      "display_name": "diego",
+      "avatar_url": null,
+      "created_at": "2026-06-30T19:05:54.180206+00:00",
+      "updated_at": "2026-07-31T00:31:15.609982+00:00",
+      "last_active": "2026-07-31T00:31:15.609982+00:00",
+      "tutorials_seen": {
+        "wallet": true,
+        "preguntas": true,
+        "tienda_v2": true,
+        "wallet_v2": true,
+        "forest_map": true,
+        "mercado_v2": true,
+        "misiones_v2": true,
+        "trabajos_v2": true,
+        "banco_estelar": true,
+        "banco_estelar_v2": true
+      },
+      "world_name": "diego",
+      "account_type": "full",
+      "pin_hash": "58dfba1a1e8c9799a2c2d8ad5abe9ca9d2668eb468298aea97e6bfd8dfff9de9"
+    },
+    {
+      "id": "ce0dbc4f-472d-4673-a8d0-edd2afd3d24b",
+      "role": "parent",
+      "display_name": "Diego papá",
+      "avatar_url": null,
+      "created_at": "2026-06-30T18:55:35.565117+00:00",
+      "updated_at": "2026-06-30T18:55:35.565117+00:00",
+      "last_active": "2026-06-30T18:55:35.565117+00:00",
+      "tutorials_seen": {},
+      "world_name": null,
+      "account_type": "full",
+      "pin_hash": null
+    }
+  ],
+  "parent_child": [
+    {
+      "id": "ef622a2e-0080-4678-a1c0-4fd182a13b10",
+      "parent_id": "ce0dbc4f-472d-4673-a8d0-edd2afd3d24b",
+      "child_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "created_at": "2026-06-30T18:55:52.61705+00:00",
+      "status": "accepted"
+    },
+    {
+      "id": "b4c93f05-3c6d-4bd4-8e92-0578acbf6bd2",
+      "parent_id": "ce0dbc4f-472d-4673-a8d0-edd2afd3d24b",
+      "child_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "created_at": "2026-06-30T19:21:25.95164+00:00",
+      "status": "accepted"
+    }
+  ],
+  "wallets": [
+    {
+      "id": "7bb7ff41-3ffb-4500-ae6f-137478c09e71",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "total_coins": 1807,
+      "real_balance_cents": 0,
+      "created_at": "2026-06-30T19:05:54.180206+00:00",
+      "updated_at": "2026-07-30T09:11:46.177413+00:00",
+      "weekly_allowance": 0,
+      "allowance_last_granted_at": null
+    },
+    {
+      "id": "0ab2e726-b831-4a1f-ab27-6e28c7ebefd1",
+      "user_id": "b6f37f99-192c-4266-94fe-a0cf02136c45",
+      "total_coins": 200,
+      "real_balance_cents": 0,
+      "created_at": "2026-06-30T19:22:40.597352+00:00",
+      "updated_at": "2026-06-30T19:22:46.289142+00:00",
+      "weekly_allowance": 0,
+      "allowance_last_granted_at": null
+    },
+    {
+      "id": "4aeebb2b-a192-420f-887f-80be1f23a0ff",
+      "user_id": "aaccdb1d-0014-4c29-a18a-25feaa149c4c",
+      "total_coins": 200,
+      "real_balance_cents": 0,
+      "created_at": "2026-07-10T16:09:57.04099+00:00",
+      "updated_at": "2026-07-10T16:10:02.752437+00:00",
+      "weekly_allowance": 0,
+      "allowance_last_granted_at": null
+    },
+    {
+      "id": "939f180e-2878-41f4-be13-d738688bb3bf",
+      "user_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "total_coins": 9,
+      "real_balance_cents": 0,
+      "created_at": "2026-06-30T18:54:14.858421+00:00",
+      "updated_at": "2026-07-14T02:45:18.596174+00:00",
+      "weekly_allowance": 0,
+      "allowance_last_granted_at": null
+    }
+  ],
+  "wallet_categories": [
+    {
+      "id": "e14b1384-bb0e-4704-8627-488d351b9101",
+      "wallet_id": "0ab2e726-b831-4a1f-ab27-6e28c7ebefd1",
+      "category": "guardar",
+      "balance": 0,
+      "updated_at": "2026-06-30T19:23:07.725512+00:00"
+    },
+    {
+      "id": "46ceac44-1147-437f-8bc5-7c16d68b1bf1",
+      "wallet_id": "0ab2e726-b831-4a1f-ab27-6e28c7ebefd1",
+      "category": "gastar",
+      "balance": 0,
+      "updated_at": "2026-06-30T19:23:07.725512+00:00"
+    },
+    {
+      "id": "b5d0a8bf-cfe2-44d4-b94d-2121da788350",
+      "wallet_id": "939f180e-2878-41f4-be13-d738688bb3bf",
+      "category": "guardar",
+      "balance": 0,
+      "updated_at": "2026-06-30T21:09:04.040903+00:00"
+    },
+    {
+      "id": "a85240c5-d28c-4508-b9dd-aac2f6eb84c9",
+      "wallet_id": "939f180e-2878-41f4-be13-d738688bb3bf",
+      "category": "gastar",
+      "balance": 0,
+      "updated_at": "2026-07-14T02:44:51.67908+00:00"
+    },
+    {
+      "id": "957bd51b-6e68-409f-af12-c0c2ab987c55",
+      "wallet_id": "4aeebb2b-a192-420f-887f-80be1f23a0ff",
+      "category": "guardar",
+      "balance": 0,
+      "updated_at": "2026-07-14T02:49:51.740545+00:00"
+    },
+    {
+      "id": "fe563001-ee3c-420f-a422-eb2a1de3ede9",
+      "wallet_id": "4aeebb2b-a192-420f-887f-80be1f23a0ff",
+      "category": "gastar",
+      "balance": 0,
+      "updated_at": "2026-07-14T02:49:51.740545+00:00"
+    },
+    {
+      "id": "8f91e0d7-e1ed-4ca9-ac67-ba099057f00c",
+      "wallet_id": "0ab2e726-b831-4a1f-ab27-6e28c7ebefd1",
+      "category": "invertir",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:08.778457+00:00"
+    },
+    {
+      "id": "4e596b32-aeb8-4c7e-bc15-b435081627e2",
+      "wallet_id": "0ab2e726-b831-4a1f-ab27-6e28c7ebefd1",
+      "category": "donar",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:08.778457+00:00"
+    },
+    {
+      "id": "00729aa4-1cbd-41c6-84fa-f0128a8df492",
+      "wallet_id": "4aeebb2b-a192-420f-887f-80be1f23a0ff",
+      "category": "invertir",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:08.778457+00:00"
+    },
+    {
+      "id": "cc6dc597-2969-41e2-801e-4206524af97e",
+      "wallet_id": "4aeebb2b-a192-420f-887f-80be1f23a0ff",
+      "category": "donar",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:08.778457+00:00"
+    },
+    {
+      "id": "1b2a1750-f205-4a75-8882-6b33b8de688b",
+      "wallet_id": "939f180e-2878-41f4-be13-d738688bb3bf",
+      "category": "invertir",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:08.778457+00:00"
+    },
+    {
+      "id": "c4e6590a-cf00-4ed3-a451-d8a41aaa4be1",
+      "wallet_id": "939f180e-2878-41f4-be13-d738688bb3bf",
+      "category": "donar",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:08.778457+00:00"
+    },
+    {
+      "id": "490cd3a7-3f9f-4791-b354-aef17300d3c0",
+      "wallet_id": "0ab2e726-b831-4a1f-ab27-6e28c7ebefd1",
+      "category": "banco_estelar",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:38.019591+00:00"
+    },
+    {
+      "id": "e2e715af-739f-4c3c-8205-9e85ee4791de",
+      "wallet_id": "939f180e-2878-41f4-be13-d738688bb3bf",
+      "category": "banco_estelar",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:38.019591+00:00"
+    },
+    {
+      "id": "359a8a3f-b070-4120-bc55-6a85ab40aed9",
+      "wallet_id": "4aeebb2b-a192-420f-887f-80be1f23a0ff",
+      "category": "banco_estelar",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:38.019591+00:00"
+    },
+    {
+      "id": "335d992c-db90-462d-bdc7-3e26ee81d56b",
+      "wallet_id": "7bb7ff41-3ffb-4500-ae6f-137478c09e71",
+      "category": "banco_estelar",
+      "balance": 0,
+      "updated_at": "2026-07-30T02:52:38.019591+00:00"
+    },
+    {
+      "id": "fb9c48aa-4c06-4c1b-868d-22cdd2be764f",
+      "wallet_id": "7bb7ff41-3ffb-4500-ae6f-137478c09e71",
+      "category": "guardar",
+      "balance": 1107,
+      "updated_at": "2026-07-30T05:27:02.855202+00:00"
+    },
+    {
+      "id": "6013b82e-43c5-4265-aaa6-ad479f0e66aa",
+      "wallet_id": "7bb7ff41-3ffb-4500-ae6f-137478c09e71",
+      "category": "donar",
+      "balance": 144,
+      "updated_at": "2026-07-30T07:28:23.719867+00:00"
+    },
+    {
+      "id": "fbe18075-2e72-4dfa-bda2-27219103172a",
+      "wallet_id": "7bb7ff41-3ffb-4500-ae6f-137478c09e71",
+      "category": "gastar",
+      "balance": 673,
+      "updated_at": "2026-07-30T07:28:31.560403+00:00"
+    },
+    {
+      "id": "dd5ef4f1-06e5-4db4-b1df-d3d1ae9bfdcd",
+      "wallet_id": "7bb7ff41-3ffb-4500-ae6f-137478c09e71",
+      "category": "invertir",
+      "balance": 164,
+      "updated_at": "2026-07-30T07:28:43.488803+00:00"
+    }
+  ],
+  "world_progress": [
+    {
+      "id": "13e51f98-335c-46bb-98d7-189c1dbf9c6e",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "world_id": "5c25416e-c636-41eb-9e58-5203e679092b",
+      "is_unlocked": true,
+      "unlocked_at": "2026-07-30T03:11:52.371694+00:00"
+    }
+  ],
+  "item_catalog": [
+    {
+      "id": "fcc1f869-2387-4586-8b96-b45e1c25d099",
+      "name": "Llave",
+      "description": "Llave inglesa para poder arreglar naves",
+      "type": "tool",
+      "price_coins": 5,
+      "price_real_cents": 0,
+      "image_url": null,
+      "is_active": true,
+      "metadata": null,
+      "created_at": "2026-07-14T02:51:08.874202+00:00"
+    }
+  ],
+  "characters": [
+    {
+      "id": "f1bcdc8c-8002-4c95-a304-3372090f1956",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "xp": 1845,
+      "level": 19,
+      "evolution_stage": 1,
+      "equipped_avatar_id": null,
+      "created_at": "2026-07-14T08:01:03.268848+00:00",
+      "updated_at": "2026-07-30T09:11:46.630653+00:00"
+    }
+  ],
+  "player_answers": [
+    {
+      "id": "115e123d-f33e-4173-8920-cf2697072823",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "60f7e02d-1529-48cb-8aa9-7d02d74c4feb",
+      "is_correct": false,
+      "answered_at": "2026-07-24T00:12:11.245631+00:00"
+    },
+    {
+      "id": "c2f3375f-df39-4ea5-a78a-7831dc03d7cd",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "60f7e02d-1529-48cb-8aa9-7d02d74c4feb",
+      "is_correct": true,
+      "answered_at": "2026-07-24T00:12:22.165178+00:00"
+    },
+    {
+      "id": "d5ffbb65-1d9c-4708-a892-739ccbdd43e0",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "60f7e02d-1529-48cb-8aa9-7d02d74c4feb",
+      "is_correct": true,
+      "answered_at": "2026-07-24T00:12:35.375286+00:00"
+    },
+    {
+      "id": "139e5e53-218a-4c91-97d3-ba6d937b92b4",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "60f7e02d-1529-48cb-8aa9-7d02d74c4feb",
+      "is_correct": true,
+      "answered_at": "2026-07-24T00:49:15.870433+00:00"
+    },
+    {
+      "id": "c638d84c-b1ac-4248-b04f-9192cde37192",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "7a03410b-9c3f-4407-a729-97c86903caa7",
+      "is_correct": true,
+      "answered_at": "2026-07-30T04:59:31.007634+00:00"
+    },
+    {
+      "id": "09a7e175-8312-4e19-9c47-bbc6f136052c",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "7a03410b-9c3f-4407-a729-97c86903caa7",
+      "is_correct": false,
+      "answered_at": "2026-07-30T05:00:04.100468+00:00"
+    },
+    {
+      "id": "d0d156de-d65e-4fe6-ab71-e5ca0c526d6a",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "95ef8c7a-51be-473d-9e07-9b16042721e1",
+      "is_correct": true,
+      "answered_at": "2026-07-30T05:00:15.401768+00:00"
+    },
+    {
+      "id": "549ffe0d-e9c3-4fa2-aae4-8321dd868d2b",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "82f72bf5-1122-4235-b057-fd2ea90681b1",
+      "is_correct": true,
+      "answered_at": "2026-07-30T05:00:24.511828+00:00"
+    },
+    {
+      "id": "ddca6653-ccdb-4d75-8433-38ed8ba64224",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "7a25d546-61ec-4a71-9bff-39815f9b8811",
+      "is_correct": false,
+      "answered_at": "2026-07-30T05:01:03.475723+00:00"
+    },
+    {
+      "id": "cd96f7ef-c5dc-4925-803b-7d1d7b4302b7",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "fb8f3f27-2000-4880-b03f-d7e9c46fa949",
+      "is_correct": false,
+      "answered_at": "2026-07-30T05:01:21.625119+00:00"
+    },
+    {
+      "id": "adb50f25-9bd9-4dcc-aaf4-2fd5806106ae",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "question_id": "b09a701c-f2cc-4b3d-a4be-afd039abb454",
+      "is_correct": true,
+      "answered_at": "2026-07-30T05:01:41.61023+00:00"
+    }
+  ],
+  "jobs": [
+    {
+      "id": "f074082e-f249-411e-a05a-f4233417a429",
+      "world_id": "5c25416e-c636-41eb-9e58-5203e679092b",
+      "name": "Vendedor de Frutas",
+      "description": "Atiende tu puesto de frutas y da el cambio correcto a los clientes.",
+      "instructions": {
+        "intro": "Los clientes llegan con billetes y monedas. Tu tarea es dar el cambio exacto.",
+        "levels": [
+          {
+            "paid": 20,
+            "price": 15,
+            "change": 5
+          },
+          {
+            "paid": 50,
+            "price": 32,
+            "change": 18
+          },
+          {
+            "paid": 100,
+            "price": 67,
+            "change": 33
+          }
+        ],
+        "mechanics": "drag_coins"
+      },
+      "coin_reward": 25,
+      "xp_reward": 15,
+      "duration_seconds": 60,
+      "cooldown_minutes": 60,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-05-22T18:19:25.097174+00:00",
+      "type": "minigame",
+      "emoji": null,
+      "npc_name": null,
+      "npc_emoji": null,
+      "story": null,
+      "requirements": null,
+      "item_reward": null,
+      "fuel_reward": 0
+    },
+    {
+      "id": "716d2378-b217-4f78-b71f-8b0735508131",
+      "world_id": "5c25416e-c636-41eb-9e58-5203e679092b",
+      "name": "Tiendita del Bosque",
+      "description": "Anota los ingresos y gastos del día en tu tiendita.",
+      "instructions": {
+        "intro": "Registra cuánto ganaste y cuánto gastaste para saber si tuviste ganancia.",
+        "mechanics": "income_expense_entry",
+        "transactions": [
+          {
+            "desc": "Ventas de mañana",
+            "type": "income",
+            "amount": 120
+          },
+          {
+            "desc": "Compra de frutas",
+            "type": "expense",
+            "amount": 45
+          },
+          {
+            "desc": "Ventas de tarde",
+            "type": "income",
+            "amount": 85
+          },
+          {
+            "desc": "Bolsas y empaques",
+            "type": "expense",
+            "amount": 10
+          }
+        ]
+      },
+      "coin_reward": 20,
+      "xp_reward": 10,
+      "duration_seconds": 90,
+      "cooldown_minutes": 120,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-05-22T18:19:25.097174+00:00",
+      "type": "minigame",
+      "emoji": null,
+      "npc_name": null,
+      "npc_emoji": null,
+      "story": null,
+      "requirements": null,
+      "item_reward": null,
+      "fuel_reward": 0
+    },
+    {
+      "id": "53a06f28-6554-4215-80cb-e06a16376917",
+      "world_id": "5c25416e-c636-41eb-9e58-5203e679092b",
+      "name": "Curar al Zorro",
+      "description": null,
+      "instructions": null,
+      "coin_reward": 200,
+      "xp_reward": 30,
+      "duration_seconds": 60,
+      "cooldown_minutes": 60,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-07-14T00:43:01.432396+00:00",
+      "type": "crafting",
+      "emoji": "🦊",
+      "npc_name": "Doctora Búho",
+      "npc_emoji": "🦉",
+      "story": "El zorro del bosque está muy enfermo y necesita ayuda urgente. Prepara 2 hierbas mágicas mezcladas con 1 poción de salud para hacer la medicina. ¡Date prisa, por favor!",
+      "requirements": [
+        {
+          "qty": 2,
+          "item_id": "magic_herb"
+        },
+        {
+          "qty": 1,
+          "item_id": "health_potion"
+        }
+      ],
+      "item_reward": null,
+      "fuel_reward": 0
+    },
+    {
+      "id": "432d2b4d-12bc-491e-97c2-2c387c30586d",
+      "world_id": "55a8ea9c-68c0-41c8-aecd-3d21bc524c1c",
+      "name": "Activar la Estación",
+      "description": null,
+      "instructions": null,
+      "coin_reward": 250,
+      "xp_reward": 35,
+      "duration_seconds": 60,
+      "cooldown_minutes": 60,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-07-14T00:43:01.432396+00:00",
+      "type": "crafting",
+      "emoji": "⚡",
+      "npc_name": "Robot R2",
+      "npc_emoji": "🤖",
+      "story": "BEEP BOOP - Estación de energía sin poder. Necesito 2 baterías cuánticas y 1 cápsula de combustible para reactivar los sistemas. ¡Muchas gracias, humano amigo!",
+      "requirements": [
+        {
+          "qty": 2,
+          "item_id": "wrench"
+        }
+      ],
+      "item_reward": null,
+      "fuel_reward": 0
+    },
+    {
+      "id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "world_id": "55a8ea9c-68c0-41c8-aecd-3d21bc524c1c",
+      "name": "Reparar la Nave",
+      "description": null,
+      "instructions": null,
+      "coin_reward": 300,
+      "xp_reward": 50,
+      "duration_seconds": 60,
+      "cooldown_minutes": 60,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-07-14T00:43:01.432396+00:00",
+      "type": "crafting",
+      "emoji": "🚀",
+      "npc_name": "Capitán Astro",
+      "npc_emoji": "👨‍🚀",
+      "story": "¡Socorro, astronauta! Mi nave espacial chocó con un asteroide. Necesito 3 pernos espaciales y 1 llave inglesa para repararla. Si me ayudas, te doy una recompensa galáctica muy especial.",
+      "requirements": [
+        {
+          "qty": 2,
+          "item_id": "wrench"
+        }
+      ],
+      "item_reward": {
+        "qty": 1,
+        "item_id": "wrench"
+      },
+      "fuel_reward": 25
+    },
+    {
+      "id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "world_id": "55a8ea9c-68c0-41c8-aecd-3d21bc524c1c",
+      "name": "Arreglar al Robot",
+      "description": null,
+      "instructions": null,
+      "coin_reward": 30,
+      "xp_reward": 60,
+      "duration_seconds": 60,
+      "cooldown_minutes": 60,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-07-14T00:43:01.432396+00:00",
+      "type": "crafting",
+      "emoji": "🦾",
+      "npc_name": "Ingeniera Luna",
+      "npc_emoji": "👩‍🔬",
+      "story": "El robot de mantenimiento de la estación espacial se descompuso. Para repararlo necesito 1 llave inglesa, 2 circuitos lunares y 1 perno espacial. ¡Es urgente para la misión!",
+      "requirements": [
+        {
+          "qty": 1,
+          "item_id": "wrench"
+        }
+      ],
+      "item_reward": null,
+      "fuel_reward": 5
+    },
+    {
+      "id": "7406f181-8a93-4c02-9b5d-a1483078a3ef",
+      "world_id": "55a8ea9c-68c0-41c8-aecd-3d21bc524c1c",
+      "name": "se rompio una nave",
+      "description": null,
+      "instructions": null,
+      "coin_reward": 10,
+      "xp_reward": 10,
+      "duration_seconds": 60,
+      "cooldown_minutes": 60,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-07-24T17:46:21.240905+00:00",
+      "type": "crafting",
+      "emoji": null,
+      "npc_name": null,
+      "npc_emoji": null,
+      "story": null,
+      "requirements": [
+        {
+          "qty": 5,
+          "item_id": "wood_plank"
+        },
+        {
+          "qty": 3,
+          "item_id": "star_crystal"
+        },
+        {
+          "qty": 1,
+          "item_id": "wrench"
+        }
+      ],
+      "item_reward": {
+        "qty": 1,
+        "item_id": "wood_plank"
+      },
+      "fuel_reward": 0
+    },
+    {
+      "id": "5ffcc06d-1b23-4b53-a92f-fb7090a175a0",
+      "world_id": "5c25416e-c636-41eb-9e58-5203e679092b",
+      "name": "Reparar la Cabaña",
+      "description": null,
+      "instructions": null,
+      "coin_reward": 250,
+      "xp_reward": 40,
+      "duration_seconds": 60,
+      "cooldown_minutes": 60,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-07-14T00:43:01.432396+00:00",
+      "type": "crafting",
+      "emoji": "🏚️",
+      "npc_name": "Osito Bruno",
+      "npc_emoji": "🐻",
+      "story": "¡Hola aventurero! Un árbol cayó sobre mi cabaña durante la tormenta. Necesito 3 tablones de madera y un martillo para repararla. ¿Me puedes ayudar? ¡Te lo agradeceré con muchas monedas!",
+      "requirements": [
+        {
+          "qty": 3,
+          "item_id": "wood_plank"
+        },
+        {
+          "qty": 1,
+          "item_id": "hammer"
+        }
+      ],
+      "item_reward": null,
+      "fuel_reward": 10
+    },
+    {
+      "id": "bb2696ad-921e-4573-b152-8e26cfd9649c",
+      "world_id": "5c25416e-c636-41eb-9e58-5203e679092b",
+      "name": "El Festín de la Ardilla",
+      "description": null,
+      "instructions": null,
+      "coin_reward": 150,
+      "xp_reward": 20,
+      "duration_seconds": 60,
+      "cooldown_minutes": 60,
+      "image_url": null,
+      "is_active": true,
+      "created_at": "2026-07-14T00:43:01.432396+00:00",
+      "type": "crafting",
+      "emoji": "🐿️",
+      "npc_name": "Ardilla Chispa",
+      "npc_emoji": "🐿️",
+      "story": "¡El invierno se acerca y no tengo suficiente comida! Necesito juntar 5 bellotas para llenar mi despensa. Si me las consigues, te doy unas hierbas especiales que encontré.",
+      "requirements": [
+        {
+          "qty": 5,
+          "item_id": "acorn"
+        }
+      ],
+      "item_reward": null,
+      "fuel_reward": 10
+    }
+  ],
+  "job_completions": [
+    {
+      "id": "8efa8e97-a92e-42f4-ba23-0d72b115676f",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-14T04:37:47.105589+00:00"
+    },
+    {
+      "id": "2032d58a-74fa-4443-a772-3a3b73d03780",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T04:39:49.563657+00:00"
+    },
+    {
+      "id": "59cb8741-c8c7-4e36-aa1c-c4fec3ac423d",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T04:46:47.248842+00:00"
+    },
+    {
+      "id": "4d6dd3e8-828f-46cb-93b6-26b7fe04ab09",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T04:52:52.311517+00:00"
+    },
+    {
+      "id": "f0809256-e5be-42a3-9294-bb13de870dcc",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T08:02:15.725231+00:00"
+    },
+    {
+      "id": "b599ff23-828f-46fb-b13a-e05cf96dda97",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T08:07:35.860278+00:00"
+    },
+    {
+      "id": "f2b496e9-eb15-4199-9f97-75d369282188",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T08:07:59.089438+00:00"
+    },
+    {
+      "id": "b536df64-b494-4de6-8d1b-70b522d95c45",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T08:10:33.064737+00:00"
+    },
+    {
+      "id": "0be6cb7d-d996-4e6a-8c29-211856c14bd7",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T08:11:34.08936+00:00"
+    },
+    {
+      "id": "2a53b1a3-1662-44f5-989a-3223a5b1f366",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 350,
+      "completed_at": "2026-07-14T08:17:13.845638+00:00"
+    },
+    {
+      "id": "6a92d03c-b8f7-4a44-bbb9-a2f33daa73bf",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 30,
+      "completed_at": "2026-07-14T08:22:07.938271+00:00"
+    },
+    {
+      "id": "9941d9de-10a8-4b20-9fe5-abb97d2d85d6",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-14T08:22:22.002828+00:00"
+    },
+    {
+      "id": "c792df7d-285d-4516-81bf-1ef6f756a001",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-14T08:34:36.946247+00:00"
+    },
+    {
+      "id": "7818fe4d-2773-440a-b1d2-3eef31be9a09",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-14T08:36:49.217926+00:00"
+    },
+    {
+      "id": "91d4c399-8d75-4a70-b90f-7c1be2af7f12",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-14T08:37:18.138921+00:00"
+    },
+    {
+      "id": "f16f2fa6-ebf8-4139-9db8-658fca74c8d8",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-14T08:37:38.631892+00:00"
+    },
+    {
+      "id": "d813e543-9829-47de-8279-074bd52b1a53",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 30,
+      "completed_at": "2026-07-14T09:03:12.905978+00:00"
+    },
+    {
+      "id": "40180ae6-69ad-4f9c-8d3d-023476338680",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 30,
+      "completed_at": "2026-07-14T09:03:46.810528+00:00"
+    },
+    {
+      "id": "d35b1f9e-2004-4d03-9ad2-100cc1b6e967",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 30,
+      "completed_at": "2026-07-14T09:04:06.210559+00:00"
+    },
+    {
+      "id": "de76d6b2-dd48-4c54-879f-f62a73fe6785",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-14T09:05:52.6608+00:00"
+    },
+    {
+      "id": "f1709936-5aca-4314-8206-b312f9a87f1a",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "ecfec983-4469-42f7-be19-049d365277d4",
+      "coins_earned": 30,
+      "completed_at": "2026-07-14T09:05:59.754181+00:00"
+    },
+    {
+      "id": "4f5d9b6d-07b8-446d-9bf3-d12b72d5ce55",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "432d2b4d-12bc-491e-97c2-2c387c30586d",
+      "coins_earned": 250,
+      "completed_at": "2026-07-30T05:06:19.485+00:00"
+    },
+    {
+      "id": "e4898137-37cc-4f26-bb8d-1fd95c5d5f7f",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "432d2b4d-12bc-491e-97c2-2c387c30586d",
+      "coins_earned": 250,
+      "completed_at": "2026-07-30T07:32:25.955207+00:00"
+    },
+    {
+      "id": "79d23157-e357-46b7-90ca-a455e80d47f3",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-30T07:32:55.746772+00:00"
+    },
+    {
+      "id": "8fcdaa28-fba8-4349-8ffd-418184662bd1",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-30T08:16:04.03188+00:00"
+    },
+    {
+      "id": "19644de7-fba0-413b-855d-e5c6b1ad2bdb",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-30T08:20:15.083554+00:00"
+    },
+    {
+      "id": "10c25531-3a57-497f-b787-fa5b3a6e1543",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-30T08:24:02.485664+00:00"
+    },
+    {
+      "id": "7c8ca64c-1309-4836-92c1-e34acf4b8fd2",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-30T08:32:40.599923+00:00"
+    },
+    {
+      "id": "889bfe88-cf24-44f1-9d36-64f89c4ba6ab",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "job_id": "91065ddd-1103-45fe-accf-000e5e879449",
+      "coins_earned": 300,
+      "completed_at": "2026-07-30T09:11:46.282821+00:00"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "436a20f5-fb89-4ea3-be23-611d7608695e",
+      "user_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "type": "banco_estelar_interest",
+      "title": "¡Banco Estelar! 🏦✨",
+      "body": "¡Recibiste +5 monedas de interés esta semana. ¡Sigue ahorrando!",
+      "data": {},
+      "is_read": false,
+      "created_at": "2026-07-05T00:00:00.218589+00:00"
+    },
+    {
+      "id": "0a673f97-2cd8-4f40-8c5c-ba02c35c8931",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "type": "inactivity_7d",
+      "title": "¡Hace una semana que no te vemos! 🌟",
+      "body": "Tu bolsa te extraña... entra a Blinkids y mira cuánto puede crecer tu dinero.",
+      "data": {
+        "days_since": 9
+      },
+      "is_read": true,
+      "created_at": "2026-07-10T15:05:44.467756+00:00"
+    },
+    {
+      "id": "c96083d1-a720-4da4-9fca-2bef327d2536",
+      "user_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "type": "banco_estelar_interest",
+      "title": "¡Banco Estelar! 🏦✨",
+      "body": "¡Recibiste +5 monedas de interés esta semana. ¡Sigue ahorrando!",
+      "data": {},
+      "is_read": false,
+      "created_at": "2026-07-12T00:00:00.206776+00:00"
+    },
+    {
+      "id": "3819b8aa-53f1-4489-89de-9a0fe0f8d0c5",
+      "user_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "type": "inactivity_7d",
+      "title": "¡Hace una semana que no te vemos! 🌟",
+      "body": "Tu bolsa te extraña... entra a Blinkids y mira cuánto puede crecer tu dinero.",
+      "data": {
+        "days_since": 11
+      },
+      "is_read": false,
+      "created_at": "2026-07-14T00:26:22.373733+00:00"
+    },
+    {
+      "id": "6f2c66f0-006c-4c7d-ae4e-64244fce17ec",
+      "user_id": "aaccdb1d-0014-4c29-a18a-25feaa149c4c",
+      "type": "inactivity_3d",
+      "title": "¡Te extrañamos, aventurero! 👋",
+      "body": "Llevas 3 días sin aventuras. ¡Vuelve y revisa cómo va creciendo tu bolsa!",
+      "data": {
+        "days_since": 3
+      },
+      "is_read": false,
+      "created_at": "2026-07-14T02:49:03.001139+00:00"
+    },
+    {
+      "id": "006206ad-ca73-4f0e-93c4-dff898738279",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "type": "inactivity_3d",
+      "title": "¡Te extrañamos, aventurero! 👋",
+      "body": "Llevas 3 días sin aventuras. ¡Vuelve y revisa cómo va creciendo tu bolsa!",
+      "data": {
+        "days_since": 3
+      },
+      "is_read": true,
+      "created_at": "2026-07-14T03:50:12.658016+00:00"
+    },
+    {
+      "id": "9f8c6068-3400-40b2-a13e-ab44bab71114",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "type": "banco_estelar_interest",
+      "title": "¡Banco Estelar! 🏦✨",
+      "body": "¡Recibiste +5 monedas de interés esta semana. ¡Sigue ahorrando!",
+      "data": {},
+      "is_read": true,
+      "created_at": "2026-07-19T00:00:00.2034+00:00"
+    },
+    {
+      "id": "abb91a92-a0be-4b9d-8cd2-90a222187160",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "type": "inactivity_3d",
+      "title": "¡Te extrañamos, aventurero! 👋",
+      "body": "Llevas 6 días sin aventuras. ¡Vuelve y revisa cómo va creciendo tu bolsa!",
+      "data": {
+        "days_since": 6
+      },
+      "is_read": true,
+      "created_at": "2026-07-23T23:12:25.538691+00:00"
+    },
+    {
+      "id": "e3ccbf7e-09eb-471a-938f-007e70e3f101",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "type": "banco_estelar_interest",
+      "title": "¡Banco Estelar! 🏦✨",
+      "body": "¡Recibiste +5 monedas de interés esta semana. ¡Sigue ahorrando!",
+      "data": {},
+      "is_read": true,
+      "created_at": "2026-07-26T00:00:00.183664+00:00"
+    },
+    {
+      "id": "bcaff5ca-6603-46be-9640-0a896b829d73",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "type": "inactivity_3d",
+      "title": "¡Te extrañamos, aventurero! 👋",
+      "body": "Llevas 5 días sin aventuras. ¡Vuelve y revisa cómo va creciendo tu bolsa!",
+      "data": {
+        "days_since": 5
+      },
+      "is_read": true,
+      "created_at": "2026-07-30T01:29:14.385743+00:00"
+    }
+  ],
+  "blink_dialogues": [
+    {
+      "id": 1,
+      "screen": "intro",
+      "order": 1,
+      "title": "¡Hola!",
+      "body": "¡Hola! Soy Blink, el zorro más curioso de la galaxia. 🦊 ¡Por fin llegaste! Estaba esperando un compañero de viaje.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 2,
+      "screen": "intro",
+      "order": 2,
+      "title": "Monedas con superpoderes",
+      "body": "Cada misión nos lleva un poco más lejos. Algunas fáciles, otras nos harán pensar, pero en todas aprendemos algo. ¡Cada decisión cuenta!",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 3,
+      "screen": "intro",
+      "order": 3,
+      "title": "Nuestras misiones",
+      "body": "Cada misión nos lleva un poco más lejos. Algunas fáciles, otras nos harán pensar, pero en todas aprendemos algo. ¡Cada decisión cuenta!",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 4,
+      "screen": "intro",
+      "order": 4,
+      "title": "Tu Bolsa Espacial",
+      "body": "Antes de despegar te muestro tu Bolsa: Ahorro, Inversión,  Compartir, Gastor . Aquí cada moneda encuentra su misión.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 5,
+      "screen": "world_map",
+      "order": 1,
+      "title": "Nuestra galaxia",
+      "body": "¡Esta es nuestra galaxia! Cada estación esconde algo distinto donde ganas monedas y aprendes. ¿Cuál exploramos primero?",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 6,
+      "screen": "world_map",
+      "order": 2,
+      "title": "Las estaciones",
+      "body": "Toca cualquier estación para entrar: el Banco,  Trabajos o  Misiones. Tú eliges... yo voy contigo.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 9,
+      "screen": "banco_estelar",
+      "order": 1,
+      "title": "Aquí las monedas crecen 🌱",
+      "body": "Psst... ¿escuchas eso? Aquí las monedas crecen.  Deposita tu Inversión  , lo verás crecer solito,  hasta mientras duermes.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 10,
+      "screen": "banco_estelar",
+      "order": 2,
+      "title": "Crecer despacito",
+      "body": "Algunas monedas son impacientes.  Otras prefieren crecer despacito. Si no las tocas un rato, cada día pasa un poquito de magia... y así cargamos combustible para Marte.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 11,
+      "screen": "banco_estelar",
+      "order": 3,
+      "title": "Lo que espera, recompensa",
+      "body": "Hay tesoros que solo aparecen para quien sabe esperar.  Completa los retos de ahorro y ganamos recompensas extra.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 12,
+      "screen": "trabajos_v2",
+      "order": 1,
+      "title": "¡Trabajos Espaciales!",
+      "body": "¿Listo para un buen reto? Toma un trabajo y complétalo para ganar monedas. Ojo: cada trabajo necesita materiales.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 13,
+      "screen": "trabajos_v2",
+      "order": 2,
+      "title": "¿Cómo funciona?",
+      "body": "Aceptamos el reto, conseguimos los materiales en la Tienda... ¡y luego festejamos la recompensa como se debe!",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 17,
+      "screen": "tienda_v2",
+      "order": 1,
+      "title": "¡La Tienda Espacial!",
+      "body": "¡Bienvenido a mi tienda favorita! Aquí compras los materiales para tus trabajos y misiones. Elige lo que de verdad necesitas.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 18,
+      "screen": "tienda_v2",
+      "order": 2,
+      "title": "Guarda los materiales",
+      "body": "Todo lo que consigues viaja contigo en tu mochila. Míralo cuando quieras en \"Mi inventario\".",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 14,
+      "screen": "misiones_v2",
+      "order": 1,
+      "title": "Cómo completar una misión",
+      "body": "Antes de despegar, revisemos el plan: unas misiones piden materiales, otras tiempo o XP. Un buen explorador siempre se prepara.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 15,
+      "screen": "misiones_v2",
+      "order": 2,
+      "title": "Cómo completar una misión",
+      "body": "Antes de despegar, revisemos el plan: unas misiones piden materiales, otras tiempo o XP. Un buen explorador siempre se prepara.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 16,
+      "screen": "misiones_v2",
+      "order": 3,
+      "title": "¡Reclamar la recompensa!",
+      "body": "¡Lo logramos!  Hora de recoger nuestra recompensa: toca \"Reclamar\" para llevarte tus monedas y XP.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 22,
+      "screen": "preguntas",
+      "order": 1,
+      "title": "¡Hora de preguntas!",
+      "body": "¡Me encantan estos retos! Responde preguntas de finanzas y cada acierto te da monedas y experiencia. ¿Probamos?",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 23,
+      "screen": "preguntas",
+      "order": 2,
+      "title": "Lee con calma",
+      "body": "No respondas todavía. Primero piensa cuál elegirías tú. Ahora descubramos qué estaba pasando realmente. 👀",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 7,
+      "screen": "wallet",
+      "order": 1,
+      "title": "Mi Bolsa",
+      "body": "Mira todas tus monedas: parecen iguales, pero cada categoría tiene su propio propósito. Aquí las ves ordenadas.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 8,
+      "screen": "wallet",
+      "order": 2,
+      "title": "¿Cómo distribuir?",
+      "body": "Cada moneda puede tener una mision diferente\r\nAlgunas prefieren esperar en Ahorro\r\nOtras quieren crecer en Inversión \r\nUnas ayudan a otros en Compartir\r\nY otras están listas para usarse en Gastos\r\n¿A cuál misión enviarás la siguiente?",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 24,
+      "screen": "forest_map",
+      "order": 1,
+      "title": "¡Bienvenido al Bosque! 🌲",
+      "body": "Mi nariz de zorro detectó algo por aquí... Este lugar guarda muchos secretos. ¿Cuál descubrimos hoy?",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 25,
+      "screen": "forest_map",
+      "order": 2,
+      "title": "Explora los edificios 🏠",
+      "body": "Cada rincón esconde una sorpresa. El Mercado y las Preguntas nos esperan. Mi cola me dice que vamos por buen camino.",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 26,
+      "screen": "forest_map",
+      "order": 3,
+      "title": "Tus monedas 🪙",
+      "body": "Cada moneda que ganas aquí se suma a tu bolsa principal. ¡Todo cuenta para avanzar!",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 19,
+      "screen": "mercado_v2",
+      "order": 1,
+      "title": "¡Mercado Galáctico! 🛒",
+      "body": "Aquí cada explorador trae algo distinto. Tienes 3 secciones: ver lo que tienes, poner cosas a la venta y explorar lo de otros. ¿Qué encontraremos?",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 20,
+      "screen": "mercado_v2",
+      "order": 2,
+      "title": "Tu tienda personal",
+      "body": "Si algo ya terminó su viaje contigo, quizá ayude a otro explorador. Pon hasta 10 artículos a la venta. ¿Qué precio sería justo?",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    },
+    {
+      "id": 21,
+      "screen": "mercado_v2",
+      "order": 3,
+      "title": "Explorar el mercado 🔍",
+      "body": "Tengo una sospecha... aquí hay buenos hallazgos. Pero antes de comprar: ¿lo necesitamos para la misión, o solo nos emocionó verlo?",
+      "active": true,
+      "created_at": "2026-07-13T23:03:18.883945+00:00"
+    }
+  ],
+  "tutorial_progress": [
+    {
+      "id": "434d73d5-3af4-4057-80c8-95d4f45ec63d",
+      "user_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "current_step": 4,
+      "is_completed": true,
+      "completed_at": "2026-06-30T12:54:29.008+00:00"
+    },
+    {
+      "id": "2bab61ea-1c8a-4615-abcf-f34f21728ec3",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "current_step": 4,
+      "is_completed": true,
+      "completed_at": "2026-06-30T13:06:00.189+00:00"
+    },
+    {
+      "id": "72154d62-9d7e-4f43-bc53-2c710fb32230",
+      "user_id": "b6f37f99-192c-4266-94fe-a0cf02136c45",
+      "current_step": 4,
+      "is_completed": true,
+      "completed_at": "2026-06-30T13:22:46.377+00:00"
+    },
+    {
+      "id": "3c5173fe-f6cd-40ed-9f58-e952f5ec4a80",
+      "user_id": "aaccdb1d-0014-4c29-a18a-25feaa149c4c",
+      "current_step": 4,
+      "is_completed": true,
+      "completed_at": "2026-07-10T10:10:01.604695+00:00"
+    }
+  ],
+  "invite_codes": [
+    {
+      "id": "e12545f7-638a-4eb0-ba27-c73b3a26a0b4",
+      "code": "BUEZ8A",
+      "parent_id": "ce0dbc4f-472d-4673-a8d0-edd2afd3d24b",
+      "child_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "created_at": "2026-06-30T18:55:41.778133+00:00",
+      "expires_at": "2026-07-01T18:55:41.778133+00:00",
+      "used_at": "2026-06-30T18:55:52.61705+00:00"
+    },
+    {
+      "id": "9e58329a-731e-4ea6-856a-9aad7c718e12",
+      "code": "PS2T2V",
+      "parent_id": "ce0dbc4f-472d-4673-a8d0-edd2afd3d24b",
+      "child_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "created_at": "2026-06-30T19:21:17.234123+00:00",
+      "expires_at": "2026-07-01T19:21:17.234123+00:00",
+      "used_at": "2026-06-30T19:21:25.95164+00:00"
+    }
+  ],
+  "mission_progress": [
+    {
+      "user_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "quizzes": 0,
+      "jobs": 0,
+      "purchases": 3,
+      "updated_at": "2026-07-14T02:45:18.900097+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "quizzes": 3,
+      "jobs": 29,
+      "purchases": 34,
+      "updated_at": "2026-07-30T09:11:47.32105+00:00"
+    }
+  ],
+  "player_items": [
+    {
+      "user_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "item_id": "lunar_circuit",
+      "qty": 1
+    },
+    {
+      "user_id": "1fc30521-a566-4b23-a5ce-73683eb53fed",
+      "item_id": "wrench",
+      "qty": 2
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "item_id": "saw",
+      "qty": 1
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "item_id": "star_crystal",
+      "qty": 9
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "item_id": "wrench",
+      "qty": 3
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "item_id": "fuel_capsule",
+      "qty": 2
+    }
+  ],
+  "player_badges": [
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "badge_id": "level_5",
+      "earned_at": "2026-07-14T08:11:34.493936+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "badge_id": "missions_10",
+      "earned_at": "2026-07-14T08:11:34.493936+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "badge_id": "savings_100",
+      "earned_at": "2026-07-14T08:11:34.493936+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "badge_id": "savings_500",
+      "earned_at": "2026-07-14T08:11:34.493936+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "badge_id": "level_10",
+      "earned_at": "2026-07-14T08:36:49.566787+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "badge_id": "missions_30",
+      "earned_at": "2026-07-14T08:36:49.566787+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "badge_id": "first_world",
+      "earned_at": "2026-07-30T04:59:31.424363+00:00"
+    }
+  ],
+  "player_cosmetics": [
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "cosmetic_id": "ec8be492-9e49-42e4-a7a0-31199da09b05",
+      "obtained_at": "2026-07-17T01:36:41.03855+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "cosmetic_id": "b117215a-7314-4927-932e-59c3beabf1f2",
+      "obtained_at": "2026-07-17T01:56:29.980051+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "cosmetic_id": "74d28d1e-0c61-480d-8b0a-0d6cd2afb7f0",
+      "obtained_at": "2026-07-17T01:56:32.559363+00:00"
+    }
+  ],
+  "character_equipped": [
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "slot": "accesorios",
+      "cosmetic_id": "ec8be492-9e49-42e4-a7a0-31199da09b05",
+      "updated_at": "2026-07-24T17:17:58.553251+00:00"
+    },
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "slot": "helmet",
+      "cosmetic_id": "b117215a-7314-4927-932e-59c3beabf1f2",
+      "updated_at": "2026-07-25T21:44:43.296528+00:00"
+    }
+  ],
+  "world_fuel": [
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "world_slug": "space",
+      "fuel": 100,
+      "cycle": 1,
+      "updated_at": "2026-07-30T09:11:47.217643+00:00"
+    }
+  ],
+  "user_streaks": [
+    {
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "streak_type": "daily",
+      "current_streak": 1,
+      "longest_streak": 1,
+      "last_activity_at": "2026-07-30",
+      "updated_at": "2026-07-30T01:29:14.002782+00:00"
+    }
+  ],
+  "item_definitions": [
+    {
+      "item_id": "wood_plank",
+      "emoji": "🪵",
+      "name": "Tablón de Madera",
+      "description": "Madera resistente del bosque. Sirve para reparar cabañas.",
+      "world": "forest",
+      "shop_price": 50,
+      "is_rare": false,
+      "image_name": null,
+      "active": true,
+      "created_at": "2026-07-14T04:29:55.580119+00:00"
+    },
+    {
+      "item_id": "wrench",
+      "emoji": "🔧",
+      "name": "Llave Inglesa",
+      "description": "Herramienta indispensable en cualquier taller galáctico.",
+      "world": "space",
+      "shop_price": 90,
+      "is_rare": false,
+      "image_name": "llave_inglesa.png",
+      "active": true,
+      "created_at": "2026-07-14T03:48:45.42487+00:00"
+    },
+    {
+      "item_id": "star_crystal",
+      "emoji": "🔮",
+      "name": "Cristal Estelar",
+      "description": "Cristal rarísimo que solo cae de las estrellas. Misiones exclusivas.",
+      "world": "space",
+      "shop_price": 0,
+      "is_rare": true,
+      "image_name": null,
+      "active": true,
+      "created_at": "2026-07-14T04:29:55.580119+00:00"
+    },
+    {
+      "item_id": "gear",
+      "emoji": "⚙️",
+      "name": "Engrane",
+      "description": "Pieza mecánica esencial para reparar maquinaria espacial.",
+      "world": "space",
+      "shop_price": 100,
+      "is_rare": false,
+      "image_name": "engrane.png",
+      "active": true,
+      "created_at": "2026-07-30T00:26:35.855723+00:00"
+    },
+    {
+      "item_id": "saw",
+      "emoji": "🪚",
+      "name": "Sierra",
+      "description": "Herramienta de corte para trabajos de precisión en la nave.",
+      "world": "space",
+      "shop_price": 100,
+      "is_rare": false,
+      "image_name": "sierra.png",
+      "active": true,
+      "created_at": "2026-07-30T00:26:35.855723+00:00"
+    },
+    {
+      "item_id": "hammer",
+      "emoji": "🔨",
+      "name": "Martillo",
+      "description": "Herramienta básica para todo tipo de construcción.",
+      "world": "space",
+      "shop_price": 80,
+      "is_rare": false,
+      "image_name": "martillo.png",
+      "active": true,
+      "created_at": "2026-07-30T00:26:35.855723+00:00"
+    },
+    {
+      "item_id": "battery",
+      "emoji": "⚡",
+      "name": "Batería Cuántica",
+      "description": "Fuente de energía para dispositivos espaciales.",
+      "world": "space",
+      "shop_price": 110,
+      "is_rare": false,
+      "image_name": "bateria.png",
+      "active": true,
+      "created_at": "2026-07-31T00:37:15.993865+00:00"
+    },
+    {
+      "item_id": "magnet",
+      "emoji": "🧲",
+      "name": "Imán Magnético",
+      "description": "Atrae piezas metálicas flotando en la estación espacial.",
+      "world": "space",
+      "shop_price": 90,
+      "is_rare": false,
+      "image_name": "iman.png",
+      "active": true,
+      "created_at": "2026-07-31T00:37:15.993865+00:00"
+    },
+    {
+      "item_id": "master_key",
+      "emoji": "🔑",
+      "name": "Llave Maestra",
+      "description": "Abre cualquier compartimento sellado de la nave.",
+      "world": "space",
+      "shop_price": 130,
+      "is_rare": false,
+      "image_name": "llave_maestra.png",
+      "active": true,
+      "created_at": "2026-07-31T00:37:15.993865+00:00"
+    },
+    {
+      "item_id": "screws",
+      "emoji": "🔩",
+      "name": "Tornillos Espaciales",
+      "description": "Juego de tornillos resistentes para ajustar cualquier pieza.",
+      "world": "space",
+      "shop_price": 70,
+      "is_rare": false,
+      "image_name": "tornillos.png",
+      "active": true,
+      "created_at": "2026-07-31T00:37:15.993865+00:00"
+    },
+    {
+      "item_id": "supply_box",
+      "emoji": "📦",
+      "name": "Caja de Suministros",
+      "description": "Caja llena de materiales variados para la estación espacial.",
+      "world": "space",
+      "shop_price": 150,
+      "is_rare": false,
+      "image_name": "caja_de_suministros.png",
+      "active": true,
+      "created_at": "2026-07-31T00:37:15.993865+00:00"
+    }
+  ],
+  "child_goals": [
+    {
+      "id": "20114786-5c95-4384-b3c9-bf61d8acc362",
+      "user_id": "ac6fce43-b856-4823-b5bf-83c9d1da8374",
+      "goal_key": "consola",
+      "goal_name": "Consola",
+      "goal_emoji": "🎮",
+      "goal_cost": 900,
+      "chosen_at": "2026-07-29T23:02:53.851982+00:00",
+      "completed_at": "2026-07-29T23:02:54.17081+00:00"
+    }
+  ],
+  "questions": [
+    {
+      "id": "02cd9d83-91b0-4afd-b582-63f74d4c80a0",
+      "world_id": "5c25416e-c636-41eb-9e58-5203e679092b",
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "¿Qué es el ahorro?",
+      "options": [
+        {
+          "id": "a",
+          "icon": "🛒",
+          "text": "Gastar todo tu dinero en lo que quieras"
+        },
+        {
+          "id": "b",
+          "icon": "🐷",
+          "text": "Guardar parte de tu dinero para el futuro"
+        },
+        {
+          "id": "c",
+          "icon": "🤝",
+          "text": "Pedir dinero prestado a un amigo"
+        },
+        {
+          "id": "d",
+          "icon": "🎲",
+          "text": "Perder dinero jugando"
+        }
+      ],
+      "correct_answer": "b",
+      "coin_reward": 10,
+      "xp_reward": 5,
+      "explanation": "El ahorro es guardar una parte de tu dinero para poder usarlo después, ya sea para una emergencia o para una meta importante.",
+      "is_active": true,
+      "created_at": "2026-05-22T18:19:25.097174+00:00",
+      "catalog_id": null,
+      "module_slug": null,
+      "group_name": null,
+      "gancho": null,
+      "retro_wrong": null,
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 0
+    },
+    {
+      "id": "1fb0f32b-7e12-43da-b7fb-456304ebc0b8",
+      "world_id": "5c25416e-c636-41eb-9e58-5203e679092b",
+      "type": "true_false",
+      "difficulty": "easy",
+      "question_text": "¿Es buena idea gastar todo tu dinero apenas lo recibes?",
+      "options": [
+        {
+          "id": "true",
+          "text": "Verdadero"
+        },
+        {
+          "id": "false",
+          "text": "Falso"
+        }
+      ],
+      "correct_answer": "false",
+      "coin_reward": 8,
+      "xp_reward": 4,
+      "explanation": "No es buena idea. Es mejor guardar una parte para el futuro y otra para emergencias antes de gastar.",
+      "is_active": true,
+      "created_at": "2026-05-22T18:19:25.097174+00:00",
+      "catalog_id": null,
+      "module_slug": null,
+      "group_name": null,
+      "gancho": null,
+      "retro_wrong": null,
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 0
+    },
+    {
+      "id": "60f7e02d-1529-48cb-8aa9-7d02d74c4feb",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "¿Cuántas categorías tiene la bolsa de FinQuest?",
+      "options": [
+        {
+          "id": "a",
+          "icon": "3️⃣",
+          "text": "3"
+        },
+        {
+          "id": "b",
+          "icon": "4️⃣",
+          "text": "4"
+        },
+        {
+          "id": "c",
+          "icon": "5️⃣",
+          "text": "5"
+        },
+        {
+          "id": "d",
+          "icon": "🔟",
+          "text": "10"
+        }
+      ],
+      "correct_answer": "c",
+      "coin_reward": 10,
+      "xp_reward": 5,
+      "explanation": "La bolsa tiene 5 categorías: Ahorro, Inversión, Emergencia, Gastos y Metas. ¡Cada una tiene un propósito diferente!",
+      "is_active": true,
+      "created_at": "2026-05-22T18:19:25.097174+00:00",
+      "catalog_id": null,
+      "module_slug": null,
+      "group_name": null,
+      "gancho": null,
+      "retro_wrong": null,
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 0
+    },
+    {
+      "id": "8a8a7f59-206f-4151-9986-724b7626a7b5",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Blink encontró una nave increíble, pero necesita monedas para prepararla. ¿Qué hace primero?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ayudar a alguien para ganar monedas"
+        },
+        {
+          "id": "b",
+          "text": "Esperar a que aparezcan"
+        },
+        {
+          "id": "c",
+          "text": "Buscar un cofre mágico"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Exacto! Las monedas se ganan cuando hacemos algo útil.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-001",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Casi. En Blinkids las monedas aparecen cuando ayudamos y hacemos un buen trabajo.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 1
+    },
+    {
+      "id": "17a1bd23-06d9-4a7c-947e-2736a2e36d67",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "easy",
+      "question_text": "La estación necesita ayuda. Arrastra lo que podría ser un trabajo (Trabajo / No es trabajo).",
+      "options": [
+        {
+          "id": "a",
+          "text": "Regar plantas",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "Ver televisión",
+          "bucket": "b"
+        },
+        {
+          "id": "c",
+          "text": "Lavar un coche",
+          "bucket": "a"
+        },
+        {
+          "id": "d",
+          "text": "Dormir",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Trabajo",
+        "b": "No"
+      },
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Bien! Un trabajo ayuda a alguien y puede dar monedas.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-002",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Piensa: ¿esto ayuda a alguien o solo te entretiene?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 2
+    },
+    {
+      "id": "a9c3e1f2-2f3a-49b3-aa86-03998b346a9b",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "El panel solo funcionará si haces las cosas en orden.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ayudar"
+        },
+        {
+          "id": "b",
+          "text": "Terminar el trabajo"
+        },
+        {
+          "id": "c",
+          "text": "Recibir monedas"
+        },
+        {
+          "id": "d",
+          "text": "Darles una misión"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Así se gana y se organiza el dinero!",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-003",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 3
+    },
+    {
+      "id": "0658d029-ae34-4732-b60b-0f0f9473f8af",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona cada acción con su resultado.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Regó las plantas",
+          "right": "Ganó monedas"
+        },
+        {
+          "id": "b",
+          "text": "Lavó el coche",
+          "right": "Ganó monedas"
+        },
+        {
+          "id": "c",
+          "text": "Jugó videojuegos",
+          "right": "Diversión"
+        },
+        {
+          "id": "d",
+          "text": "Vio película",
+          "right": "Tiempo libre"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Bien! Algunas acciones ayudan y pueden ser un trabajo.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-004",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "¡Casi! ¿Cuáles ayudan a alguien?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 4
+    },
+    {
+      "id": "423141e0-780d-4366-8a02-35df8641a83e",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "Ya casi alcanza para el primer tanque de combustible. ¿Qué hará Blink para completar las monedas?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ayudar en un trabajo"
+        },
+        {
+          "id": "b",
+          "text": "Esperar a que aparezcan"
+        },
+        {
+          "id": "c",
+          "text": "Cancelar el viaje"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "🛢️ ¡Tanque comprado! Tu esfuerzo empezó a preparar la nave.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-005",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "⭐ HITO — ¡Compramos el tanque!",
+      "retro_wrong": "¡Casi! Con un trabajo más conseguimos el tanque.",
+      "fuel_reward": 0,
+      "is_hito": true,
+      "badge_name": "🌟 Primer encargo",
+      "sort_order": 5
+    },
+    {
+      "id": "d5afe8f5-3e72-4fbe-8cc6-533da0570e78",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "El radar dejó de funcionar y sin él no hay camino a Marte. ¿Cómo conseguimos monedas para repararlo?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Haciendo un trabajo"
+        },
+        {
+          "id": "b",
+          "text": "Esperando a que alguien lo arregle"
+        },
+        {
+          "id": "c",
+          "text": "Dejando la nave así"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Exacto! Para mejorar algo, primero ganamos las monedas.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-006",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "¡Casi! Las mejoras se pagan con lo que ganamos trabajando.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 6
+    },
+    {
+      "id": "9b436f0e-8974-4cb4-9cf9-963e60a08ddb",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "easy",
+      "question_text": "Selecciona cuáles actividades ayudan a conseguir monedas.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Regar plantas",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "Dormir",
+          "bucket": "b"
+        },
+        {
+          "id": "c",
+          "text": "Ordenar libros",
+          "bucket": "a"
+        },
+        {
+          "id": "d",
+          "text": "Ver televisión",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Gana",
+        "b": "No"
+      },
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Bien! Solo el trabajo da monedas.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-007",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Piensa: ¿esto aporta algo a alguien?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 7
+    },
+    {
+      "id": "cba4bb5b-e731-4cbb-b6e1-7c6e996e68f3",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "Hay que llenar el tanque. Ordena correctamente.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Hacer el trabajo"
+        },
+        {
+          "id": "b",
+          "text": "Recibir monedas"
+        },
+        {
+          "id": "c",
+          "text": "Llevarlas a Mi Bolsa"
+        },
+        {
+          "id": "d",
+          "text": "Continuar la misión"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Perfecto! Primero el esfuerzo, luego la recompensa.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-008",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 8
+    },
+    {
+      "id": "d68a28b1-c5df-4c78-932c-67abe98795bd",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona cada acción con lo que es.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ayudar a limpiar",
+          "right": "Trabajo"
+        },
+        {
+          "id": "b",
+          "text": "Ordenar herramientas",
+          "right": "Trabajo"
+        },
+        {
+          "id": "c",
+          "text": "Jugar fútbol",
+          "right": "Diversión"
+        },
+        {
+          "id": "d",
+          "text": "Dormir",
+          "right": "Descanso"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Bien! Ayudar puede convertirse en un trabajo.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-009",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "¡Casi! ¿Cuáles ayudan de verdad?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 9
+    },
+    {
+      "id": "3ffa4f21-4f5f-4f74-957a-b09a13e86063",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "Falta comprar la batería principal. ¿Qué debería hacer Blink?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ayudar en un nuevo trabajo"
+        },
+        {
+          "id": "b",
+          "text": "Esperar a que aparezcan monedas"
+        },
+        {
+          "id": "c",
+          "text": "Gastar las pocas que tiene"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "✨ ¡La nave se ilumina por primera vez! Ya tiene energía.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-010",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "⭐ HITO — ¡La nave enciende!",
+      "retro_wrong": "¡Casi! Un trabajo más y la nave enciende.",
+      "fuel_reward": 0,
+      "is_hito": true,
+      "badge_name": "🚀 Primer despegue",
+      "sort_order": 10
+    },
+    {
+      "id": "7b78378d-d118-41bf-9783-88581110ae2d",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "easy",
+      "question_text": "Clasifica (Sirve para trabajar / No sirve).",
+      "options": [
+        {
+          "id": "a",
+          "text": "Llave",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "Martillo",
+          "bucket": "a"
+        },
+        {
+          "id": "c",
+          "text": "Dulce",
+          "bucket": "b"
+        },
+        {
+          "id": "d",
+          "text": "Juguete",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Sirve",
+        "b": "No"
+      },
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Bien! Con las herramientas correctas se avanza.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-011",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Piensa: ¿esto ayuda a reparar la nave?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 11
+    },
+    {
+      "id": "93101812-e57b-4cbe-939d-758f746d8d75",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "El motor hace un ruido raro. ¿Qué conviene hacer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Revisarlo con calma y repararlo"
+        },
+        {
+          "id": "b",
+          "text": "Ignorarlo"
+        },
+        {
+          "id": "c",
+          "text": "Apagar todo y esperar"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Bien! Un buen trabajo se hace con cuidado.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-012",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "¡Casi! Revisar bien evita problemas después.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 12
+    },
+    {
+      "id": "8ba64e98-51d5-4698-b615-a0dec49f948c",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "Ordena cómo se preparan las provisiones.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ganar monedas"
+        },
+        {
+          "id": "b",
+          "text": "Comprar provisiones"
+        },
+        {
+          "id": "c",
+          "text": "Cargarlas en la nave"
+        },
+        {
+          "id": "d",
+          "text": "Revisar que no falte"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Listo! Todo en orden para el viaje.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-013",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 13
+    },
+    {
+      "id": "c5d6533c-0b5b-4a79-ab15-e37d39f8bb47",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona cada ayuda con lo que logra.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Reparar",
+          "right": "Nave lista"
+        },
+        {
+          "id": "b",
+          "text": "Cargar",
+          "right": "Provisiones a bordo"
+        },
+        {
+          "id": "c",
+          "text": "Limpiar",
+          "right": "Todo en orden"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Bien! Cada esfuerzo suma al viaje.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-014",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "¡Casi! ¿Qué logra cada tarea?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 14
+    },
+    {
+      "id": "8700455d-2f6d-4fcd-a5df-331dfe4582ed",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "Con las monedas de estos trabajos podemos instalar el radar. ¿Qué hace Blink?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Terminar el trabajo y colocarlo"
+        },
+        {
+          "id": "b",
+          "text": "Dejarlo para después"
+        },
+        {
+          "id": "c",
+          "text": "Usar las monedas en otra cosa"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "📡 ¡Radar instalado! Los motores quedan listos.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-015",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "⭐ HITO — ¡Radar instalado!",
+      "retro_wrong": "¡Casi! Un esfuerzo más y el radar queda puesto.",
+      "fuel_reward": 0,
+      "is_hito": true,
+      "badge_name": "🛠️ Ingeniero estelar",
+      "sort_order": 15
+    },
+    {
+      "id": "a20416d7-f77b-49d1-99d7-09642bf952c7",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "easy",
+      "question_text": "Clasifica (Ya está listo / Aún falta).",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tanque cargado",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "Batería puesta",
+          "bucket": "a"
+        },
+        {
+          "id": "c",
+          "text": "Provisiones a medias",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Listo",
+        "b": "Falta"
+      },
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Casi lista! Ya casi despegamos.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-016",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Piensa: ¿qué ya terminamos y qué no?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 16
+    },
+    {
+      "id": "c0e8e70c-1641-4c61-8386-5879d64fe923",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "easy",
+      "question_text": "Ordena los últimos pasos.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Revisar la nave"
+        },
+        {
+          "id": "b",
+          "text": "Cargar el último tanque"
+        },
+        {
+          "id": "c",
+          "text": "Encender motores"
+        },
+        {
+          "id": "d",
+          "text": "Prepararse para despegar"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Todo en orden para despegar!",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-017",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 17
+    },
+    {
+      "id": "5cbc530f-0072-49c1-b57a-e428c42f7f97",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona cada parte con su estado.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Tanque",
+          "right": "Cargado"
+        },
+        {
+          "id": "b",
+          "text": "Radar",
+          "right": "Instalado"
+        },
+        {
+          "id": "c",
+          "text": "Motor",
+          "right": "Revisado"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Bien! La nave está casi completa.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-018",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "¡Casi! ¿Cómo quedó cada parte?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 18
+    },
+    {
+      "id": "cc11f705-1a78-428e-957c-878f265e4c8e",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "Falta poco para terminar. ¿Qué hace Blink con las últimas monedas por ganar?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Hacer el último trabajo"
+        },
+        {
+          "id": "b",
+          "text": "Rendirse tan cerca"
+        },
+        {
+          "id": "c",
+          "text": "Gastarlas antes de terminar"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Bien! El último esfuerzo completa la nave.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-019",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "Blink tiene un nuevo encargo para ti.",
+      "retro_wrong": "¡Casi! Un trabajo más y la nave está lista.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 19
+    },
+    {
+      "id": "7a03410b-9c3f-4407-a729-97c86903caa7",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "hard",
+      "question_text": "¡Último encargo! Con este trabajo la nave queda lista para el viaje. ¿Qué hace Blink?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Terminar el último trabajo"
+        },
+        {
+          "id": "b",
+          "text": "Dejarla incompleta"
+        },
+        {
+          "id": "c",
+          "text": "Gastar todo y no despegar"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 100,
+      "xp_reward": 40,
+      "explanation": "🚀 ¡La nave está completa! Se desbloquea la siguiente misión: “Falta combustible”.",
+      "is_active": true,
+      "created_at": "2026-07-30T02:22:17.73778+00:00",
+      "catalog_id": "TB-020",
+      "module_slug": "trabajos",
+      "group_name": "El dinero se gana",
+      "gancho": "⭐ HITO — ¡La nave está lista!",
+      "retro_wrong": "¡Casi! Un esfuerzo más y la nave queda lista.",
+      "fuel_reward": 0,
+      "is_hito": true,
+      "badge_name": "🚀 Nave lista",
+      "sort_order": 20
+    },
+    {
+      "id": "d04c4274-3652-45e9-9865-41ffe9b3dd3d",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Blink encontró una bicicleta espacial de $500. Hoy solo tiene $100. ¿Qué debería hacer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar las monedas poco a poco"
+        },
+        {
+          "id": "b",
+          "text": "Gastar las monedas en otra cosa"
+        },
+        {
+          "id": "c",
+          "text": "Esperar a que aparezcan más"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 10,
+      "explanation": "¡Exacto! Las metas grandes se alcanzan paso a paso.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-001",
+      "module_slug": "banco_estelar",
+      "group_name": "G1 · Las metas requieren tiempo",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "¡Casi! Guardar poco a poco te acerca a la meta.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 1
+    },
+    {
+      "id": "f8e00e35-0143-4b5b-8097-61958a0e2a2b",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "easy",
+      "question_text": "Ayuda a decidir qué cosas necesitan ahorro (Ahorrar / No necesita ahorro).",
+      "options": [
+        {
+          "id": "a",
+          "text": "🚲 Bicicleta",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "🍦 Helado",
+          "bucket": "b"
+        },
+        {
+          "id": "c",
+          "text": "🎮 Consola",
+          "bucket": "a"
+        },
+        {
+          "id": "d",
+          "text": "🍿 Palomitas",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Ahorrar",
+        "b": "No"
+      },
+      "coin_reward": 0,
+      "xp_reward": 10,
+      "explanation": "Algunas metas necesitan tiempo. Por eso guardamos monedas.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-002",
+      "module_slug": "banco_estelar",
+      "group_name": "G1 · Las metas requieren tiempo",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "Piénsalo: ¿esto se compra hoy o se ahorra?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 2
+    },
+    {
+      "id": "3a55b031-3a20-4136-9032-4db926f583f9",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona cada cosa con lo que le toca.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Bicicleta",
+          "right": "Guardar monedas"
+        },
+        {
+          "id": "b",
+          "text": "Consola",
+          "right": "Guardar monedas"
+        },
+        {
+          "id": "c",
+          "text": "Helado",
+          "right": "Disfrutar"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "¡Bien! Las metas grandes se guardan; los gustos pequeños se disfrutan.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-003",
+      "module_slug": "banco_estelar",
+      "group_name": "G1 · Las metas requieren tiempo",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "¡Casi! ¿Qué le toca a cada una?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 3
+    },
+    {
+      "id": "b3f257fd-993c-4827-8a1d-b1f7c40597e2",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "Ordena los pasos para alcanzar una meta.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elegir la meta"
+        },
+        {
+          "id": "b",
+          "text": "Guardar monedas"
+        },
+        {
+          "id": "c",
+          "text": "Esperar"
+        },
+        {
+          "id": "d",
+          "text": "Alcanzar la meta"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "¡Así se cumple una meta, paso a paso!",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-004",
+      "module_slug": "banco_estelar",
+      "group_name": "G1 · Las metas requieren tiempo",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 4
+    },
+    {
+      "id": "a374a1c3-6429-43dc-b62f-ff7a5ec2c5b2",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "Blink llenó su primera barra de ahorro. La bóveda se abre y aparece el casco espacial. Todavía no alcanza, pero dio el primer paso. ¿Vale la pena guardar aunque aún no alcance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sí"
+        },
+        {
+          "id": "b",
+          "text": "No"
+        },
+        {
+          "id": "c",
+          "text": "Solo si es rápido"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "¡Cada moneda guardada nos acerca un poco más a nuestra meta!",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-005",
+      "module_slug": "banco_estelar",
+      "group_name": "G1 · Las metas requieren tiempo",
+      "gancho": "⭐ HITO — 🎯 Tu primera barra de ahorro",
+      "retro_wrong": "¡Casi! Aunque aún no alcance, cada moneda cuenta.",
+      "fuel_reward": 3,
+      "is_hito": true,
+      "badge_name": "🎯 Primera meta",
+      "sort_order": 5
+    },
+    {
+      "id": "971e3186-8525-4010-bc51-cb23df317b0e",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "¿Qué te acerca más a una meta grande?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar un poco seguido"
+        },
+        {
+          "id": "b",
+          "text": "Gastar todo hoy"
+        },
+        {
+          "id": "c",
+          "text": "No hacer nada"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Sí! Guardar seguido cumple metas.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-013",
+      "module_slug": "misiones",
+      "group_name": "🌞 Diaria",
+      "gancho": "Misión diaria de hoy",
+      "retro_wrong": "¡Casi! Guardar poco a poco es la clave.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 13
+    },
+    {
+      "id": "02ea694b-ceb8-4bb0-9ec7-16f9b93c7e9f",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Hay dos cascos: uno de $100 y otro que protege mucho mejor de $250. ¿Qué harías?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Esperar un poco para comprar el mejor"
+        },
+        {
+          "id": "b",
+          "text": "Gastar todo hoy"
+        },
+        {
+          "id": "c",
+          "text": "No comprar ninguno"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 10,
+      "explanation": "A veces esperar un poco nos ayuda a conseguir algo que de verdad queremos.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-006",
+      "module_slug": "banco_estelar",
+      "group_name": "G2 · Esperar vale la pena",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "¡Casi! Esperar un poco puede darte algo mejor.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 6
+    },
+    {
+      "id": "9c44d99a-48bb-422d-968c-167c9369a370",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "easy",
+      "question_text": "Ayuda a decidir cuáles metas necesitan más tiempo (Necesitan tiempo / Se disfrutan pronto).",
+      "options": [
+        {
+          "id": "a",
+          "text": "🚲 Bicicleta",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "🎈 Globo",
+          "bucket": "b"
+        },
+        {
+          "id": "c",
+          "text": "🏕️ Viaje",
+          "bucket": "a"
+        },
+        {
+          "id": "d",
+          "text": "🎈 Globo",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Tiempo",
+        "b": "Pronto"
+      },
+      "coin_reward": 0,
+      "xp_reward": 10,
+      "explanation": "Algunas metas llegan rápido. Otras necesitan paciencia.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-007",
+      "module_slug": "banco_estelar",
+      "group_name": "G2 · Esperar vale la pena",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "Piénsalo: ¿esto es para hoy o para más adelante?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 7
+    },
+    {
+      "id": "402de97b-400b-45d8-a9c4-eb4edefc6732",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona cada acción con su resultado.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar monedas",
+          "right": "Meta grande"
+        },
+        {
+          "id": "b",
+          "text": "Esperar",
+          "right": "Más oportunidades"
+        },
+        {
+          "id": "c",
+          "text": "Comprar hoy",
+          "right": "Disfrutar ahora"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "¡Bien! Guardar hoy ayuda a tu yo del futuro.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-008",
+      "module_slug": "banco_estelar",
+      "group_name": "G2 · Esperar vale la pena",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "¡Casi! ¿Qué trae cada decisión?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 8
+    },
+    {
+      "id": "d20ba12f-5128-4d90-92e2-a8ceeb29412e",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "Blink quiere una meta importante. Ordena los pasos.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar unas monedas"
+        },
+        {
+          "id": "b",
+          "text": "Volver a guardar"
+        },
+        {
+          "id": "c",
+          "text": "Seguir avanzando"
+        },
+        {
+          "id": "d",
+          "text": "Alcanzar la meta"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "Las metas grandes se construyen paso a paso.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-009",
+      "module_slug": "banco_estelar",
+      "group_name": "G2 · Esperar vale la pena",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 9
+    },
+    {
+      "id": "a1f75e93-585a-41be-bb78-59195ecef13a",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "Tras varios días guardando, la bóveda revela un mapa estelar con la siguiente ruta a Marte. Blink: “Gracias por no rendirte.” ¿Qué hizo posible abrirla?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar monedas con paciencia"
+        },
+        {
+          "id": "b",
+          "text": "Tener suerte"
+        },
+        {
+          "id": "c",
+          "text": "Esperar sin hacer nada"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "Cada día que guardas, estás un paso más cerca de tu meta.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-010",
+      "module_slug": "banco_estelar",
+      "group_name": "G2 · Esperar vale la pena",
+      "gancho": "⭐ HITO — 🗺️ Se abre el mapa estelar",
+      "retro_wrong": "¡Casi! Fue la paciencia de guardar lo que la abrió.",
+      "fuel_reward": 3,
+      "is_hito": true,
+      "badge_name": "🗺️ Ruta estelar",
+      "sort_order": 10
+    },
+    {
+      "id": "110143ec-180a-42ec-94d8-b284458224e4",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Blink ya ahorró $450 de $500 para su bicicleta. Solo falta un poco. ¿Qué debería hacer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar un poco más y completar la meta"
+        },
+        {
+          "id": "b",
+          "text": "Gastar lo que ya tiene"
+        },
+        {
+          "id": "c",
+          "text": "Empezar otra meta"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 10,
+      "explanation": "¡Muy bien! Cuando ya estás cerca, vale la pena el último esfuerzo.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-011",
+      "module_slug": "banco_estelar",
+      "group_name": "G3 · Las metas motivan",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "¡Casi! Estás tan cerca que vale terminar.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 11
+    },
+    {
+      "id": "7f36fdd1-3265-45b2-bd9a-0cd5adcd98b5",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "easy",
+      "question_text": "Ayuda a organizar estas metas (Metas grandes / Metas pequeñas).",
+      "options": [
+        {
+          "id": "a",
+          "text": "🚲 Bicicleta",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "🍭 Paleta",
+          "bucket": "b"
+        },
+        {
+          "id": "c",
+          "text": "🎮 Consola",
+          "bucket": "a"
+        },
+        {
+          "id": "d",
+          "text": "🎈 Globo",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Grandes",
+        "b": "Pequeñas"
+      },
+      "coin_reward": 0,
+      "xp_reward": 10,
+      "explanation": "Todas las metas importan. Algunas solo necesitan más tiempo.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-012",
+      "module_slug": "banco_estelar",
+      "group_name": "G3 · Las metas motivan",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "Piénsalo: ¿esta meta es grande o pequeña?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 12
+    },
+    {
+      "id": "134da807-6556-4afb-9ad9-00f4364d0e03",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona cada acción con lo que logra.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar monedas",
+          "right": "Acercarme a mi meta"
+        },
+        {
+          "id": "b",
+          "text": "Esperar",
+          "right": "Seguir avanzando"
+        },
+        {
+          "id": "c",
+          "text": "Meta cumplida",
+          "right": "Celebrar"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "¡Bien! Cada moneda te acerca a tu sueño.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-013",
+      "module_slug": "banco_estelar",
+      "group_name": "G3 · Las metas motivan",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "¡Casi! ¿Qué logra cada acción?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 13
+    },
+    {
+      "id": "3c45116e-1603-4c26-a610-263188c56d58",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "Blink quiere completar su meta. Ordena.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar"
+        },
+        {
+          "id": "b",
+          "text": "Ver crecer el progreso"
+        },
+        {
+          "id": "c",
+          "text": "Seguir guardando"
+        },
+        {
+          "id": "d",
+          "text": "Cumplir la meta"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "¡Exacto! Las metas se logran paso a paso.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-014",
+      "module_slug": "banco_estelar",
+      "group_name": "G3 · Las metas motivan",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 14
+    },
+    {
+      "id": "832b0fe0-1e10-4e4a-afd6-aad3d1006c91",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "La barra llega al final. La bóveda se abre (CLONK) y dentro está el casco que Blink quería desde el principio. “¡Lo logramos! No fue magia… fue paciencia.” ¿Qué lo hizo posible?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar poco a poco"
+        },
+        {
+          "id": "b",
+          "text": "Tener suerte"
+        },
+        {
+          "id": "c",
+          "text": "Esperar sin hacer nada"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "Cada meta cumplida nos prepara para una aventura todavía más grande.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-015",
+      "module_slug": "banco_estelar",
+      "group_name": "G3 · Las metas motivan",
+      "gancho": "⭐ HITO — ✨ Tu meta ya está muy cerca",
+      "retro_wrong": "¡Casi! Fue guardar poco a poco lo que lo logró.",
+      "fuel_reward": 3,
+      "is_hito": true,
+      "badge_name": "🎯 Meta cumplida",
+      "sort_order": 15
+    },
+    {
+      "id": "32922b6d-0923-498b-bfc8-2dfceaf3d1c7",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Blink consiguió su casco y puede seguir preparándose para Marte. ¿Qué debería hacer ahora?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Elegir una nueva meta"
+        },
+        {
+          "id": "b",
+          "text": "Dejar de ahorrar para siempre"
+        },
+        {
+          "id": "c",
+          "text": "Gastar todas las monedas que gane"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 10,
+      "explanation": "¡Exacto! Cada meta cumplida abre la puerta a una nueva aventura.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-016",
+      "module_slug": "banco_estelar",
+      "group_name": "G4 · Celebrar y elegir nueva meta",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "¡Casi! Cumplir una meta es el inicio de otra.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 16
+    },
+    {
+      "id": "75017cc2-19ae-4661-a13f-f70b565509a2",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "easy",
+      "question_text": "Ayuda a Blink a elegir sus siguientes metas (Nueva meta / No es meta).",
+      "options": [
+        {
+          "id": "a",
+          "text": "🛴 Patín",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "🍿 Palomitas",
+          "bucket": "b"
+        },
+        {
+          "id": "c",
+          "text": "🐶 Adoptar mascota",
+          "bucket": "a"
+        },
+        {
+          "id": "d",
+          "text": "🥤 Refresco",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Metas",
+        "b": "No"
+      },
+      "coin_reward": 0,
+      "xp_reward": 10,
+      "explanation": "Las metas importantes suelen necesitar tiempo y planificación.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-017",
+      "module_slug": "banco_estelar",
+      "group_name": "G4 · Celebrar y elegir nueva meta",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "Piénsalo: ¿esto se ahorra o se disfruta hoy?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 17
+    },
+    {
+      "id": "a0d8a199-794c-4688-bbd8-4d87da3bc3e3",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar",
+          "right": "Cumplir una meta"
+        },
+        {
+          "id": "b",
+          "text": "Meta cumplida",
+          "right": "Celebrar"
+        },
+        {
+          "id": "c",
+          "text": "Nueva meta",
+          "right": "Nuevo plan"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "¡Bien! Cada meta tiene su recompensa.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-018",
+      "module_slug": "banco_estelar",
+      "group_name": "G4 · Celebrar y elegir nueva meta",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "¡Casi! ¿Qué sigue a cada una?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 18
+    },
+    {
+      "id": "40b1b273-574e-488d-a555-4b1454514dba",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "Ordena correctamente.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Cumplir una meta"
+        },
+        {
+          "id": "b",
+          "text": "Celebrar"
+        },
+        {
+          "id": "c",
+          "text": "Elegir una nueva"
+        },
+        {
+          "id": "d",
+          "text": "Empezar a ahorrar otra vez"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 0,
+      "xp_reward": 20,
+      "explanation": "¡Muy bien! Cada meta alcanzada es el inicio de otra.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-019",
+      "module_slug": "banco_estelar",
+      "group_name": "G4 · Celebrar y elegir nueva meta",
+      "gancho": "Hoy podemos acercarnos un poco más a tu meta.",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 19
+    },
+    {
+      "id": "fde2a5e1-8855-4873-9042-533896dcc5ed",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "hard",
+      "question_text": "Blink mira la nave: tanque, batería, radar y casco listos. “Gracias por ayudarme a cumplir mi primera gran meta.” ¿Qué aprendió Blink en esta misión?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Que las metas se cumplen guardando poco a poco"
+        },
+        {
+          "id": "b",
+          "text": "Que todo llega de inmediato"
+        },
+        {
+          "id": "c",
+          "text": "Que ahorrar no sirve"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 40,
+      "explanation": "¡Dominaste el Banco Estelar! Ya sabes cómo alcanzar una meta.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:44:04.19079+00:00",
+      "catalog_id": "BE-020",
+      "module_slug": "banco_estelar",
+      "group_name": "G4 · Celebrar y elegir nueva meta",
+      "gancho": "⭐ HITO — 🎉 Dominaste el Banco Estelar",
+      "retro_wrong": "¡Casi! La clave fue guardar poco a poco.",
+      "fuel_reward": 5,
+      "is_hito": true,
+      "badge_name": "🏆 Banco dominado",
+      "sort_order": 20
+    },
+    {
+      "id": "f9d11a01-44e6-402a-973e-9a0dcde108c9",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Blink presiona encender y no pasa nada, las luces siguen apagadas. “Nos falta algo para despegar…” ¿Qué hacemos primero?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Conseguir monedas trabajando"
+        },
+        {
+          "id": "b",
+          "text": "Comprar accesorios"
+        },
+        {
+          "id": "c",
+          "text": "Llegar directo a Marte"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 25,
+      "explanation": "¡Exacto! Antes de viajar, necesitamos conseguir recursos.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-001",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.1",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "¡Casi! Primero hay que ganar monedas trabajando.",
+      "fuel_reward": 5,
+      "is_hito": true,
+      "badge_name": "🚀 Inicio del viaje",
+      "sort_order": 1
+    },
+    {
+      "id": "6c9580f1-ab88-4d13-bbf7-d229391f2ce5",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Blink ya tiene monedas, pero no sabe qué hacer con ellas. Sin repartirlas no avanza. ¿Qué hace?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Darle una misión a cada moneda en Mi Bolsa"
+        },
+        {
+          "id": "b",
+          "text": "Guardarlas todas sin decidir"
+        },
+        {
+          "id": "c",
+          "text": "Gastarlas de una vez"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 25,
+      "explanation": "¡Sí! Cada moneda necesita una misión antes de seguir.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-002",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.2",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "¡Casi! Primero cada moneda necesita su misión.",
+      "fuel_reward": 5,
+      "is_hito": true,
+      "badge_name": "🎯 Repartidor",
+      "sort_order": 2
+    },
+    {
+      "id": "bd055d77-924c-41e8-a596-81c874b9df2f",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "El casco de Blink se rompió y necesita uno nuevo, pero cuesta más de lo que tiene. ¿Cómo lo consigue?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar en el Banco hasta alcanzar la meta"
+        },
+        {
+          "id": "b",
+          "text": "Rendirse"
+        },
+        {
+          "id": "c",
+          "text": "Tomar uno prestado"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 50,
+      "explanation": "¡Bien! Guardar poco a poco nos acerca a la meta.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-003",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.3",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "¡Casi! Ahorrar en el Banco es el camino.",
+      "fuel_reward": 5,
+      "is_hito": true,
+      "badge_name": "🛡️ Ahorrador",
+      "sort_order": 3
+    },
+    {
+      "id": "451c1769-517a-469a-9749-788f8238730a",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "Blink encuentra un cristal que puede intercambiar por equipo en la tienda espacial. ¿Qué conviene?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Ir a la Tienda y elegir con cabeza"
+        },
+        {
+          "id": "b",
+          "text": "Comprar lo primero que vea"
+        },
+        {
+          "id": "c",
+          "text": "Cambiarlo sin pensar"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 50,
+      "explanation": "¡Bien! En la Tienda se decide con calma.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-004",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.4",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "¡Casi! Mejor elegir con cabeza en la Tienda.",
+      "fuel_reward": 5,
+      "is_hito": true,
+      "badge_name": "🛍️ Comprador",
+      "sort_order": 4
+    },
+    {
+      "id": "4ca957e2-ff63-4b20-97a4-3bbfc615ad0c",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "Otra nave quedó varada en la Luna sin recursos. ¿Compartes parte de tus monedas para ayudarla?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Sí, comparto una parte"
+        },
+        {
+          "id": "b",
+          "text": "No, sigo de largo"
+        },
+        {
+          "id": "c",
+          "text": "Solo si me pagan"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 50,
+      "explanation": "¡Gracias! Compartir hace más fuerte a toda la misión.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-005",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.5",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "Piénsalo: ayudar también nos hace grandes.",
+      "fuel_reward": 10,
+      "is_hito": true,
+      "badge_name": "❤️ Generoso",
+      "sort_order": 5
+    },
+    {
+      "id": "624889b9-93f6-4e3e-ac67-1017f808b0b6",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "Para cruzar el cinturón de meteoritos hay que usar bien los recursos. Ordena el plan.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Revisar cuánto tengo"
+        },
+        {
+          "id": "b",
+          "text": "Repartir por prioridad"
+        },
+        {
+          "id": "c",
+          "text": "Avanzar con cuidado"
+        },
+        {
+          "id": "d",
+          "text": "Cruzar al otro lado"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 0,
+      "xp_reward": 50,
+      "explanation": "¡Lo lograste! Un buen plan cruza cualquier tormenta.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-006",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.6",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 10,
+      "is_hito": true,
+      "badge_name": "☄️ Piloto experto",
+      "sort_order": 6
+    },
+    {
+      "id": "5a207f6b-4ad8-4d81-b500-f1003cd8c769",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "medium",
+      "question_text": "El radar falla y repararlo cuesta. Blink puede guardar un poco cada día. ¿Qué decisión lo acerca?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardar un poco de forma constante"
+        },
+        {
+          "id": "b",
+          "text": "Esperar a tener todo de golpe"
+        },
+        {
+          "id": "c",
+          "text": "Olvidar el radar"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 50,
+      "explanation": "¡Bien! Guardar constante repara el radar.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-007",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.7",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "¡Casi! Un poco cada día suma.",
+      "fuel_reward": 10,
+      "is_hito": true,
+      "badge_name": "📡 Constante",
+      "sort_order": 7
+    },
+    {
+      "id": "d192a9af-9391-4f07-a51d-3f7a25e14ce2",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "hard",
+      "question_text": "Hay una gran oferta, pero Blink ahorra para algo importante. ¿Qué hace un comprador inteligente?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pensar si de verdad lo necesita"
+        },
+        {
+          "id": "b",
+          "text": "Comprar solo porque está barato"
+        },
+        {
+          "id": "c",
+          "text": "Gastar todo el ahorro"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 100,
+      "explanation": "¡Bien! Una oferta sigue siendo una decisión.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-008",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.8",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "¡Casi! Aun en oferta, primero se piensa.",
+      "fuel_reward": 10,
+      "is_hito": true,
+      "badge_name": "🧠 Comprador listo",
+      "sort_order": 8
+    },
+    {
+      "id": "0bc482e1-40ab-4fda-aa2a-8e9ed2be1403",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "hard",
+      "question_text": "El motor necesita mejoras para el último tramo. Blink se fija una meta y trabaja por ella. ¿Adónde va a ver su avance?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Al Hangar, a ver el progreso"
+        },
+        {
+          "id": "b",
+          "text": "A ningún lado"
+        },
+        {
+          "id": "c",
+          "text": "A empezar de cero"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 100,
+      "explanation": "¡Bien! En el Hangar se ve todo el avance.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-009",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.9",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "¡Casi! El Hangar muestra tu progreso.",
+      "fuel_reward": 10,
+      "is_hito": true,
+      "badge_name": "🔧 Ingeniero",
+      "sort_order": 9
+    },
+    {
+      "id": "0521adfc-18a0-465a-b3f5-20f4769479cf",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "hard",
+      "question_text": "Todo está listo. Blink repasa: trabajó, repartió, ahorró, compró bien y ayudó. ¿Qué hizo posible el viaje?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Todas las buenas decisiones juntas"
+        },
+        {
+          "id": "b",
+          "text": "Solo la suerte"
+        },
+        {
+          "id": "c",
+          "text": "Solo comprar cosas"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 0,
+      "xp_reward": 100,
+      "explanation": "🚀 ¡Despegamos a Marte! Cada buena decisión te trajo hasta aquí.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-010",
+      "module_slug": "misiones",
+      "group_name": "📖 Historia · Cap.10",
+      "gancho": "¡Tenemos una nueva misión!",
+      "retro_wrong": "¡Casi! Fue la suma de todas tus decisiones.",
+      "fuel_reward": 20,
+      "is_hito": true,
+      "badge_name": "🪐 Rumbo a Marte",
+      "sort_order": 10
+    },
+    {
+      "id": "e4335b07-9500-4d1f-a782-7dd9b353f6df",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "¿De dónde salen las monedas en Blinkids?",
+      "options": [
+        {
+          "id": "a",
+          "text": "De hacer trabajos y ayudar"
+        },
+        {
+          "id": "b",
+          "text": "Aparecen solas"
+        },
+        {
+          "id": "c",
+          "text": "De esperar"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Así es! Se ganan trabajando.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-011",
+      "module_slug": "misiones",
+      "group_name": "🌞 Diaria",
+      "gancho": "Misión diaria de hoy",
+      "retro_wrong": "¡Casi! Las monedas se ganan ayudando.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 11
+    },
+    {
+      "id": "f3bfc08f-bcd3-4ad1-a898-e16c84ba808c",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Ganaste monedas nuevas. ¿Qué haces primero?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Repartirlas en Mi Bolsa"
+        },
+        {
+          "id": "b",
+          "text": "Ignorarlas"
+        },
+        {
+          "id": "c",
+          "text": "Gastarlas sin pensar"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Bien! Toda moneda pasa por Mi Bolsa.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-012",
+      "module_slug": "misiones",
+      "group_name": "🌞 Diaria",
+      "gancho": "Misión diaria de hoy",
+      "retro_wrong": "¡Casi! Primero se reparten en Mi Bolsa.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 12
+    },
+    {
+      "id": "e60b970c-fac1-4dba-9689-a61bd2351911",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Antes de comprar algo, ¿qué haces?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Pienso si de verdad lo quiero"
+        },
+        {
+          "id": "b",
+          "text": "Compro sin ver el precio"
+        },
+        {
+          "id": "c",
+          "text": "Compro porque otros lo tienen"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Bien! Pensar antes de comprar.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-014",
+      "module_slug": "misiones",
+      "group_name": "🌞 Diaria",
+      "gancho": "Misión diaria de hoy",
+      "retro_wrong": "¡Casi! Siempre piensa antes de comprar.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 14
+    },
+    {
+      "id": "ac262b96-85ee-429f-949b-1b25036644d6",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "easy",
+      "question_text": "Un amigo explorador necesita ayuda. ¿Qué puedes hacer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Compartir una parte de lo que tengo"
+        },
+        {
+          "id": "b",
+          "text": "Nada"
+        },
+        {
+          "id": "c",
+          "text": "Quitarle lo suyo"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 25,
+      "xp_reward": 10,
+      "explanation": "¡Qué generoso! Compartir ayuda a todos.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-015",
+      "module_slug": "misiones",
+      "group_name": "🌞 Diaria",
+      "gancho": "Misión diaria de hoy",
+      "retro_wrong": "¡Casi! Puedes compartir una parte.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 15
+    },
+    {
+      "id": "b09a701c-f2cc-4b3d-a4be-afd039abb454",
+      "world_id": null,
+      "type": "classify",
+      "difficulty": "medium",
+      "question_text": "Clasifica rápido (Necesito / Quiero).",
+      "options": [
+        {
+          "id": "a",
+          "text": "🪖 Casco para la misión",
+          "bucket": "a"
+        },
+        {
+          "id": "b",
+          "text": "🍦 Helado",
+          "bucket": "b"
+        },
+        {
+          "id": "c",
+          "text": "⛽ Combustible",
+          "bucket": "a"
+        },
+        {
+          "id": "d",
+          "text": "🎈 Globo",
+          "bucket": "b"
+        }
+      ],
+      "correct_answer": {
+        "a": "Necesito",
+        "b": "Quiero"
+      },
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Rápido y bien!",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-016",
+      "module_slug": "misiones",
+      "group_name": "🎮 Desafío",
+      "gancho": "¡Desafío desbloqueado!",
+      "retro_wrong": "¡Casi! Piensa qué es necesario.",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 16
+    },
+    {
+      "id": "fb8f3f27-2000-4880-b03f-d7e9c46fa949",
+      "world_id": null,
+      "type": "order_steps",
+      "difficulty": "medium",
+      "question_text": "Ordena el viaje del dinero en Blinkids.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Trabajar"
+        },
+        {
+          "id": "b",
+          "text": "Repartir en Mi Bolsa"
+        },
+        {
+          "id": "c",
+          "text": "Ahorrar o comprar"
+        },
+        {
+          "id": "d",
+          "text": "Avanzar a Marte"
+        }
+      ],
+      "correct_answer": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Te sabes el viaje completo!",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-017",
+      "module_slug": "misiones",
+      "group_name": "🎮 Desafío",
+      "gancho": "¡Desafío desbloqueado!",
+      "retro_wrong": "Ordénalo otra vez: ¿qué va primero?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 17
+    },
+    {
+      "id": "7a25d546-61ec-4a71-9bff-39815f9b8811",
+      "world_id": null,
+      "type": "drag_match",
+      "difficulty": "medium",
+      "question_text": "Relaciona cada módulo con su pregunta.",
+      "options": [
+        {
+          "id": "a",
+          "text": "Trabajos",
+          "right": "¿cómo consigo monedas?"
+        },
+        {
+          "id": "b",
+          "text": "Banco",
+          "right": "¿cómo llego a mi meta?"
+        },
+        {
+          "id": "c",
+          "text": "Tienda",
+          "right": "¿en qué las uso?"
+        }
+      ],
+      "correct_answer": [],
+      "coin_reward": 50,
+      "xp_reward": 20,
+      "explanation": "¡Conoces bien tu nave!",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-018",
+      "module_slug": "misiones",
+      "group_name": "🎮 Desafío",
+      "gancho": "¡Desafío desbloqueado!",
+      "retro_wrong": "¡Casi! ¿Qué hace cada estación?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 18
+    },
+    {
+      "id": "82f72bf5-1122-4235-b057-fd2ea90681b1",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "hard",
+      "question_text": "Tienes 💰100. Quieres ahorrar para una meta de 💰500 y ves un gustito de 💰100. ¿Qué haces?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Guardo la mayoría y disfruto poquito"
+        },
+        {
+          "id": "b",
+          "text": "Gasto los 100 en el gustito"
+        },
+        {
+          "id": "c",
+          "text": "No hago nada"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 50,
+      "xp_reward": 40,
+      "explanation": "¡Buen equilibrio! Guardar y disfrutar un poco.",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-019",
+      "module_slug": "misiones",
+      "group_name": "🎮 Desafío",
+      "gancho": "¡Desafío desbloqueado!",
+      "retro_wrong": "Piensa: ¿cómo equilibrar meta y gustito?",
+      "fuel_reward": 0,
+      "is_hito": false,
+      "badge_name": null,
+      "sort_order": 19
+    },
+    {
+      "id": "95ef8c7a-51be-473d-9e07-9b16042721e1",
+      "world_id": null,
+      "type": "multiple_choice",
+      "difficulty": "hard",
+      "question_text": "Repaso final: ¿qué hace a un buen explorador del dinero?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Trabajar, repartir, ahorrar, comprar bien y compartir"
+        },
+        {
+          "id": "b",
+          "text": "Solo tener muchas monedas"
+        },
+        {
+          "id": "c",
+          "text": "Gastar rápido"
+        }
+      ],
+      "correct_answer": "a",
+      "coin_reward": 100,
+      "xp_reward": 40,
+      "explanation": "🪐 ¡Eres un explorador experto del dinero!",
+      "is_active": true,
+      "created_at": "2026-07-30T04:48:35.808371+00:00",
+      "catalog_id": "MS-020",
+      "module_slug": "misiones",
+      "group_name": "🎮 Desafío",
+      "gancho": "⭐ ¡Gran desafío!",
+      "retro_wrong": "¡Casi! Es la suma de todas las buenas decisiones.",
+      "fuel_reward": 0,
+      "is_hito": true,
+      "badge_name": "🪐 Explorador experto",
+      "sort_order": 20
+    }
+  ]
+}
