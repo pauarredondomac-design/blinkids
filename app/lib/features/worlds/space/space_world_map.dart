@@ -2,31 +2,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/providers/profile_provider.dart';
-import '../../../shared/providers/character_provider.dart';
 import '../../../data/models/profile.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/fuel_provider.dart';
-import '../../../shared/widgets/profile_bottom_sheet.dart';
+import '../../../shared/providers/salary_provider.dart';
 import '../../../shared/widgets/blink_character.dart';
-import '../../../shared/widgets/child_notification_bell.dart';
 import '../../../shared/helpers/notification_helper.dart';
 import '../../../shared/providers/demo_progress_provider.dart';
 import '../../../shared/providers/world_provider.dart';
-import '../../../shared/providers/auth_provider.dart';
-import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/providers/blink_ambient_provider.dart';
 import '../../../shared/helpers/blink_ambient_helper.dart';
 import 'banco_estelar_screen.dart';
 import '../trabajos/trabajos_screen.dart';
 import '../misiones/misiones_screen.dart';
 import '../tienda/tienda_screen.dart';
-import '../mercado/mercado_screen.dart';
-import '../vestidor/vestidor_screen.dart';
 import '../../wallet/screens/wallet_screen.dart';
-import '../world_selector_screen.dart';
+import '../../../shared/widgets/world_side_panels.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SpaceWorldMap — Mundo único por ahora
@@ -42,7 +35,6 @@ class SpaceWorldMap extends ConsumerStatefulWidget {
 
 class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
     with SingleTickerProviderStateMixin {
-
   late AnimationController _orbitCtrl;
   bool _worldNameChecked = false;
   String? _localWorldName;
@@ -56,6 +48,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
     )..repeat();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(currentWorldProvider.notifier).state = 'space';
       NotificationHelper.checkEngagement();
       BlinkAmbientHelper.maybeGreet(ref);
       ref.listenManual<AsyncValue<Profile?>>(
@@ -82,7 +75,9 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         (prev, next) {
           if (next.pendingMessage != null && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(next.pendingMessage!), duration: const Duration(seconds: 3)),
+              SnackBar(
+                  content: Text(next.pendingMessage!),
+                  duration: const Duration(seconds: 3)),
             );
             ref.read(demoProgressProvider.notifier).clearPendingMessage();
           }
@@ -153,32 +148,35 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
   @override
   Widget build(BuildContext context) {
-    final profile   = ref.watch(currentProfileProvider).value;
-    final wallet    = ref.watch(currentWalletProvider).value;
-    final worldName   = _localWorldName ?? profile?.worldName ?? 'Mi Galaxia';
+    final profile = ref.watch(currentProfileProvider).value;
+    final wallet = ref.watch(currentWalletProvider).value;
+    final worldName = _localWorldName ?? profile?.worldName ?? 'Mi Galaxia';
     // Demo = sin sesión real. Un niño con PIN tiene sesión real → no es demo.
-    final supaUser    = Supabase.instance.client.auth.currentUser;
-    final isDemo      = supaUser == null || (supaUser.isAnonymous == true);
-    final demoState   = ref.watch(demoProgressProvider);
-    final spaceFuel   = ref.watch(spaceFuelProvider).valueOrNull;
+    final supaUser = Supabase.instance.client.auth.currentUser;
+    final isDemo = supaUser == null || (supaUser.isAnonymous == true);
+    final demoState = ref.watch(demoProgressProvider);
+    final spaceFuel = ref.watch(spaceFuelProvider).valueOrNull;
     // En demo, monedas/combustible viven solo en memoria — nunca en Supabase.
-    final coins       = isDemo ? demoState.coins : (wallet?.totalCoins ?? 0);
-    final fuelLevel   = isDemo ? demoState.fuel : (spaceFuel?.fuel ?? 0);
+    final coins = isDemo ? demoState.coins : (wallet?.totalCoins ?? 0);
+    final fuelLevel = isDemo ? demoState.fuel : (spaceFuel?.fuel ?? 0);
     final ambientMessage = ref.watch(blinkAmbientMessageProvider);
-
+    final salaryStatus = ref.watch(mySalaryStatusProvider).valueOrNull ?? {};
+    final hasSalary = (salaryStatus['has_salary'] as bool? ?? false) &&
+        !(salaryStatus['already_claimed'] as bool? ?? true);
 
     return Scaffold(
       backgroundColor: const Color(0xFF020A18),
       body: LayoutBuilder(
         builder: (ctx, constraints) {
-          final w      = constraints.maxWidth;
-          final h      = constraints.maxHeight;
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
           final panelW = w * 0.16;
 
           return Stack(
             children: [
               // ── Fondo estático (RepaintBoundary = no se repinta en rebuilds) ──
-              const Positioned.fill(child: RepaintBoundary(child: _StaticBackground())),
+              const Positioned.fill(
+                  child: RepaintBoundary(child: _StaticBackground())),
 
               // ── Partículas ambientales flotantes ──────────────────────────
               const Positioned.fill(child: _SpaceParticles()),
@@ -204,7 +202,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
               // ── Sombra/glow bajo Blink ────────────────────────────────────
               Positioned(
                 left: w * 0.5 - h * 0.095,
-                top:  h * 0.25 + h * 0.38,
+                top: h * 0.25 + h * 0.38,
                 child: Container(
                   width: h * 0.19,
                   height: h * 0.028,
@@ -224,7 +222,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
               // ── Blink ─────────────────────────────────────────────────────
               Positioned(
                 left: w * 0.5 - (h * 0.20) / 3.2,
-                top:  h * 0.29,
+                top: h * 0.29,
                 child: BlinkCharacterWidget(
                   width: h * 0.15,
                   enableBounce: false,
@@ -235,11 +233,12 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
               if (ambientMessage != null)
                 Positioned(
                   left: w * 0.5 - (h * 0.20) / 3.2 + h * 0.14,
-                  top:  h * 0.29 - h * 0.02,
+                  top: h * 0.29 - h * 0.02,
                   child: _AmbientBubble(
                     text: ambientMessage,
-                    onDismiss: () =>
-                        ref.read(blinkAmbientMessageProvider.notifier).state = null,
+                    onDismiss: () => ref
+                        .read(blinkAmbientMessageProvider.notifier)
+                        .state = null,
                   ),
                 ),
 
@@ -264,21 +263,29 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
               // ── Panel izquierdo ───────────────────────────────────────────
               Positioned(
-                left: 0, top: 0, bottom: 0,
+                left: 0,
+                top: 0,
+                bottom: 0,
                 width: panelW,
-                child: _LeftPanel(profile: profile),
+                child: WorldLeftPanel(profile: profile),
               ),
 
               // ── Panel derecho ─────────────────────────────────────────────
               Positioned(
-                right: 0, top: 0, bottom: 0,
+                right: 0,
+                top: 0,
+                bottom: 0,
                 width: panelW,
-                child: _RightPanel(fuel: fuelLevel),
+                child: WorldRightPanel(
+                  fuel: fuelLevel,
+                  hasSalary: hasSalary,
+                  onSalaryClaim:
+                      hasSalary ? () => handleSalaryClaim(context, ref) : null,
+                ),
               ),
 
               // ── HUD central superior ──────────────────────────────────────
-              _buildCenterHud(context, ref, coins, panelW, demoMode: isDemo),
-
+              buildWorldCenterHud(context, ref, coins, panelW),
             ],
           );
         },
@@ -300,14 +307,31 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
   // Para cambiar tamaño:    cambia el campo size (fracción de imgW).
   List<Widget> _buildBuildings(double w, double h, {bool demoMode = false}) {
     // Rect de la imagen estructuras.png en coordenadas de pantalla
-    const double _natW = 3954, _natH = 1767;
-    final imgH    = h * 0.90;
-    final imgW    = imgH * _natW / _natH;   // ancho derivado del alto
-    final imgLeft = (w - imgW) / 2;         // centrada horizontalmente
-    final imgTop  = (h - imgH) / 2;         // centrada verticalmente
+    const double natW = 3954, natH = 1767;
+    final imgH = h * 0.90;
+    final imgW = imgH * natW / natH; // ancho derivado del alto
+    final imgLeft = (w - imgW) / 2; // centrada horizontalmente
+    final imgTop = (h - imgH) / 2; // centrada verticalmente
 
     // Tamaño base de edificios como fracción del ancho de la imagen
-    final bSize = imgW * 0.10;   // ~20% del ancho de la imagen
+    final bSize = imgW * 0.20; // ~20% del ancho de la imagen
+
+    // Los PNG de edificios tienen distinto margen transparente alrededor del
+    // dibujo (todos son lienzos de 3000×3000, pero el dibujo real ocupa un
+    // % distinto de cada uno). Como Image.asset solo fija el ANCHO del
+    // lienzo completo, sin este multiplicador cada edificio se vería de un
+    // tamaño visual distinto aunque `size` sea igual. Multiplicador =
+    // (relleno promedio del set) / (relleno real de ese PNG) — así el
+    // dibujo de cada edificio queda del mismo tamaño visual en pantalla.
+    const fillCompensation = {
+      'banco': 0.97, // building_bolsa.png     — relleno 54.6%
+      'trabajos':
+          1.40, // building_trabajos.png   — relleno 37.9% (el más recortado)
+      'misiones': 0.86, // building_misiones.png   — relleno 61.8%
+      'tienda': 0.91, // building_tienda.png     — relleno 58.4%
+      'alcancia': 1.02, // alcancia.png            — relleno 52.0%
+    };
+    double sizeFor(String id) => bSize * (fillCompensation[id] ?? 1.0);
 
     final demoState = ref.read(demoProgressProvider);
     bool locked(String id) => demoMode && !demoState.isUnlocked(id);
@@ -322,9 +346,13 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showBancoEstelarDialog,
         demoRoute: '/demo/banco',
-        size: bSize ,
+        size: imgW * 0.22,
         locked: locked('banco'),
-        islandFx: 0.31, islandFy: 0.39,
+        islandFx: 0.31,
+        islandFy: 0.59,
+        topPad: 0.111,
+        rightPad: 0.227,
+        bottomPad: 0.432,
       ),
       _BuildingData(
         id: 'trabajos',
@@ -333,10 +361,14 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showTrabajosDialog,
         demoRoute: '/demo/trabajos',
-        size: bSize,
+        size: imgW * 0.25,
         badgeCount: 1,
         locked: locked('trabajos'),
-        islandFx: 0.66, islandFy: 0.23,
+        islandFx: 0.66,
+        islandFy: 0.54,
+        topPad: 0.058,
+        rightPad: 0.309,
+        bottomPad: 0.370,
       ),
       _BuildingData(
         id: 'misiones',
@@ -345,10 +377,14 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showMisionesDialog,
         demoRoute: '/demo/misiones',
-        size: bSize,
+        size: imgW * 0.25,
         badgeCount: 3,
         locked: locked('misiones'),
-        islandFx: 0.34, islandFy: 0.82,
+        islandFx: 0.35,
+        islandFy: 1.05,
+        topPad: 0.080,
+        rightPad: 0.203,
+        bottomPad: 0.364,
       ),
       _BuildingData(
         id: 'tienda',
@@ -357,9 +393,13 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showTiendaDialog,
         demoRoute: '/demo/tienda',
-        size: bSize,
+        size: imgW * 0.25,
         locked: locked('tienda'),
-        islandFx: 0.78, islandFy: 0.60,
+        islandFx: 0.79,
+        islandFy: 0.80,
+        topPad: 0.155,
+        rightPad: 0.230,
+        bottomPad: 0.327,
       ),
       _BuildingData(
         id: 'alcancia',
@@ -368,9 +408,13 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showWalletDialog,
         demoRoute: '/demo/bolsa',
-        size: bSize,
+        size: imgW * 0.23,
         locked: locked('alcancia'),
-        islandFx: 0.64, islandFy: 0.81,
+        islandFx: 0.65,
+        islandFy: 1.03,
+        topPad: 0.065,
+        rightPad: 0.266,
+        bottomPad: 0.378,
       ),
       // _BuildingData(id: 'mercado', ..., islandFx: 0.72, islandFy: 0.48),
     ];
@@ -378,13 +422,13 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
     return buildings.map((b) {
       // Centro de la isla en coordenadas de pantalla
       final cx = imgLeft + b.islandFx! * imgW;
-      final cy = imgTop  + b.islandFy! * imgH;
+      final cy = imgTop + b.islandFy! * imgH;
       // Edificio centrado horizontalmente; base del edificio en el centro de la isla
       final bx = cx - b.size / 2;
       final by = cy - b.size;
       return Positioned(
         left: bx,
-        top:  by,
+        top: by,
         child: _BuildingButton(data: b, demoMode: demoMode),
       );
     }).toList();
@@ -392,110 +436,11 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HUD central superior — monedas + botón créditos + campana
-// ─────────────────────────────────────────────────────────────────────────────
-Widget _buildCenterHud(
-  BuildContext context,
-  WidgetRef ref,
-  int coins,
-  double panelW, {
-  bool demoMode = false,
-}) {
-  return Positioned(
-    top: 0,
-    left: panelW,
-    right: panelW,
-    child: Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.65),
-            Colors.transparent,
-          ],
-        ),
-      ),
-      child: Row(
-        children: [
-          // ── Monedas ──────────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.55),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Colors.amber.withOpacity(0.80), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.25),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const AnimatedCoin(size: 20)
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .scale(begin: const Offset(1, 1), end: const Offset(1.15, 1.15),
-                           duration: 1800.ms, curve: Curves.easeInOut),
-                const SizedBox(width: 6),
-                Text(
-                  '$coins',
-                  style: const TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    shadows: [
-                      Shadow(color: Colors.amber, blurRadius: 8),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const Spacer(),
-
-
-          const Spacer(),
-
-          // ── Mercado ───────────────────────────────────────────────────────
-          GestureDetector(
-            onTap: () => showMercadoDialog(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              margin: const EdgeInsets.only(right: 10),
-              decoration: BoxDecoration(
-                color: Colors.black.withAlpha(100),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: const Icon(
-                Icons.storefront_rounded,
-                color: Colors.white54,
-                size: 20,
-              ),
-            ),
-          ),
-
-          // ── Campana ───────────────────────────────────────────────────────
-          ChildNotificationBell(),
-        ],
-      ),
-    ),
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Burbuja de diálogo ambiental de Blink
 // ─────────────────────────────────────────────────────────────────────────────
 class _AmbientBubble extends StatelessWidget {
   const _AmbientBubble({required this.text, required this.onDismiss});
-  final String       text;
+  final String text;
   final VoidCallback onDismiss;
 
   @override
@@ -510,7 +455,8 @@ class _AmbientBubble extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: const [
-              BoxShadow(color: Colors.black38, blurRadius: 14, offset: Offset(0, 4)),
+              BoxShadow(
+                  color: Colors.black38, blurRadius: 14, offset: Offset(0, 4)),
             ],
           ),
           child: Text(
@@ -593,743 +539,31 @@ class _StaticBackground extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Panel izquierdo — Perfil de Blink (tap→vestuario) + tuerca de opciones
-// ─────────────────────────────────────────────────────────────────────────────
-class _LeftPanel extends ConsumerWidget {
-  const _LeftPanel({required this.profile});
-  final Profile? profile;
-
-  void _showWardrobeDialog(BuildContext context) {
-    showVestidorDialog(context);
-  }
-
-  void _showOptionsMenu(BuildContext context, WidgetRef ref) {
-    final supaUser = Supabase.instance.client.auth.currentUser;
-    final isDemo   = supaUser == null || (supaUser.isAnonymous == true);
-    final profile  = ref.read(currentProfileProvider).valueOrNull;
-    final isChild  = !isDemo && (profile?.role == UserRole.child);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => _OptionsDialog(
-        isDemo: isDemo,
-        isChild: isChild,
-        onSignIn: () { Navigator.pop(ctx); context.push('/child-login'); },
-        onLinkParent: () {
-          Navigator.pop(ctx);
-          showDialog(context: context, builder: (_) => const _RedeemCodeDialog());
-        },
-        onSignOut: () async {
-          Navigator.pop(ctx);
-          await ref.read(authRepositoryProvider).signOut();
-          if (context.mounted) context.go('/world');
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final liveProfile  = ref.watch(currentProfileProvider).valueOrNull ?? profile;
-    final character    = ref.watch(currentCharacterProvider).valueOrNull;
-    final demoState    = ref.watch(demoProgressProvider);
-    final isDemo       = DemoStore.isActive;
-    final xp           = isDemo ? demoState.xp              : (character?.xp    ?? 0);
-    final level        = isDemo ? (demoState.xp ~/ 500) + 1 : (character?.level ?? 1);
-    const xpPerLevel   = 500;
-    final xpProgress   = (xp % xpPerLevel) / xpPerLevel;
-    final xpInLevel    = xp % xpPerLevel;
-    final filledStars  = (xpProgress * 5).floor().clamp(0, 5);
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [
-            const Color(0xFF020D1F).withOpacity(0.92),
-            const Color(0xFF020D1F).withOpacity(0.78),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.65, 1.0],
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Card de perfil — tap abre vestuario ───────────────────────
-          GestureDetector(
-            onTap: () => _showWardrobeDialog(context),
-            child: _PanelCard(
-              borderColor: const Color(0xFF4FC3F7).withOpacity(0.55),
-              glowColor: const Color(0xFF4FC3F7).withOpacity(0.12),
-              child: Column(
-                children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF4FC3F7).withOpacity(0.70), width: 2),
-                      color: const Color(0xFF0D1B3E),
-                      boxShadow: [BoxShadow(color: const Color(0xFF4FC3F7).withOpacity(0.30), blurRadius: 10, spreadRadius: 1)],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: OverflowBox(
-                      maxWidth: 70,
-                      maxHeight: 220,
-                      alignment: const Alignment(0.05, -0.70),
-                      child: const BlinkCharacterWidget(
-                        width: 70,
-                        enableBounce: false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    liveProfile?.displayName ?? 'Blink',
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 1),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF0277BD), Color(0xFF01579B)]),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text('Nivel $level', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-                  ),
-                  const SizedBox(height: 7),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (i) => Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                      child: Icon(
-                        i < filledStars ? Icons.star_rounded : Icons.star_outline_rounded,
-                        color: i < filledStars ? Colors.amber : Colors.white24,
-                        size: 13,
-                      ),
-                    )),
-                  ),
-                  const SizedBox(height: 5),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: xpProgress,
-                      backgroundColor: Colors.white.withOpacity(0.10),
-                      valueColor: const AlwaysStoppedAnimation(Color(0xFF4FC3F7)),
-                      minHeight: 5,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text('$xpInLevel / $xpPerLevel XP', style: TextStyle(color: Colors.white.withOpacity(0.40), fontSize: 9)),
-                ],
-              ),
-            ),
-          ),
-
-          const Spacer(),
-
-          // ── Botón tuerca de opciones ───────────────────────────────────
-          GestureDetector(
-            onTap: () => _showOptionsMenu(context, ref),
-            child: _PanelCard(
-              borderColor: const Color(0xFF4FC3F7).withOpacity(0.30),
-              glowColor: Colors.transparent,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.settings_rounded, color: const Color(0xFF4FC3F7).withOpacity(0.80), size: 20),
-                  const SizedBox(width: 6),
-                  Text('Opciones', style: TextStyle(color: Colors.white.withOpacity(0.70), fontSize: 10, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Diálogo de opciones — carga el nombre del papá vinculado de forma asíncrona
-class _OptionsDialog extends StatefulWidget {
-  const _OptionsDialog({
-    required this.isDemo,
-    required this.isChild,
-    required this.onSignIn,
-    required this.onLinkParent,
-    required this.onSignOut,
-  });
-  final bool isDemo;
-  final bool isChild;
-  final VoidCallback onSignIn;
-  final VoidCallback onLinkParent;
-  final VoidCallback onSignOut;
-
-  @override
-  State<_OptionsDialog> createState() => _OptionsDialogState();
-}
-
-class _OptionsDialogState extends State<_OptionsDialog> {
-  String? _parentName;
-  bool _loaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.isChild) _loadParentLink();
-    else _loaded = true;
-  }
-
-  Future<void> _loadParentLink() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId == null) { if (mounted) setState(() => _loaded = true); return; }
-    try {
-      final link = await Supabase.instance.client
-          .from('parent_child')
-          .select('parent_id')
-          .eq('child_id', userId)
-          .maybeSingle();
-      if (link != null) {
-        final parentId = link['parent_id'] as String?;
-        if (parentId != null) {
-          final p = await Supabase.instance.client
-              .from('profiles')
-              .select('display_name')
-              .eq('id', parentId)
-              .maybeSingle();
-          if (mounted) setState(() { _parentName = p?['display_name'] as String?; });
-        }
-      }
-    } catch (_) {}
-    if (mounted) setState(() => _loaded = true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFF0D1B3E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Row(
-        children: [
-          Icon(Icons.settings_rounded, color: Color(0xFF4FC3F7), size: 20),
-          SizedBox(width: 8),
-          Text('Opciones', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (widget.isDemo)
-            _OptionItem(icon: Icons.login_rounded, label: 'Iniciar sesión', onTap: widget.onSignIn),
-          if (!widget.isDemo) ...[
-            if (widget.isChild) ...[
-              if (!_loaded)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: SizedBox(height: 20, width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4FC3F7))),
-                )
-              else if (_parentName != null)
-                _OptionItem(
-                  icon: Icons.verified_user_rounded,
-                  label: 'Vinculado con $_parentName',
-                  color: const Color(0xFF4CAF50),
-                  onTap: () {},
-                )
-              else
-                _OptionItem(
-                  icon: Icons.link_rounded,
-                  label: 'Vincular a papás',
-                  onTap: widget.onLinkParent,
-                ),
-            ],
-            _OptionItem(
-              icon: Icons.logout_rounded,
-              label: 'Cerrar sesión',
-              color: const Color(0xFFEF4444),
-              onTap: widget.onSignOut,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// Ítem de opción reutilizable para el menú de opciones
-class _OptionItem extends StatelessWidget {
-  const _OptionItem({required this.icon, required this.label, required this.onTap, this.color});
-  final IconData icon;
-  final String   label;
-  final VoidCallback onTap;
-  final Color?   color;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = color ?? Colors.white;
-    return ListTile(
-      leading: Icon(icon, color: c, size: 20),
-      title: Text(label, style: TextStyle(color: c, fontSize: 13, fontWeight: FontWeight.w600)),
-      onTap: onTap,
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Diálogo para que el hijo ingrese el código de invitación del padre
-// ─────────────────────────────────────────────────────────────────────────────
-class _RedeemCodeDialog extends StatefulWidget {
-  const _RedeemCodeDialog();
-
-  @override
-  State<_RedeemCodeDialog> createState() => _RedeemCodeDialogState();
-}
-
-class _RedeemCodeDialogState extends State<_RedeemCodeDialog> {
-  final _ctrl    = TextEditingController();
-  bool  _loading = false;
-  String? _error;
-  bool  _success = false;
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _redeem() async {
-    final code = _ctrl.text.trim().toUpperCase().replaceAll(' ', '');
-    if (code.length != 6) {
-      setState(() => _error = 'El código tiene 6 letras. Revísalo e inténtalo de nuevo.');
-      return;
-    }
-    setState(() { _loading = true; _error = null; });
-    try {
-      await Supabase.instance.client.rpc('redeem_invite_code', params: {'p_code': code});
-      if (mounted) setState(() { _success = true; _loading = false; });
-    } catch (e) {
-      if (mounted) setState(() {
-        _error = e.toString().contains('inválido')
-            ? '❌ Código inválido o expirado. Pide uno nuevo a tu papá/mamá.'
-            : e.toString().contains('vinculado')
-                ? '✅ ¡Ya estás vinculado con ese papá/mamá!'
-                : '⚠️ No se pudo procesar. Verifica tu conexión.';
-        _loading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final keyboardH = MediaQuery.of(context).viewInsets.bottom;
-    return Dialog(
-      backgroundColor: const Color(0xFF0D1230),
-      insetPadding: EdgeInsets.fromLTRB(24, 40, 24, keyboardH + 24),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: _success
-              ? _RedeemSuccessView(onClose: () => Navigator.pop(context))
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(children: [
-                      const Text('🔗 Vincularme',
-                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito',
-                              fontWeight: FontWeight.w800, fontSize: 18)),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close_rounded, color: Colors.white38),
-                      ),
-                    ]),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Escribe el código de 6 letras que te dio tu papá o mamá.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white54, fontFamily: 'Nunito',
-                          fontSize: 13, height: 1.5),
-                    ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: _ctrl,
-                      textAlign: TextAlign.center,
-                      autocorrect: false,
-                      textCapitalization: TextCapitalization.characters,
-                      maxLength: 6,
-                      style: const TextStyle(color: Colors.white, fontFamily: 'Courier',
-                          fontWeight: FontWeight.w900, fontSize: 32, letterSpacing: 8),
-                      decoration: InputDecoration(
-                        counterText: '',
-                        hintText: 'XXXXXX',
-                        hintStyle: const TextStyle(color: Colors.white24, fontFamily: 'Courier',
-                            fontSize: 32, letterSpacing: 8),
-                        filled: true,
-                        fillColor: Colors.white.withAlpha(10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Colors.white10)),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Colors.white10)),
-                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF7C3AED), width: 2)),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      onSubmitted: (_) => _redeem(),
-                    ),
-                    if (_error != null) ...[
-                      const SizedBox(height: 12),
-                      Text(_error!, textAlign: TextAlign.center,
-                          style: const TextStyle(color: Color(0xFFFBBF24), fontFamily: 'Nunito', fontSize: 13)),
-                    ],
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: _loading ? null : _redeem,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF7C3AED),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: _loading
-                            ? const SizedBox(width: 20, height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : const Text('¡Vincularme! 🎉',
-                                style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 15)),
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-    );
-  }
-}
-
-class _RedeemSuccessView extends StatelessWidget {
-  const _RedeemSuccessView({required this.onClose});
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('🎉', style: TextStyle(fontSize: 48)),
-        const SizedBox(height: 12),
-        const Text('¡Vinculado!', style: TextStyle(color: Colors.white, fontFamily: 'Nunito',
-            fontWeight: FontWeight.w800, fontSize: 20)),
-        const SizedBox(height: 8),
-        const Text('Ya estás conectado con tu papá o mamá.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, fontFamily: 'Nunito', fontSize: 13)),
-        const SizedBox(height: 20),
-        FilledButton(
-          onPressed: onClose,
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF4ADE80),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          child: const Text('¡Perfecto! ✓', style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Panel derecho — Destino Marte + combustible + Hangar de Despegue + Cambiar mundo
-// ─────────────────────────────────────────────────────────────────────────────
-class _RightPanel extends ConsumerWidget {
-  const _RightPanel({required this.fuel});
-  final int fuel;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final world         = ref.watch(currentWorldProvider);
-    final weeksLeft     = ((100 - fuel) / 7.0).ceil().clamp(1, 20);
-    const totalSegments = 5;
-    final filledSegs    = (fuel / 100 * totalSegments).round();
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.centerRight,
-          end: Alignment.centerLeft,
-          colors: [
-            const Color(0xFF0A051A).withOpacity(0.92),
-            const Color(0xFF0A051A).withOpacity(0.78),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.65, 1.0],
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Destino Marte ──────────────────────────────────────────────
-          _PanelCard(
-            borderColor: Colors.deepOrange.withOpacity(0.60),
-            glowColor: Colors.deepOrange.withOpacity(0.10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Encabezado con ícono de cohete
-                Row(
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: Colors.deepOrange.withOpacity(0.20),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.flag_rounded,
-                          color: Colors.deepOrange.shade300, size: 12),
-                    ),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'Marte',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                        shadows: [Shadow(color: Colors.deepOrange, blurRadius: 6)],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  'Nuestro destino final',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.45),
-                    fontSize: 9,
-                  ),
-                ),
-                const SizedBox(height: 10),
-
-                // Porcentaje combustible
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '$fuel',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        height: 1.0,
-                        shadows: [
-                          Shadow(color: Colors.deepOrange, blurRadius: 8),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 5),
-                      child: Text(
-                        '%',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.70),
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  'combustible cargado',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.50),
-                    fontSize: 9,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Barra segmentada con glow
-                Row(
-                  children: List.generate(totalSegments, (i) {
-                    final filled = i < filledSegs;
-                    return Expanded(
-                      child: Container(
-                        height: 10,
-                        margin: EdgeInsets.only(
-                            right: i < totalSegments - 1 ? 3 : 0),
-                        decoration: BoxDecoration(
-                          color: filled
-                              ? const Color(0xFF4FC3F7)
-                              : Colors.white.withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(4),
-                          boxShadow: filled
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFF4FC3F7).withOpacity(0.55),
-                                    blurRadius: 6,
-                                    spreadRadius: 1,
-                                  )
-                                ]
-                              : null,
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '$weeksLeft semanas para despegar',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.55),
-                    fontSize: 9,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // ── Hangar de Despegue ─────────────────────────────────────────
-          _PanelCard(
-            borderColor: Colors.deepOrange.withOpacity(0.25),
-            glowColor: Colors.transparent,
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.deepOrange.withOpacity(0.25),
-                        Colors.deepOrange.withOpacity(0.10),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.deepOrange.withOpacity(0.40),
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(Icons.rocket_launch_rounded,
-                      color: Colors.deepOrange.shade300, size: 16),
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Hangar de Despegue',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Prepárate para Marte',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.45),
-                          fontSize: 9,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const Spacer(),
-
-          // ── Cambiar mundo ──────────────────────────────────────────────
-          GestureDetector(
-            onTap: () => showWorldSelectorDialog(context, world),
-            child: _PanelCard(
-              borderColor: const Color(0xFF4FC3F7).withOpacity(0.30),
-              glowColor: Colors.transparent,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.public_rounded, color: const Color(0xFF4FC3F7).withOpacity(0.80), size: 18),
-                  const SizedBox(width: 6),
-                  Text('Cambiar mundo', style: TextStyle(color: Colors.white.withOpacity(0.70), fontSize: 10, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Card reutilizable para los paneles laterales — con glow opcional
-// ─────────────────────────────────────────────────────────────────────────────
-class _PanelCard extends StatelessWidget {
-  const _PanelCard({
-    required this.child,
-    required this.borderColor,
-    this.glowColor = Colors.transparent,
-  });
-  final Widget child;
-  final Color  borderColor;
-  final Color  glowColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A1628).withOpacity(0.85),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor, width: 1.2),
-        boxShadow: [
-          if (glowColor != Colors.transparent)
-            BoxShadow(
-              color: glowColor,
-              blurRadius: 14,
-              spreadRadius: 2,
-            ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
 // Abre la pantalla demo (banco) como diálogo avanzando el stage al cerrar
 void _showDemoDialog(BuildContext context, WidgetRef ref, String demoRoute) {
   // Mapeo demoRoute → widget
   final configs = <String, (Widget, int, String)>{
-    '/demo/banco':    (const BancoEstelarScreen(), 0, '🔓 ¡Desbloqueaste Trabajos!'),
-    '/demo/trabajos': (const TrabajosScreen(),     1, '🔓 ¡Desbloqueaste Misiones!'),
-    '/demo/misiones': (const MisionesScreen(),     2, '🔓 ¡Desbloqueaste Mi Bolsa!'),
-    '/demo/bolsa':    (const WalletScreen(),       3, '🔓 ¡Desbloqueaste la Tienda!'),
-    '/demo/tienda':   (const TiendaScreen(),       4, '🎉 ¡Has completado la demo!'),
+    '/demo/banco': (
+      const BancoEstelarScreen(),
+      0,
+      '🔓 ¡Desbloqueaste Trabajos!'
+    ),
+    '/demo/trabajos': (
+      const TrabajosScreen(),
+      1,
+      '🔓 ¡Desbloqueaste Misiones!'
+    ),
+    '/demo/misiones': (
+      const MisionesScreen(),
+      2,
+      '🔓 ¡Desbloqueaste Mi Bolsa!'
+    ),
+    '/demo/bolsa': (const WalletScreen(), 3, '🔓 ¡Desbloqueaste la Tienda!'),
+    '/demo/tienda': (const TiendaScreen(), 4, '🎉 ¡Has completado la demo!'),
   };
-  final cfg    = configs[demoRoute] ?? configs['/demo/banco']!;
+  final cfg = configs[demoRoute] ?? configs['/demo/banco']!;
   final screen = cfg.$1;
-  final atStage   = cfg.$2;
+  final atStage = cfg.$2;
   final unlockMsg = cfg.$3;
 
   final size = MediaQuery.of(context).size;
@@ -1381,7 +615,7 @@ void _showDemoDialog(BuildContext context, WidgetRef ref, String demoRoute) {
 class _BuildingButton extends ConsumerWidget {
   const _BuildingButton({required this.data, this.demoMode = false});
   final _BuildingData data;
-  final bool          demoMode;
+  final bool demoMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1390,10 +624,26 @@ class _BuildingButton extends ConsumerWidget {
     if (data.locked) {
       image = ColorFiltered(
         colorFilter: const ColorFilter.matrix([
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0,      0,      0,      0.6, 0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0.6,
+          0,
         ]),
         child: image,
       );
@@ -1414,7 +664,8 @@ class _BuildingButton extends ConsumerWidget {
               borderRadius: BorderRadius.circular(100),
               gradient: RadialGradient(
                 colors: [
-                  const Color(0xFF4FC3F7).withOpacity(data.locked ? 0.12 : 0.42),
+                  const Color(0xFF4FC3F7)
+                      .withOpacity(data.locked ? 0.12 : 0.42),
                   Colors.transparent,
                 ],
               ),
@@ -1442,7 +693,8 @@ class _BuildingButton extends ConsumerWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white30, width: 1.2),
             ),
-            child: const Icon(Icons.lock_rounded, color: Colors.white70, size: 18),
+            child:
+                const Icon(Icons.lock_rounded, color: Colors.white70, size: 18),
           ),
         ],
       );
@@ -1455,8 +707,11 @@ class _BuildingButton extends ConsumerWidget {
         children: [
           building,
           Positioned(
-            top: 2,
-            right: 2,
+            // Se ancla a la esquina superior-derecha del DIBUJO real
+            // (usando el margen transparente medido por PNG), no del
+            // lienzo completo — así no queda "flotando" en el aire.
+            top: max(2, data.size * data.topPad - 9),
+            right: max(2, data.size * data.rightPad - 10),
             child: Container(
               constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -1512,9 +767,7 @@ class _BuildingButton extends ConsumerWidget {
       child: Text(
         data.label,
         style: TextStyle(
-          color: data.locked
-              ? Colors.white.withOpacity(0.40)
-              : Colors.white,
+          color: data.locked ? Colors.white.withOpacity(0.40) : Colors.white,
           fontSize: 10,
           fontWeight: FontWeight.bold,
           letterSpacing: 0.8,
@@ -1537,8 +790,13 @@ class _BuildingButton extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           building,
-          const SizedBox(height: 3),
-          label,
+          // El label se sube para pegarse a la base visual del dibujo
+          // (descontando el margen transparente inferior del PNG) en vez
+          // de quedar lejos, pegado a la base del lienzo completo.
+          Transform.translate(
+            offset: Offset(0, -(data.size * data.bottomPad) + 8),
+            child: label,
+          ),
         ],
       ),
     );
@@ -1550,22 +808,26 @@ class _BuildingButton extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _BuildingData {
   final String id;
-  final double angle;
   final String asset;
   final String label;
   final String demoRoute;
-  final bool   openAsDialog;
+  final bool openAsDialog;
   final void Function(BuildContext)? dialogBuilder;
   final double size;
-  final int    badgeCount;
-  final bool   locked;
+  final int badgeCount;
+  final bool locked;
   // Posición como fracción del rect de estructuras.png (0..1)
   final double? islandFx;
   final double? islandFy;
+  // Margen transparente del PNG (fracción 0..1 del lienzo) alrededor del
+  // dibujo real, medido con Python/PIL. Se usa para pegar el badge y el
+  // label al dibujo en vez de al lienzo completo.
+  final double topPad;
+  final double rightPad;
+  final double bottomPad;
 
   const _BuildingData({
     required this.id,
-    this.angle = 0,
     required this.asset,
     required this.label,
     this.demoRoute = '',
@@ -1576,6 +838,9 @@ class _BuildingData {
     this.locked = false,
     this.islandFx,
     this.islandFy,
+    this.topPad = 0.10,
+    this.rightPad = 0.25,
+    this.bottomPad = 0.37,
   });
 }
 
@@ -1588,12 +853,12 @@ class _OrbitPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cx   = w * 0.5;
-    final cy   = h * 0.54;
-    final rx   = w * 0.34;
-    final ry   = h * 0.27;
-    final rect = Rect.fromCenter(
-        center: Offset(cx, cy), width: rx * 2, height: ry * 2);
+    final cx = w * 0.5;
+    final cy = h * 0.54;
+    final rx = w * 0.34;
+    final ry = h * 0.27;
+    final rect =
+        Rect.fromCenter(center: Offset(cx, cy), width: rx * 2, height: ry * 2);
 
     // ── Capa 1: glow exterior difuso ──────────────────────────────────────
     canvas.drawOval(
@@ -1657,16 +922,18 @@ class _SpaceParticlesState extends State<_SpaceParticles> {
   void initState() {
     super.initState();
     final rng = Random(42);
-    _particles = List.generate(22, (i) => _ParticleData(
-      x:       rng.nextDouble(),
-      y:       rng.nextDouble(),
-      size:    1.2 + rng.nextDouble() * 2.4,
-      opacity: 0.20 + rng.nextDouble() * 0.55,
-      durationMs: 2400 + (rng.nextDouble() * 3800).toInt(),
-      delayMs:    (rng.nextDouble() * 3200).toInt(),
-      moveY:   4.0 + rng.nextDouble() * 10.0,
-      isCyan:  rng.nextBool(),
-    ));
+    _particles = List.generate(
+        22,
+        (i) => _ParticleData(
+              x: rng.nextDouble(),
+              y: rng.nextDouble(),
+              size: 1.2 + rng.nextDouble() * 2.4,
+              opacity: 0.20 + rng.nextDouble() * 0.55,
+              durationMs: 2400 + (rng.nextDouble() * 3800).toInt(),
+              delayMs: (rng.nextDouble() * 3200).toInt(),
+              moveY: 4.0 + rng.nextDouble() * 10.0,
+              isCyan: rng.nextBool(),
+            ));
   }
 
   @override
@@ -1678,14 +945,12 @@ class _SpaceParticlesState extends State<_SpaceParticles> {
           final h = constraints.maxHeight;
           return Stack(
             children: _particles.map((p) {
-              final color = p.isCyan
-                  ? const Color(0xFF4FC3F7)
-                  : Colors.white;
+              final color = p.isCyan ? const Color(0xFF4FC3F7) : Colors.white;
               return Positioned(
                 left: p.x * w,
-                top:  p.y * h,
+                top: p.y * h,
                 child: Container(
-                  width:  p.size,
+                  width: p.size,
                   height: p.size,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -1698,21 +963,21 @@ class _SpaceParticlesState extends State<_SpaceParticles> {
                     ],
                   ),
                 )
-                .animate(
-                  onPlay: (c) => c.repeat(reverse: true),
-                  delay: Duration(milliseconds: p.delayMs),
-                )
-                .moveY(
-                  begin: 0,
-                  end: -p.moveY,
-                  duration: Duration(milliseconds: p.durationMs),
-                  curve: Curves.easeInOut,
-                )
-                .fade(
-                  begin: p.opacity * 0.30,
-                  end: p.opacity,
-                  duration: Duration(milliseconds: p.durationMs),
-                ),
+                    .animate(
+                      onPlay: (c) => c.repeat(reverse: true),
+                      delay: Duration(milliseconds: p.delayMs),
+                    )
+                    .moveY(
+                      begin: 0,
+                      end: -p.moveY,
+                      duration: Duration(milliseconds: p.durationMs),
+                      curve: Curves.easeInOut,
+                    )
+                    .fade(
+                      begin: p.opacity * 0.30,
+                      end: p.opacity,
+                      duration: Duration(milliseconds: p.durationMs),
+                    ),
               );
             }).toList(),
           );
@@ -1724,8 +989,8 @@ class _SpaceParticlesState extends State<_SpaceParticles> {
 
 class _ParticleData {
   final double x, y, size, opacity, moveY;
-  final int    durationMs, delayMs;
-  final bool   isCyan;
+  final int durationMs, delayMs;
+  final bool isCyan;
 
   const _ParticleData({
     required this.x,
@@ -1750,10 +1015,9 @@ class _ShootingStars extends StatefulWidget {
 
 class _ShootingStarsState extends State<_ShootingStars>
     with TickerProviderStateMixin {
-
   static const _count = 4;
   late final List<AnimationController> _ctrls;
-  late final List<_StarData>           _data;
+  late final List<_StarData> _data;
   final _rng = Random();
 
   @override
@@ -1777,11 +1041,11 @@ class _ShootingStarsState extends State<_ShootingStars>
   }
 
   _StarData _randomStar() => _StarData(
-        startX:   _rng.nextDouble() * 0.90,
-        startY:   _rng.nextDouble() * 0.80,
+        startX: _rng.nextDouble() * 0.90,
+        startY: _rng.nextDouble() * 0.80,
         angleDeg: 15.0 + _rng.nextDouble() * 35.0,
-        length:   0.12 + _rng.nextDouble() * 0.14,
-        width:    1.2  + _rng.nextDouble() * 1.2,
+        length: 0.12 + _rng.nextDouble() * 0.14,
+        width: 1.2 + _rng.nextDouble() * 1.2,
       );
 
   void _fire(int i) {
@@ -1796,7 +1060,9 @@ class _ShootingStarsState extends State<_ShootingStars>
 
   @override
   void dispose() {
-    for (final c in _ctrls) { c.dispose(); }
+    for (final c in _ctrls) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -1827,7 +1093,7 @@ class _StarData {
 
 class _ShootingStarPainter extends CustomPainter {
   final List<AnimationController> ctrls;
-  final List<_StarData>           data;
+  final List<_StarData> data;
   const _ShootingStarPainter({required this.ctrls, required this.data});
 
   @override
@@ -1836,15 +1102,15 @@ class _ShootingStarPainter extends CustomPainter {
       final t = ctrls[i].value;
       if (t <= 0) continue;
 
-      final d        = data[i];
-      final rad      = d.angleDeg * pi / 180;
-      final dx       = cos(rad);
-      final dy       = sin(rad);
-      final travel   = d.length * size.width;
+      final d = data[i];
+      final rad = d.angleDeg * pi / 180;
+      final dx = cos(rad);
+      final dy = sin(rad);
+      final travel = d.length * size.width;
       final trailLen = travel * 0.40;
 
       // Cabeza: avanza a lo largo de la dirección
-      final hx = d.startX * size.width  + dx * travel * t;
+      final hx = d.startX * size.width + dx * travel * t;
       final hy = d.startY * size.height + dy * travel * t;
 
       // Cola: posición fija detrás de la cabeza
@@ -1874,8 +1140,8 @@ class _ShootingStarPainter extends CustomPainter {
             ],
           ).createShader(Rect.fromPoints(Offset(tx, ty), Offset(hx, hy)))
           ..strokeWidth = d.width * alpha
-          ..style       = PaintingStyle.stroke
-          ..strokeCap   = StrokeCap.round,
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round,
       );
 
       // ── Punto brillante en la cabeza ───────────────────────────────────
@@ -1883,7 +1149,7 @@ class _ShootingStarPainter extends CustomPainter {
         Offset(hx, hy),
         d.width * 1.5 * alpha,
         Paint()
-          ..color      = Colors.white.withOpacity(0.95 * alpha)
+          ..color = Colors.white.withOpacity(0.95 * alpha)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
       );
     }
@@ -1892,7 +1158,6 @@ class _ShootingStarPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ShootingStarPainter old) => true;
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Botón del diálogo de nombre del mundo
@@ -1907,7 +1172,7 @@ class _WorldNameButton extends StatefulWidget {
 }
 
 class _WorldNameButtonState extends State<_WorldNameButton> {
-  bool   _saving = false;
+  bool _saving = false;
   String? _error;
 
   @override
@@ -1940,7 +1205,7 @@ class _WorldNameButtonState extends State<_WorldNameButton> {
                     if (name.isEmpty) return;
                     setState(() {
                       _saving = true;
-                      _error  = null;
+                      _error = null;
                     });
                     try {
                       await Supabase.instance.client
@@ -1950,7 +1215,7 @@ class _WorldNameButtonState extends State<_WorldNameButton> {
                       if (mounted) {
                         setState(() {
                           _saving = false;
-                          _error  = 'Error al guardar. Inténtalo de nuevo.';
+                          _error = 'Error al guardar. Inténtalo de nuevo.';
                         });
                       }
                     }

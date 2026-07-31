@@ -23,17 +23,12 @@ class ChildNotificationBell extends ConsumerStatefulWidget {
       _ChildNotificationBellState();
 }
 
-class _ChildNotificationBellState
-    extends ConsumerState<ChildNotificationBell> {
-
+class _ChildNotificationBellState extends ConsumerState<ChildNotificationBell> {
   void _openPanel() {
     // Marcar todas como leídas al abrir
     final userId = ref.read(currentUserProvider)?.id;
     if (userId != null) {
-      ref
-          .read(notificationRepositoryProvider)
-          .markAllRead(userId)
-          .then((_) {
+      ref.read(notificationRepositoryProvider).markAllRead(userId).then((_) {
         if (!mounted) return;
         ref.invalidate(unreadCountProvider);
         ref.invalidate(notificationsListProvider);
@@ -41,8 +36,8 @@ class _ChildNotificationBellState
     }
 
     showModalBottomSheet(
-      context:           context,
-      backgroundColor:   Colors.transparent,
+      context: context,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (_) => _NotifBottomSheet(accent: widget.accentColor),
     );
@@ -50,7 +45,7 @@ class _ChildNotificationBellState
 
   @override
   Widget build(BuildContext context) {
-    final count  = ref.watch(unreadCountProvider).valueOrNull ?? 0;
+    final count = ref.watch(unreadCountProvider).valueOrNull ?? 0;
     final accent = widget.accentColor ?? const Color(0xFF69F0AE);
 
     return GestureDetector(
@@ -62,7 +57,7 @@ class _ChildNotificationBellState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color:        Colors.black.withAlpha(100),
+              color: Colors.black.withAlpha(100),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: count > 0 ? accent.withAlpha(150) : Colors.white24,
@@ -78,30 +73,30 @@ class _ChildNotificationBellState
           if (count > 0)
             Positioned(
               right: -3,
-              top:   -3,
+              top: -3,
               child: Container(
                 padding: const EdgeInsets.all(3),
                 decoration: const BoxDecoration(
-                  color:  Color(0xFFEC4899),
-                  shape:  BoxShape.circle,
+                  color: Color(0xFFEC4899),
+                  shape: BoxShape.circle,
                 ),
                 constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
                 child: Text(
                   count > 9 ? '9+' : '$count',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color:      Colors.white,
-                    fontSize:   8,
+                    color: Colors.white,
+                    fontSize: 8,
                     fontWeight: FontWeight.w800,
                     fontFamily: 'Nunito',
                   ),
                 ),
               ).animate().scale(
-                begin: const Offset(0.6, 0.6),
-                end:   const Offset(1.0, 1.0),
-                duration: 200.ms,
-                curve: Curves.elasticOut,
-              ),
+                    begin: const Offset(0.6, 0.6),
+                    end: const Offset(1.0, 1.0),
+                    duration: 200.ms,
+                    curve: Curves.elasticOut,
+                  ),
             ),
         ],
       ),
@@ -122,7 +117,7 @@ class _NotifBottomSheet extends ConsumerWidget {
     final effectiveAccent = accent ?? const Color(0xFF69F0AE);
 
     return Container(
-      height:       MediaQuery.of(context).size.height * 0.65,
+      height: MediaQuery.of(context).size.height * 0.65,
       decoration: const BoxDecoration(
         color: Color(0xFF0D1230),
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -132,11 +127,11 @@ class _NotifBottomSheet extends ConsumerWidget {
           // ── Tirador ──────────────────────────────────────────────────
           Center(
             child: Container(
-              margin:       const EdgeInsets.only(top: 12, bottom: 4),
-              width:        40,
-              height:       4,
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
-                color:        Colors.white24,
+                color: Colors.white24,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -149,16 +144,16 @@ class _NotifBottomSheet extends ConsumerWidget {
               Icon(
                 Icons.notifications_rounded,
                 color: effectiveAccent,
-                size:  22,
+                size: 22,
               ),
               const SizedBox(width: 8),
               const Text(
                 'Notificaciones',
                 style: TextStyle(
-                  color:      Colors.white,
+                  color: Colors.white,
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w800,
-                  fontSize:   17,
+                  fontSize: 17,
                 ),
               ),
               const Spacer(),
@@ -167,9 +162,9 @@ class _NotifBottomSheet extends ConsumerWidget {
                 child: const Text(
                   'Cerrar',
                   style: TextStyle(
-                    color:      Colors.white38,
+                    color: Colors.white38,
                     fontFamily: 'Nunito',
-                    fontSize:   13,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -194,12 +189,13 @@ class _NotifBottomSheet extends ConsumerWidget {
                   return const _EmptyNotifs();
                 }
                 return ListView.builder(
-                  padding:    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemCount:  list.length,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: list.length,
                   itemBuilder: (ctx, i) {
                     final n = list[i];
                     return _NotifTile(
-                      notif:  n,
+                      notif: n,
                       accent: effectiveAccent,
                     ).animate(delay: (30 * i).ms).fadeIn(duration: 200.ms);
                   },
@@ -219,7 +215,7 @@ class _NotifBottomSheet extends ConsumerWidget {
 class _NotifTile extends ConsumerStatefulWidget {
   const _NotifTile({required this.notif, required this.accent});
   final AppNotification notif;
-  final Color           accent;
+  final Color accent;
 
   @override
   ConsumerState<_NotifTile> createState() => _NotifTileState();
@@ -233,17 +229,17 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
     final parentId = widget.notif.data['parent_id'] as String?;
     if (parentId == null) return;
 
-    final userId   = ref.read(currentUserProvider)?.id;
-    final profile  = ref.read(currentProfileProvider).valueOrNull;
+    final userId = ref.read(currentUserProvider)?.id;
+    final profile = ref.read(currentProfileProvider).valueOrNull;
     if (userId == null || profile == null) return;
 
     setState(() => _acting = true);
     try {
       await ref.read(parentRepositoryProvider).acceptLinkRequest(
-        parentId:  parentId,
-        childId:   userId,
-        childName: profile.displayName,
-      );
+            parentId: parentId,
+            childId: userId,
+            childName: profile.displayName,
+          );
       // Marcar notificación como leída
       await ref.read(notificationRepositoryProvider).markRead(widget.notif.id);
       ref.invalidate(notificationsListProvider);
@@ -251,19 +247,20 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
       setState(() => _handled = true);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text(
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
             '¡Solicitud aceptada! Tu tutor puede verte ahora. 🎉',
             style: TextStyle(fontFamily: 'Nunito'),
           ),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
         ));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error: $e', style: const TextStyle(fontFamily: 'Nunito')),
+          content:
+              Text('Error: $e', style: const TextStyle(fontFamily: 'Nunito')),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ));
@@ -312,8 +309,7 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
 
   @override
   Widget build(BuildContext context) {
-    final isLinkRequest =
-        widget.notif.type == 'link_request' && !_handled;
+    final isLinkRequest = widget.notif.type == 'link_request' && !_handled;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -346,20 +342,20 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
                   Text(
                     widget.notif.title,
                     style: const TextStyle(
-                      color:      Colors.white,
+                      color: Colors.white,
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w700,
-                      fontSize:   13,
+                      fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     widget.notif.body,
                     style: const TextStyle(
-                      color:      Colors.white54,
+                      color: Colors.white54,
                       fontFamily: 'Nunito',
-                      fontSize:   11,
-                      height:     1.35,
+                      fontSize: 11,
+                      height: 1.35,
                     ),
                   ),
                 ],
@@ -371,19 +367,19 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
                 Text(
                   widget.notif.timeAgo,
                   style: const TextStyle(
-                    color:      Colors.white30,
+                    color: Colors.white30,
                     fontFamily: 'Nunito',
-                    fontSize:   10,
+                    fontSize: 10,
                   ),
                 ),
                 if (!widget.notif.isRead && !isLinkRequest)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    width:  8,
+                    width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color:  Color(0xFFEC4899),
-                      shape:  BoxShape.circle,
+                      color: Color(0xFFEC4899),
+                      shape: BoxShape.circle,
                     ),
                   ),
               ],
@@ -399,7 +395,7 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
                   onPressed: _acting ? null : _reject,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white54,
-                    side:            const BorderSide(color: Colors.white24),
+                    side: const BorderSide(color: Colors.white24),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -409,7 +405,7 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w600,
-                      fontSize:   12,
+                      fontSize: 12,
                     ),
                   ),
                 ),
@@ -427,10 +423,10 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
                   ),
                   child: _acting
                       ? const SizedBox(
-                          width:  16,
+                          width: 16,
                           height: 16,
-                          child:  CircularProgressIndicator(
-                            color:       Colors.white,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
                             strokeWidth: 2,
                           ),
                         )
@@ -439,7 +435,7 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
                           style: TextStyle(
                             fontFamily: 'Nunito',
                             fontWeight: FontWeight.w700,
-                            fontSize:   12,
+                            fontSize: 12,
                           ),
                         ),
                 ),
@@ -452,14 +448,12 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                widget.notif.type == 'link_request'
-                    ? '✅ Respondida'
-                    : '',
+                widget.notif.type == 'link_request' ? '✅ Respondida' : '',
                 style: const TextStyle(
-                  color:      Colors.white38,
+                  color: Colors.white38,
                   fontFamily: 'Nunito',
-                  fontSize:   11,
-                  fontStyle:  FontStyle.italic,
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
             ),
@@ -486,10 +480,10 @@ class _EmptyNotifs extends StatelessWidget {
           Text(
             'Sin notificaciones',
             style: TextStyle(
-              color:      Colors.white54,
+              color: Colors.white54,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w700,
-              fontSize:   15,
+              fontSize: 15,
             ),
           ),
           SizedBox(height: 6),
@@ -497,9 +491,9 @@ class _EmptyNotifs extends StatelessWidget {
             'Aquí verás cuando un tutor\nquiera conectarse contigo.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color:      Colors.white30,
+              color: Colors.white30,
               fontFamily: 'Nunito',
-              fontSize:   12,
+              fontSize: 12,
             ),
           ),
         ],

@@ -16,13 +16,13 @@ class PinEntryScreen extends StatefulWidget {
 }
 
 class _PinEntryScreenState extends State<PinEntryScreen> {
-  static const _pinLength  = 6;
+  static const _pinLength = 6;
   static const _maxAttempts = 3;
 
-  String _pin      = '';
-  int    _attempts = 0;
-  bool   _loading  = false;
-  bool   _shaking  = false;
+  String _pin = '';
+  int _attempts = 0;
+  bool _loading = false;
+  bool _shaking = false;
   String _errorMsg = '';
   String _displayName = '';
 
@@ -41,13 +41,17 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           .select('display_name')
           .eq('id', userId)
           .maybeSingle();
-      if (mounted) setState(() => _displayName = data?['display_name'] as String? ?? '');
+      if (mounted)
+        setState(() => _displayName = data?['display_name'] as String? ?? '');
     } catch (_) {}
   }
 
   void _onDigit(String d) {
     if (_pin.length >= _pinLength || _shaking) return;
-    setState(() { _pin += d; _errorMsg = ''; });
+    setState(() {
+      _pin += d;
+      _errorMsg = '';
+    });
     if (_pin.length == _pinLength) {
       Future.delayed(const Duration(milliseconds: 200), _verify);
     }
@@ -89,9 +93,9 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
       _attempts++;
       if (!mounted) return;
       setState(() {
-        _loading  = false;
-        _pin      = '';
-        _shaking  = true;
+        _loading = false;
+        _pin = '';
+        _shaking = true;
         _errorMsg = _attempts >= _maxAttempts
             ? 'Demasiados intentos. Pídele a tu papá que te ayude.'
             : 'PIN incorrecto 🔐 Te quedan ${_maxAttempts - _attempts} intento${_maxAttempts - _attempts == 1 ? '' : 's'}.';
@@ -101,8 +105,8 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _loading  = false;
-          _pin      = '';
+          _loading = false;
+          _pin = '';
           _errorMsg = 'No se pudo verificar. ¿Tienes internet?';
         });
       }
@@ -117,7 +121,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
-            end:   Alignment.bottomCenter,
+            end: Alignment.bottomCenter,
             colors: [Color(0xFF0D0D2B), Color(0xFF1A237E), Color(0xFF0D0D2B)],
           ),
         ),
@@ -127,7 +131,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
               const SizedBox(height: 16),
 
               // Blink
-              BlinkCharacterWidget(width: 90, enableBounce: true)
+              const BlinkCharacterWidget(width: 90, enableBounce: true)
                   .animate()
                   .scale(duration: 600.ms, curve: Curves.elasticOut),
 
@@ -156,8 +160,8 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
               // Dots del PIN con shake si hay error
               _PinDots(
-                pin:     _pin,
-                length:  _pinLength,
+                pin: _pin,
+                length: _pinLength,
                 shaking: _shaking,
               ),
 
@@ -171,9 +175,11 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
                         key: const ValueKey('err'),
                         padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFF5252).withValues(alpha: 0.15),
+                            color:
+                                const Color(0xFFFF5252).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -193,8 +199,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 
               const Spacer(),
 
-              if (!_loading)
-                _NumPad(onDigit: _onDigit, onDelete: _onDelete),
+              if (!_loading) _NumPad(onDigit: _onDigit, onDelete: _onDelete),
 
               if (_loading)
                 const Padding(
@@ -214,10 +219,11 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
 // ─── Puntos con animación shake ───────────────────────────────────────────────
 
 class _PinDots extends StatelessWidget {
-  const _PinDots({required this.pin, required this.length, required this.shaking});
+  const _PinDots(
+      {required this.pin, required this.length, required this.shaking});
   final String pin;
-  final int    length;
-  final bool   shaking;
+  final int length;
+  final bool shaking;
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +234,7 @@ class _PinDots extends StatelessWidget {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.symmetric(horizontal: 8),
-          width:  filled ? 22 : 18,
+          width: filled ? 22 : 18,
           height: filled ? 22 : 18,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -260,7 +266,7 @@ class _PinDots extends StatelessWidget {
 class _NumPad extends StatelessWidget {
   const _NumPad({required this.onDigit, required this.onDelete});
   final ValueChanged<String> onDigit;
-  final VoidCallback         onDelete;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -274,12 +280,14 @@ class _NumPad extends StatelessWidget {
       child: Column(
         children: [
           ...rows.map((row) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: row.map((d) => _NumKey(digit: d, onTap: () => onDigit(d))).toList(),
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: row
+                      .map((d) => _NumKey(digit: d, onTap: () => onDigit(d)))
+                      .toList(),
+                ),
+              )),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -291,7 +299,8 @@ class _NumPad extends StatelessWidget {
                   width: 72,
                   height: 72,
                   child: Center(
-                    child: Icon(Icons.backspace_rounded, color: Colors.white54, size: 30),
+                    child: Icon(Icons.backspace_rounded,
+                        color: Colors.white54, size: 30),
                   ),
                 ),
               ),
@@ -305,7 +314,7 @@ class _NumPad extends StatelessWidget {
 
 class _NumKey extends StatelessWidget {
   const _NumKey({required this.digit, required this.onTap});
-  final String       digit;
+  final String digit;
   final VoidCallback onTap;
 
   @override

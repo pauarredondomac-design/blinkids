@@ -18,7 +18,11 @@ class DemoCompleteScreen extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF0D0D2B), Color(0xFF1A1A6E), Color(0xFF0D0D2B)],
+                colors: [
+                  Color(0xFF0D0D2B),
+                  Color(0xFF1A1A6E),
+                  Color(0xFF0D0D2B)
+                ],
               ),
             ),
           ),
@@ -32,7 +36,7 @@ class DemoCompleteScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
               child: Column(
                 children: [
-                  BlinkCharacterWidget(width: 120, enableBounce: true)
+                  const BlinkCharacterWidget(width: 120, enableBounce: true)
                       .animate()
                       .scale(duration: 700.ms, curve: Curves.elasticOut),
 
@@ -57,7 +61,10 @@ class DemoCompleteScreen extends StatelessWidget {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(0, 6)),
+                        BoxShadow(
+                            color: Colors.black38,
+                            blurRadius: 20,
+                            offset: Offset(0, 6)),
                       ],
                     ),
                     child: const Text(
@@ -76,14 +83,14 @@ class DemoCompleteScreen extends StatelessWidget {
                   const SizedBox(height: 14),
 
                   // Cards de desbloqueo
-                  Row(
+                  const Row(
                     children: [
                       _UnlockCard(emoji: '🏦', label: 'Banco\nEstelar'),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _UnlockCard(emoji: '⚔️', label: 'Misiones'),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _UnlockCard(emoji: '💰', label: 'Monedas\nReales'),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       _UnlockCard(emoji: '🎨', label: 'Cosméticos'),
                     ],
                   ).animate().fadeIn(delay: 700.ms),
@@ -95,20 +102,25 @@ class DemoCompleteScreen extends StatelessWidget {
                     onTap: () => context.go('/waiting-parent'),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 20),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
                         ),
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: const [
-                          BoxShadow(color: Color(0x55FFD700), blurRadius: 16, offset: Offset(0, 4)),
+                          BoxShadow(
+                              color: Color(0x55FFD700),
+                              blurRadius: 16,
+                              offset: Offset(0, 4)),
                         ],
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.family_restroom_rounded, color: Colors.white, size: 20),
+                          Icon(Icons.family_restroom_rounded,
+                              color: Colors.white, size: 20),
                           SizedBox(width: 8),
                           Flexible(
                             child: Text(
@@ -125,15 +137,18 @@ class DemoCompleteScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                  )
-                      .animate(onPlay: (c) => c.repeat(reverse: true))
-                      .scaleXY(begin: 1.0, end: 1.02, duration: 900.ms, curve: Curves.easeInOut),
+                  ).animate(onPlay: (c) => c.repeat(reverse: true)).scaleXY(
+                      begin: 1.0,
+                      end: 1.02,
+                      duration: 900.ms,
+                      curve: Curves.easeInOut),
 
                   const SizedBox(height: 10),
 
                   TextButton.icon(
                     onPressed: () => context.go('/world'),
-                    icon: const Icon(Icons.map_rounded, color: Colors.white54, size: 16),
+                    icon: const Icon(Icons.map_rounded,
+                        color: Colors.white54, size: 16),
                     label: const Text(
                       'Seguir explorando el mapa',
                       style: TextStyle(
@@ -165,18 +180,21 @@ class _Stars extends StatelessWidget {
         final h = constraints.maxHeight;
         return Stack(
           children: List.generate(16, (i) {
-            final rng     = i * 1693 + 17;
-            final left    = (rng % 100) / 100 * w;
-            final top     = ((rng * 37) % 100) / 100 * h;
-            final radius  = 1.0 + (rng % 3).toDouble();
+            final rng = i * 1693 + 17;
+            final left = (rng % 100) / 100 * w;
+            final top = ((rng * 37) % 100) / 100 * h;
+            final radius = 1.0 + (rng % 3).toDouble();
             final opacity = 0.2 + (rng % 5) / 12.0;
             return Positioned(
-              left: left, top: top,
+              left: left,
+              top: top,
               child: Opacity(
                 opacity: opacity,
                 child: Container(
-                  width: radius * 2, height: radius * 2,
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  width: radius * 2,
+                  height: radius * 2,
+                  decoration: const BoxDecoration(
+                      color: Colors.white, shape: BoxShape.circle),
                 ),
               ),
             );

@@ -26,11 +26,13 @@ class WorldMapScreen extends ConsumerWidget {
       steps: const [
         TutorialStep(
           title: '🗺️ El Mapa Espacial',
-          body: '¡Bienvenido a Blinkids! Aquí viven todas las actividades. Cada estación es un lugar diferente.',
+          body:
+              '¡Bienvenido a Blinkids! Aquí viven todas las actividades. Cada estación es un lugar diferente.',
         ),
         TutorialStep(
           title: '🚀 Las Estaciones',
-          body: 'Toca una estación para entrar. Empieza por "Mi Bolsa" para distribuir tus monedas de inicio.',
+          body:
+              'Toca una estación para entrar. Empieza por "Mi Bolsa" para distribuir tus monedas de inicio.',
         ),
       ],
       child: Scaffold(
@@ -87,7 +89,11 @@ class _StarField extends StatelessWidget {
       children: List.generate(65, (i) {
         final x = ((i * 37.3 + i * i * 0.7) % 97) / 100;
         final y = ((i * 17.7 + i * 13.1) % 93) / 100;
-        final sz = (i % 4 == 0) ? 2.5 : (i % 4 == 1) ? 1.8 : 1.2;
+        final sz = (i % 4 == 0)
+            ? 2.5
+            : (i % 4 == 1)
+                ? 1.8
+                : 1.2;
         final op = 0.4 + (i % 5) * 0.12;
         return Positioned(
           left: size.width * x,
@@ -126,9 +132,13 @@ class _SpaceDecorations extends StatelessWidget {
           top: 20,
           child: Opacity(
             opacity: .55,
-            child: Text('🪐', style: const TextStyle(fontSize: 90))
+            child: const Text('🪐', style: TextStyle(fontSize: 90))
                 .animate(onPlay: (c) => c.repeat(reverse: true))
-                .moveY(begin: 0, end: -10, duration: 5000.ms, curve: Curves.easeInOut)
+                .moveY(
+                    begin: 0,
+                    end: -10,
+                    duration: 5000.ms,
+                    curve: Curves.easeInOut)
                 .then()
                 .moveY(begin: -10, end: 0, duration: 5000.ms),
           ),
@@ -138,9 +148,13 @@ class _SpaceDecorations extends StatelessWidget {
           bottom: 30,
           child: Opacity(
             opacity: .4,
-            child: Text('🌑', style: const TextStyle(fontSize: 55))
+            child: const Text('🌑', style: TextStyle(fontSize: 55))
                 .animate(onPlay: (c) => c.repeat(reverse: true))
-                .moveY(begin: 0, end: -6, duration: 3500.ms, curve: Curves.easeInOut)
+                .moveY(
+                    begin: 0,
+                    end: -6,
+                    duration: 3500.ms,
+                    curve: Curves.easeInOut)
                 .then()
                 .moveY(begin: -6, end: 0, duration: 3500.ms),
           ),
@@ -150,9 +164,13 @@ class _SpaceDecorations extends StatelessWidget {
           bottom: 15,
           child: Opacity(
             opacity: .5,
-            child: Text('🛸', style: const TextStyle(fontSize: 32))
+            child: const Text('🛸', style: TextStyle(fontSize: 32))
                 .animate(onPlay: (c) => c.repeat(reverse: true))
-                .moveY(begin: 0, end: -8, duration: 2000.ms, curve: Curves.easeInOut)
+                .moveY(
+                    begin: 0,
+                    end: -8,
+                    duration: 2000.ms,
+                    curve: Curves.easeInOut)
                 .then()
                 .moveY(begin: -8, end: 0, duration: 2000.ms),
           ),
@@ -277,11 +295,16 @@ class _SpaceHud extends StatelessWidget {
 // ─────────────────────────────────────────────
 class _SpaceMap extends StatelessWidget {
   static const _stations = [
-    _Station('Mi Bolsa', SpaceBuildingType.vault, '/wallet', Color(0xFF00E5FF), true),
-    _Station('Misiones', SpaceBuildingType.command, null, Color(0xFFFF6E40), false),
-    _Station('Trabajos', SpaceBuildingType.workshop, null, Color(0xFFFFD740), false),
-    _Station('Preguntas', SpaceBuildingType.lab, null, Color(0xFFCE93D8), false),
-    _Station('Mercado', SpaceBuildingType.market, null, Color(0xFF69F0AE), false),
+    _Station('Mi Bolsa', SpaceBuildingType.vault, '/wallet', Color(0xFF00E5FF),
+        true),
+    _Station(
+        'Misiones', SpaceBuildingType.command, null, Color(0xFFFF6E40), false),
+    _Station(
+        'Trabajos', SpaceBuildingType.workshop, null, Color(0xFFFFD740), false),
+    _Station(
+        'Preguntas', SpaceBuildingType.lab, null, Color(0xFFCE93D8), false),
+    _Station(
+        'Mercado', SpaceBuildingType.market, null, Color(0xFF69F0AE), false),
     _Station('Tienda', SpaceBuildingType.store, null, Color(0xFFF48FB1), false),
   ];
 
@@ -346,9 +369,7 @@ class _StationNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: station.route != null
-          ? () => context.go(station.route!)
-          : null,
+      onTap: station.route != null ? () => context.go(station.route!) : null,
       child: SizedBox(
         width: 110,
         child: Column(
@@ -383,16 +404,14 @@ class _StationNode extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: const Center(
-                      child: Text('🔒',
-                          style: TextStyle(fontSize: 30)),
+                      child: Text('🔒', style: TextStyle(fontSize: 30)),
                     ),
                   ),
               ],
             )
                 .animate()
                 .fadeIn(
-                    delay: Duration(milliseconds: index * 90),
-                    duration: 400.ms)
+                    delay: Duration(milliseconds: index * 90), duration: 400.ms)
                 .scale(
                     begin: const Offset(.7, .7),
                     end: const Offset(1, 1),
@@ -421,11 +440,9 @@ class _StationNode extends StatelessWidget {
                   fontFamily: 'Nunito',
                 ),
               ),
-            )
-                .animate()
-                .fadeIn(
-                    delay: Duration(milliseconds: index * 90 + 180),
-                    duration: 300.ms),
+            ).animate().fadeIn(
+                delay: Duration(milliseconds: index * 90 + 180),
+                duration: 300.ms),
           ],
         ),
       ),
@@ -441,8 +458,8 @@ class _PathPainter extends CustomPainter {
   final List<Offset> positions;
 
   static const _connections = [
-    [0, 1], [1, 2],       // fila superior
-    [3, 4], [4, 5],       // fila inferior
+    [0, 1], [1, 2], // fila superior
+    [3, 4], [4, 5], // fila inferior
     [0, 3], [1, 4], [2, 5], // verticales
   ];
 
@@ -466,8 +483,8 @@ class _PathPainter extends CustomPainter {
       canvas.drawLine(
           Offset(p1.dx, p1.dy + 50), Offset(p2.dx, p2.dy + 50), glowPaint);
       // Línea punteada
-      _drawDashed(
-          canvas, Offset(p1.dx, p1.dy + 50), Offset(p2.dx, p2.dy + 50), dashPaint);
+      _drawDashed(canvas, Offset(p1.dx, p1.dy + 50), Offset(p2.dx, p2.dy + 50),
+          dashPaint);
     }
   }
 
@@ -477,9 +494,11 @@ class _PathPainter extends CustomPainter {
     final dx = p2.dx - p1.dx;
     final dy = p2.dy - p1.dy;
     final dist = (dx * dx + dy * dy) == 0 ? 1 : (dx * dx + dy * dy);
-    final len = dist == 1 ? 0.0 : (dx * dx + dy * dy) == 0
+    final len = dist == 1
         ? 0.0
-        : (p2 - p1).distance;
+        : (dx * dx + dy * dy) == 0
+            ? 0.0
+            : (p2 - p1).distance;
     if (len == 0) return;
     final ux = dx / len;
     final uy = dy / len;

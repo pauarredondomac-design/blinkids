@@ -17,6 +17,10 @@ import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/rocket_launch_overlay.dart';
+import '../../../shared/widgets/badges_row.dart';
+import '../../../shared/widgets/activity_player.dart';
+import '../../../shared/providers/question_provider.dart';
+import 'trabajos_en_casa_panel.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TrabajosScreen
@@ -58,16 +62,24 @@ class TrabajosScreen extends ConsumerStatefulWidget {
   ConsumerState<TrabajosScreen> createState() => _TrabajosScreenState();
 }
 
-class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
+class _TrabajosScreenState extends ConsumerState<TrabajosScreen> with SingleTickerProviderStateMixin {
   Map<String, int>   _inventory  = {};
   List<CraftingJob>? _remoteJobs;   // null = usando hardcoded
   bool _loadingInv = true;
+  late final TabController _tabCtrl;
 
   @override
   void initState() {
     super.initState();
+    _tabCtrl = TabController(length: 3, vsync: this);
     _loadInventory();
     _loadJobs();
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadJobs() async {
@@ -127,7 +139,7 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
         );
       }
 
-      await awardXp(ref, job.xpReward);
+      final newBadges = await awardXp(ref, job.xpReward);
       ref.invalidate(currentCharacterProvider);
 
       if (job.itemReward != null) {
@@ -145,7 +157,8 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
 
       if (mounted) {
         await _showRewardDialog(job);
-        if (reachedFullFuel && mounted) showRocketLaunchOverlay(context);
+        if (mounted) showBadgeUnlockToasts(context, ref, newBadges);
+        if (reachedFullFuel && mounted) await handleFuelReachedFull(context, ref);
       }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
@@ -202,31 +215,73 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
               onBack: () => context.pop(),
             ),
             Expanded(
-              child: _loadingInv
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFF4FC3F7)),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                      itemCount: jobs.length,
-                      itemBuilder: (ctx, i) {
-                        final job   = jobs[i];
-                        final canDo = _hasAllMaterials(job);
-                        return _JobCard(
-                          job:       job,
-                          inventory: _inventory,
-                          canDo:     canDo,
-                          onTap:     () => _doJob(job),
-                        )
-                            .animate(delay: (80 * i).ms)
-                            .fadeIn(duration: 350.ms)
-                            .slideY(
-                              begin: 0.12, end: 0,
-                              curve: Curves.easeOut,
-                            );
-                      },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    color: const Color(0xFF0D0A2A),
+                    child: TabBar(
+                      controller: _tabCtrl,
+                      indicatorColor: const Color(0xFF4FC3F7),
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.white38,
+                      labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 13),
+                      tabs: const [
+                        Tab(text: '📜 Encargos'),
+                        Tab(text: '🔨 Taller'),
+                        Tab(text: '🏠 En Casa'),
+                      ],
                     ),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabCtrl,
+                      children: [
+                        Consumer(builder: (context, ref, __) {
+                          final activitiesAsync = ref.watch(questionsForModuleProvider('trabajos'));
+                          return activitiesAsync.when(
+                            loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFF4FC3F7))),
+                            error: (_, __) => const Center(
+                              child: Text('No se pudieron cargar los encargos.', style: TextStyle(color: Colors.white70, fontFamily: 'Nunito')),
+                            ),
+                            data: (activities) => ActivityPlayer(
+                              activities: activities,
+                              accentColor: const Color(0xFF4FC3F7),
+                              worldIdForFuel: worldId,
+                            ),
+                          );
+                        }),
+                        _loadingInv
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                    color: Color(0xFF4FC3F7)),
+                              )
+                            : ListView.builder(
+                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                                itemCount: jobs.length,
+                                itemBuilder: (ctx, i) {
+                                  final job   = jobs[i];
+                                  final canDo = _hasAllMaterials(job);
+                                  return _JobCard(
+                                    job:       job,
+                                    inventory: _inventory,
+                                    canDo:     canDo,
+                                    onTap:     () => _doJob(job),
+                                  )
+                                      .animate(delay: (80 * i).ms)
+                                      .fadeIn(duration: 350.ms)
+                                      .slideY(
+                                        begin: 0.12, end: 0,
+                                        curve: Curves.easeOut,
+                                      );
+                                },
+                              ),
+                        const TrabajosEnCasaPanel(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

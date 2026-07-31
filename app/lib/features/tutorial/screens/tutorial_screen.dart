@@ -10,7 +10,8 @@ import '../../../shared/providers/auth_provider.dart';
 
 // ─── Pasos del tutorial (fallback hardcodeado) ────────────────────────────────
 class _TutorialStep {
-  const _TutorialStep({required this.title, required this.body, required this.bg});
+  const _TutorialStep(
+      {required this.title, required this.body, required this.bg});
   final String title;
   final String body;
   final List<Color> bg;
@@ -26,22 +27,26 @@ const _bgColors = [
 const _fallbackSteps = [
   _TutorialStep(
     title: '¡Hola!',
-    body: '¡Hola! Soy Blink, el zorro más curioso de la galaxia. 🦊 ¡Por fin llegaste! Estaba esperando un compañero de viaje.',
+    body:
+        '¡Hola! Soy Blink, el zorro más curioso de la galaxia. 🦊 ¡Por fin llegaste! Estaba esperando un compañero de viaje.',
     bg: [Color(0xFF0D0D2B), Color(0xFF1A237E)],
   ),
   _TutorialStep(
     title: 'Monedas con superpoderes',
-    body: 'Cada misión nos lleva un poco más lejos. Algunas fáciles, otras nos harán pensar, pero en todas aprendemos algo. ¡Cada decisión cuenta!',
+    body:
+        'Cada misión nos lleva un poco más lejos. Algunas fáciles, otras nos harán pensar, pero en todas aprendemos algo. ¡Cada decisión cuenta!',
     bg: [Color(0xFF1A237E), Color(0xFF4A148C)],
   ),
   _TutorialStep(
     title: 'Nuestras misiones',
-    body: 'Cada misión nos lleva un poco más lejos. Algunas fáciles, otras nos harán pensar, pero en todas aprendemos algo. ¡Cada decisión cuenta!',
+    body:
+        'Cada misión nos lleva un poco más lejos. Algunas fáciles, otras nos harán pensar, pero en todas aprendemos algo. ¡Cada decisión cuenta!',
     bg: [Color(0xFF4A148C), Color(0xFF1A1A2E)],
   ),
   _TutorialStep(
     title: 'Tu Bolsa Espacial',
-    body: 'Antes de despegar te muestro tu Bolsa: Ahorro, Inversión,  Compartir, Gastor . Aquí cada moneda encuentra su misión.',
+    body:
+        'Antes de despegar te muestro tu Bolsa: Ahorro, Inversión,  Compartir, Gastor . Aquí cada moneda encuentra su misión.',
     bg: [Color(0xFF1A1A2E), Color(0xFF0D2B1A)],
   ),
 ];
@@ -57,9 +62,9 @@ class TutorialScreen extends ConsumerStatefulWidget {
 }
 
 class _TutorialScreenState extends ConsumerState<TutorialScreen> {
-  int  _step         = 0;
+  int _step = 0;
   bool _isCompleting = false;
-  bool _typingDone   = false;
+  bool _typingDone = false;
   List<_TutorialStep> _steps = _fallbackSteps;
 
   @override
@@ -74,7 +79,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       setState(() {
         _steps = remote.asMap().entries.map((e) {
           final bg = _bgColors[e.key % _bgColors.length];
-          return _TutorialStep(title: e.value.title, body: e.value.body, bg: bg);
+          return _TutorialStep(
+              title: e.value.title, body: e.value.body, bg: bg);
         }).toList();
       });
     }
@@ -128,16 +134,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final step   = _steps[_step];
+    final step = _steps[_step];
     final isLast = _step == _steps.length - 1;
 
-    final size        = MediaQuery.of(context).size;
-    final blinkW      = (size.width * 0.22).clamp(100.0, 190.0);
-    final blinkH      = blinkW * 0.85;
-    final bubbleLeft  = blinkW - 10;
+    final size = MediaQuery.of(context).size;
+    final blinkW = (size.width * 0.22).clamp(100.0, 190.0);
+    final blinkH = blinkW * 0.85;
+    final bubbleLeft = blinkW - 10;
     final bubbleRight = size.width * 0.03;
     // Máximo alto del globo: toda la pantalla menos margen superior e inferior
-    final bubbleMaxH  = size.height - blinkH - 24;
+    final bubbleMaxH = size.height - blinkH - 24;
 
     return Scaffold(
       body: AnimatedContainer(
@@ -199,13 +205,12 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                       fit: BoxFit.fitWidth,
                       alignment: Alignment.topCenter,
                       filterQuality: FilterQuality.high,
-                    ).animate(key: ValueKey('blink_$_step'))
-                      .scale(
-                        begin: const Offset(0.7, 0.7),
-                        end:   const Offset(1.0, 1.0),
-                        duration: 500.ms,
-                        curve: Curves.elasticOut,
-                      ),
+                    ).animate(key: ValueKey('blink_$_step')).scale(
+                          begin: const Offset(0.7, 0.7),
+                          end: const Offset(1.0, 1.0),
+                          duration: 500.ms,
+                          curve: Curves.elasticOut,
+                        ),
                   ),
                 ),
               ],
@@ -235,12 +240,12 @@ class _IntroBubble extends StatefulWidget {
     required this.onAdvance,
   });
   final _TutorialStep step;
-  final int          stepIndex;
-  final int          totalSteps;
-  final bool         isLast;
-  final bool         isCompleting;
-  final bool         typingDone;
-  final double       maxBubbleH;
+  final int stepIndex;
+  final int totalSteps;
+  final bool isLast;
+  final bool isCompleting;
+  final bool typingDone;
+  final double maxBubbleH;
   final VoidCallback onTypingDone;
   final VoidCallback onPageContinue;
   final VoidCallback onAdvance;
@@ -255,34 +260,35 @@ class _IntroBubbleState extends State<_IntroBubble> {
   late final String _body;
 
   // Paginación del body
-  int    _pageStart  = 0;   // offset en _body donde empieza la página actual
-  int    _pageEnd    = 0;   // offset donde termina (calculado tras layout)
-  bool   _pageReady  = false; // true una vez que _pageEnd está calculado
-  bool   _hasMore    = false; // hay texto después de esta página
+  int _pageStart = 0; // offset en _body donde empieza la página actual
+  int _pageEnd = 0; // offset donde termina (calculado tras layout)
+  bool _pageReady = false; // true una vez que _pageEnd está calculado
+  bool _hasMore = false; // hay texto después de esta página
 
   // Typewriter
-  String _displayed  = '';
-  int    _charIndex  = 0;
+  String _displayed = '';
+  int _charIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _title = widget.step.title;
-    _body  = widget.step.body;
+    _body = widget.step.body;
   }
 
   // Llamado por LayoutBuilder cuando conocemos el ancho y alto disponibles
   void _initPage(double maxW, double maxH, double bodyFontSize) {
     if (_pageReady) return;
-    _pageEnd  = _findChunkEnd(_body, _pageStart, maxW, maxH, bodyFontSize);
-    _hasMore  = _pageEnd < _body.length;
+    _pageEnd = _findChunkEnd(_body, _pageStart, maxW, maxH, bodyFontSize);
+    _hasMore = _pageEnd < _body.length;
     _pageReady = true;
     _startTyping();
   }
 
   // Devuelve el índice hasta el que cabe el texto (body[start..result]) en maxH px
-  int _findChunkEnd(String text, int start, double maxW, double maxH, double fontSize) {
-    final sub   = text.substring(start);
+  int _findChunkEnd(
+      String text, int start, double maxW, double maxH, double fontSize) {
+    final sub = text.substring(start);
     final style = TextStyle(
       fontFamily: 'Nunito',
       fontWeight: FontWeight.w500,
@@ -294,16 +300,16 @@ class _IntroBubbleState extends State<_IntroBubble> {
     int lo = 1, hi = sub.length, best = sub.length;
     while (lo <= hi) {
       final mid = (lo + hi) ~/ 2;
-      final tp  = TextPainter(
+      final tp = TextPainter(
         text: TextSpan(text: sub.substring(0, mid), style: style),
         textDirection: TextDirection.ltr,
       )..layout(maxWidth: maxW);
 
       if (tp.height <= maxH) {
         best = mid;
-        lo   = mid + 1;
+        lo = mid + 1;
       } else {
-        hi   = mid - 1;
+        hi = mid - 1;
       }
     }
 
@@ -355,9 +361,9 @@ class _IntroBubbleState extends State<_IntroBubble> {
     if (!_hasMore) return;
     setState(() {
       _pageStart = _pageEnd;
-      _pageEnd   = 0;
+      _pageEnd = 0;
       _pageReady = false;
-      _hasMore   = false;
+      _hasMore = false;
       _displayed = '';
       _charIndex = 0;
     });
@@ -369,13 +375,13 @@ class _IntroBubbleState extends State<_IntroBubble> {
 
   @override
   Widget build(BuildContext context) {
-    final sw    = MediaQuery.of(context).size.width;
-    final sh    = MediaQuery.of(context).size.height;
+    final sw = MediaQuery.of(context).size.width;
+    final sh = MediaQuery.of(context).size.height;
     final scale = (sw / 360).clamp(0.75, 1.4);
     final titleSize = 16.0 * scale;
-    final bodySize  = 13.0 * scale;
-    final btnSize   = 12.0 * scale;
-    final pad       = (sh * 0.025).clamp(8.0, 18.0);
+    final bodySize = 13.0 * scale;
+    final btnSize = 12.0 * scale;
+    final pad = (sh * 0.025).clamp(8.0, 18.0);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -388,7 +394,6 @@ class _IntroBubbleState extends State<_IntroBubble> {
             painter: _TailPainter(),
           ),
         ),
-
         Container(
           width: double.infinity,
           padding: EdgeInsets.fromLTRB(pad, pad, pad, pad),
@@ -396,7 +401,8 @@ class _IntroBubbleState extends State<_IntroBubble> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             boxShadow: const [
-              BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(0, 6)),
+              BoxShadow(
+                  color: Colors.black38, blurRadius: 20, offset: Offset(0, 6)),
             ],
           ),
           child: Column(
@@ -410,7 +416,7 @@ class _IntroBubbleState extends State<_IntroBubble> {
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       margin: const EdgeInsets.only(right: 5),
-                      width:  i == widget.stepIndex ? 22 : 7,
+                      width: i == widget.stepIndex ? 22 : 7,
                       height: 7,
                       decoration: BoxDecoration(
                         color: i == widget.stepIndex
@@ -441,11 +447,12 @@ class _IntroBubbleState extends State<_IntroBubble> {
                 child: LayoutBuilder(
                   builder: (ctx, constraints) {
                     // Reservamos espacio para: título + dots + botón + paddings
-                    final dotsH    = widget.totalSteps > 1 ? 7 + pad * 0.6 : 0.0;
-                    final titleH   = titleSize * 1.3 + pad * 0.4;
-                    final buttonH  = btnSize * 2.0 + pad * 0.55 * 2 + pad * 0.8;
+                    final dotsH = widget.totalSteps > 1 ? 7 + pad * 0.6 : 0.0;
+                    final titleH = titleSize * 1.3 + pad * 0.4;
+                    final buttonH = btnSize * 2.0 + pad * 0.55 * 2 + pad * 0.8;
                     final reserved = dotsH + titleH + buttonH + pad * 2;
-                    final bodyMaxH = (widget.maxBubbleH - reserved).clamp(40.0, double.infinity);
+                    final bodyMaxH = (widget.maxBubbleH - reserved)
+                        .clamp(40.0, double.infinity);
 
                     // Inicializar paginación la primera vez
                     if (!_pageReady) {
@@ -487,13 +494,13 @@ class _IntroBubbleState extends State<_IntroBubble> {
                         ),
                         if (widget.isCompleting) ...[
                           SizedBox(height: pad * 0.8),
-                          Align(
+                          const Align(
                             alignment: Alignment.centerRight,
                             child: SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
-                                color: const Color(0xFF2563EB),
+                                color: Color(0xFF2563EB),
                                 strokeWidth: 2.5,
                               ),
                             ),
@@ -522,7 +529,7 @@ class _TailPainter extends CustomPainter {
       ..color = Colors.black26
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
     final paint = Paint()..color = Colors.white;
-    final path  = Path()
+    final path = Path()
       ..moveTo(size.width, 0)
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height / 2)
@@ -544,10 +551,10 @@ class _Star extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size   = MediaQuery.of(context).size;
-    final rng    = seed * 1693 + 17;
-    final left   = (rng % 100) / 100 * size.width;
-    final top    = ((rng * 37) % 100) / 100 * (size.height * 0.65);
+    final size = MediaQuery.of(context).size;
+    final rng = seed * 1693 + 17;
+    final left = (rng % 100) / 100 * size.width;
+    final top = ((rng * 37) % 100) / 100 * (size.height * 0.65);
     final radius = 1.5 + (rng % 3).toDouble();
     final opacity = 0.3 + (rng % 5) / 10.0;
 

@@ -45,6 +45,9 @@ dependencies:
   # Audio / música de fondo
   just_audio: ^0.9.39
 
+  # Video (animación de despegue del cohete)
+  video_player: ^2.9.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -76,3 +79,4 @@ flutter:
     - assets/sounds/
     - assets/items/
     - assets/badges/
+    - assets/animations/

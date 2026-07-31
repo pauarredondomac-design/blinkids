@@ -75,7 +75,7 @@ class _MercadoScreenState extends ConsumerState<MercadoScreen>
   @override
   Widget build(BuildContext context) {
     final worldId = ref.watch(currentWorldProvider);
-    final coins   = DemoStore.isActive
+    final coins = DemoStore.isActive
         ? ref.watch(demoProgressProvider).coins
         : (ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0);
 
@@ -112,7 +112,7 @@ class _MercadoScreenState extends ConsumerState<MercadoScreen>
               child: TabBarView(
                 controller: _tabCtrl,
                 children: [
-                  _InventoryTab(),
+                  const _InventoryTab(),
                   _MyShopTab(coins: coins),
                   _ExploreTab(coins: coins, worldId: worldId),
                 ],
@@ -135,9 +135,9 @@ class _MercadoSidebar extends StatelessWidget {
     required this.onBack,
     required this.onSelectTab,
   });
-  final int           coins;
-  final int           selectedTab;
-  final VoidCallback  onBack;
+  final int coins;
+  final int selectedTab;
+  final VoidCallback onBack;
   final ValueChanged<int> onSelectTab;
 
   static const _tabs = [
@@ -218,7 +218,8 @@ class _MercadoSidebar extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: Colors.amber.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(20),
@@ -304,9 +305,9 @@ class _MercadoSidebarItem extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
   });
-  final String       emoji;
-  final String       label;
-  final bool         isSelected;
+  final String emoji;
+  final String label;
+  final bool isSelected;
   final VoidCallback onTap;
 
   @override
@@ -340,8 +341,7 @@ class _MercadoSidebarItem extends StatelessWidget {
                       ? Colors.white
                       : Colors.white.withOpacity(0.45),
                   fontSize: 11,
-                  fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.normal,
                   letterSpacing: 0.5,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -428,18 +428,18 @@ class _InventoryCard extends StatelessWidget {
             Stack(
               alignment: Alignment.topRight,
               children: [
-                Text(stack.item.emoji,
-                        style: const TextStyle(fontSize: 36))
+                Text(stack.item.emoji, style: const TextStyle(fontSize: 36))
                     .animate(onPlay: (c) => c.repeat(reverse: true))
                     .moveY(
-                      begin: 0, end: -3,
+                      begin: 0,
+                      end: -3,
                       duration: 2200.ms,
                       curve: Curves.easeInOut,
                     ),
                 if (stack.qty > 1)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 5, vertical: 1),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFB300),
                       borderRadius: BorderRadius.circular(8),
@@ -490,7 +490,7 @@ class _MyShopTabState extends ConsumerState<_MyShopTab> {
 
   Future<void> _showAddListingDialog() async {
     final invAsync = ref.read(inventoryProvider);
-    final stacks   = invAsync.valueOrNull ?? [];
+    final stacks = invAsync.valueOrNull ?? [];
     if (stacks.isEmpty) {
       _snack('Tu inventario está vacío. Compra algo en la Tienda primero.',
           Colors.orange.shade700);
@@ -504,19 +504,19 @@ class _MyShopTabState extends ConsumerState<_MyShopTab> {
 
   Future<void> _addListing({
     required String itemId,
-    required int    qty,
-    required int    price,
+    required int qty,
+    required int price,
   }) async {
     setState(() => _busy = true);
     try {
-      final profile    = ref.read(currentProfileProvider).valueOrNull;
+      final profile = ref.read(currentProfileProvider).valueOrNull;
       final sellerName = profile?.displayName ?? 'Jugador';
-      final repo       = ref.read(itemRepositoryProvider);
+      final repo = ref.read(itemRepositoryProvider);
       final ok = await repo.addListing(
-        itemId:       itemId,
-        qty:          qty,
+        itemId: itemId,
+        qty: qty,
         pricePerUnit: price,
-        sellerName:   sellerName,
+        sellerName: sellerName,
       );
       if (!ok) {
         _snack('Ya tienes 10 artículos en venta. Quita uno primero.',
@@ -524,8 +524,7 @@ class _MyShopTabState extends ConsumerState<_MyShopTab> {
       } else {
         ref.invalidate(myListingsProvider);
         ref.invalidate(inventoryProvider);
-        _snack('¡Artículo publicado en tu tienda! 🏪',
-            const Color(0xFF2E7D32));
+        _snack('¡Artículo publicado en tu tienda! 🏪', const Color(0xFF2E7D32));
       }
     } catch (e) {
       _snack('Error: $e', Colors.red.shade700);
@@ -570,8 +569,7 @@ class _MyShopTabState extends ConsumerState<_MyShopTab> {
         children: [
           // Sub-cabecera: contador + botón Vender
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.25),
               border: Border(
@@ -595,8 +593,8 @@ class _MyShopTabState extends ConsumerState<_MyShopTab> {
                       ? null
                       : _showAddListingDialog,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                     decoration: BoxDecoration(
                       gradient: (_busy || listings.length >= 10)
                           ? null
@@ -663,11 +661,9 @@ class _MyShopTabState extends ConsumerState<_MyShopTab> {
                     itemBuilder: (ctx, i) {
                       final listing = listings[i];
                       return _ListingCard(
-                        listing:  listing,
+                        listing: listing,
                         onRemove: () => _removeListing(listing.id),
-                      )
-                          .animate(delay: (60 * i).ms)
-                          .fadeIn(duration: 260.ms);
+                      ).animate(delay: (60 * i).ms).fadeIn(duration: 260.ms);
                     },
                   ),
           ),
@@ -680,7 +676,7 @@ class _MyShopTabState extends ConsumerState<_MyShopTab> {
 class _ListingCard extends StatelessWidget {
   const _ListingCard({required this.listing, required this.onRemove});
   final PlayerListing listing;
-  final VoidCallback  onRemove;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -696,8 +692,7 @@ class _ListingCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            Text(item?.emoji ?? '❓',
-                style: const TextStyle(fontSize: 28)),
+            Text(item?.emoji ?? '❓', style: const TextStyle(fontSize: 28)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -764,7 +759,7 @@ class _ListingCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _ExploreTab extends ConsumerStatefulWidget {
   const _ExploreTab({required this.coins, required this.worldId});
-  final int    coins;
+  final int coins;
   final String worldId;
 
   @override
@@ -772,8 +767,8 @@ class _ExploreTab extends ConsumerStatefulWidget {
 }
 
 class _ExploreTabState extends ConsumerState<_ExploreTab> {
-  bool                _buying  = false;
-  bool                _loading = true;
+  bool _buying = false;
+  bool _loading = true;
   List<PlayerListing> _listings = [];
 
   @override
@@ -786,7 +781,11 @@ class _ExploreTabState extends ConsumerState<_ExploreTab> {
     final items = await ref
         .read(itemRepositoryProvider)
         .getMarketListings(widget.worldId);
-    if (mounted) setState(() { _listings = items; _loading = false; });
+    if (mounted)
+      setState(() {
+        _listings = items;
+        _loading = false;
+      });
   }
 
   Future<void> _buyListing(PlayerListing listing) async {
@@ -822,8 +821,9 @@ class _ExploreTabState extends ConsumerState<_ExploreTab> {
           ref.invalidate(currentWalletProvider);
         }
       }
-      await ref.read(itemRepositoryProvider).addToInventory(
-          listing.itemId, listing.qty);
+      await ref
+          .read(itemRepositoryProvider)
+          .addToInventory(listing.itemId, listing.qty);
       ref.invalidate(inventoryProvider);
       _snack(
         '¡Compraste ${listing.item?.emoji ?? ''} ${listing.item?.name ?? ''} ×${listing.qty}!',
@@ -863,14 +863,14 @@ class _ExploreTabState extends ConsumerState<_ExploreTab> {
       padding: const EdgeInsets.all(AppSizes.md),
       itemCount: _listings.length,
       itemBuilder: (ctx, i) {
-        final listing   = _listings[i];
-        final total     = listing.qty * listing.pricePerUnit;
+        final listing = _listings[i];
+        final total = listing.qty * listing.pricePerUnit;
         final canAfford = widget.coins >= total;
         return _MarketListingCard(
-          listing:   listing,
+          listing: listing,
           canAfford: canAfford,
-          busy:      _buying,
-          onBuy:     () => _buyListing(listing),
+          busy: _buying,
+          onBuy: () => _buyListing(listing),
         )
             .animate(delay: (60 * i).ms)
             .fadeIn(duration: 260.ms)
@@ -888,13 +888,13 @@ class _MarketListingCard extends StatelessWidget {
     required this.onBuy,
   });
   final PlayerListing listing;
-  final bool          canAfford;
-  final bool          busy;
-  final VoidCallback  onBuy;
+  final bool canAfford;
+  final bool busy;
+  final VoidCallback onBuy;
 
   @override
   Widget build(BuildContext context) {
-    final item  = listing.item;
+    final item = listing.item;
     final total = listing.qty * listing.pricePerUnit;
 
     return Container(
@@ -912,8 +912,7 @@ class _MarketListingCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            Text(item?.emoji ?? '❓',
-                style: const TextStyle(fontSize: 32)),
+            Text(item?.emoji ?? '❓', style: const TextStyle(fontSize: 32)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -968,8 +967,8 @@ class _MarketListingCard extends StatelessWidget {
             GestureDetector(
               onTap: (canAfford && !busy) ? onBuy : null,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: (canAfford && !busy)
                       ? const LinearGradient(
@@ -1019,8 +1018,8 @@ class _AddListingDialog extends StatefulWidget {
   final List<InventoryStack> stacks;
   final Future<void> Function({
     required String itemId,
-    required int    qty,
-    required int    price,
+    required int qty,
+    required int price,
   }) onSubmit;
 
   @override
@@ -1029,7 +1028,7 @@ class _AddListingDialog extends StatefulWidget {
 
 class _AddListingDialogState extends State<_AddListingDialog> {
   late InventoryStack _selected;
-  int _qty   = 1;
+  int _qty = 1;
   int _price = 10;
 
   @override
@@ -1072,11 +1071,9 @@ class _AddListingDialogState extends State<_AddListingDialog> {
             dropdownColor: const Color(0xFF0D1B3E),
             decoration: InputDecoration(
               labelText: 'Artículo',
-              labelStyle:
-                  TextStyle(color: Colors.white.withOpacity(0.55)),
+              labelStyle: TextStyle(color: Colors.white.withOpacity(0.55)),
               enabledBorder: OutlineInputBorder(
-                borderSide:
-                    BorderSide(color: Colors.white.withOpacity(0.20)),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.20)),
                 borderRadius: BorderRadius.circular(10),
               ),
               focusedBorder: OutlineInputBorder(
@@ -1088,12 +1085,15 @@ class _AddListingDialogState extends State<_AddListingDialog> {
             items: widget.stacks
                 .map((s) => DropdownMenuItem(
                       value: s,
-                      child:
-                          Text('${s.item.emoji} ${s.item.name} (×${s.qty})'),
+                      child: Text('${s.item.emoji} ${s.item.name} (×${s.qty})'),
                     ))
                 .toList(),
             onChanged: (s) {
-              if (s != null) setState(() { _selected = s; _qty = 1; });
+              if (s != null)
+                setState(() {
+                  _selected = s;
+                  _qty = 1;
+                });
             },
           ),
           const SizedBox(height: 12),
@@ -1103,9 +1103,7 @@ class _AddListingDialogState extends State<_AddListingDialog> {
             label: 'Cantidad:',
             value: _qty,
             onDec: _qty > 1 ? () => setState(() => _qty--) : null,
-            onInc: _qty < _selected.qty
-                ? () => setState(() => _qty++)
-                : null,
+            onInc: _qty < _selected.qty ? () => setState(() => _qty++) : null,
           ),
 
           // Precio
@@ -1114,22 +1112,19 @@ class _AddListingDialogState extends State<_AddListingDialog> {
             value: _price,
             valueColor: const Color(0xFFFFD600),
             onDec: _price > 5
-                ? () => setState(
-                    () => _price = (_price - 5).clamp(1, 9999))
+                ? () => setState(() => _price = (_price - 5).clamp(1, 9999))
                 : null,
-            onInc: () =>
-                setState(() => _price = (_price + 5).clamp(1, 9999)),
+            onInc: () => setState(() => _price = (_price + 5).clamp(1, 9999)),
           ),
 
           // Total
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFFFFB300).withOpacity(0.08),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                  color: const Color(0xFFFFB300).withOpacity(0.30)),
+              border:
+                  Border.all(color: const Color(0xFFFFB300).withOpacity(0.30)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1169,13 +1164,12 @@ class _AddListingDialogState extends State<_AddListingDialog> {
             Navigator.pop(context);
             await widget.onSubmit(
               itemId: _selected.item.id,
-              qty:    _qty,
-              price:  _price,
+              qty: _qty,
+              price: _price,
             );
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFFFF8C00), Color(0xFFFFB300)],
@@ -1206,9 +1200,9 @@ class _SpinRow extends StatelessWidget {
     required this.onDec,
     required this.onInc,
   });
-  final String   label;
-  final int      value;
-  final Color    valueColor;
+  final String label;
+  final int value;
+  final Color valueColor;
   final VoidCallback? onDec;
   final VoidCallback? onInc;
 
@@ -1258,11 +1252,11 @@ class _SpinRow extends StatelessWidget {
 class _BuyMarketDialog extends StatelessWidget {
   const _BuyMarketDialog({required this.listing, required this.coins});
   final PlayerListing listing;
-  final int           coins;
+  final int coins;
 
   @override
   Widget build(BuildContext context) {
-    final item  = listing.item;
+    final item = listing.item;
     final total = listing.qty * listing.pricePerUnit;
     final after = coins - total;
 
@@ -1278,8 +1272,7 @@ class _BuyMarketDialog extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(item?.emoji ?? '❓',
-                  style: const TextStyle(fontSize: 48))
+          Text(item?.emoji ?? '❓', style: const TextStyle(fontSize: 48))
               .animate()
               .scale(
                 begin: const Offset(0.5, 0.5),
@@ -1349,8 +1342,7 @@ class _BuyMarketDialog extends StatelessWidget {
         GestureDetector(
           onTap: () => Navigator.pop(context, true),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFFFF8C00), Color(0xFFFFB300)],

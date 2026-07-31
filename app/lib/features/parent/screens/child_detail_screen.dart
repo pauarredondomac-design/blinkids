@@ -24,7 +24,7 @@ class ChildDetailScreen extends ConsumerStatefulWidget {
 
 class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
   bool _sending = false;
-  int  _sendAmount = 50;
+  int _sendAmount = 50;
   bool _creatingMission = false;
 
   Future<void> _handleSendCoins(int parentCoinsAvail) async {
@@ -37,8 +37,8 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => _SendCoinsDialog(
-        child:         widget.child,
-        amount:        _sendAmount,
+        child: widget.child,
+        amount: _sendAmount,
         parentBalance: parentCoinsAvail,
         onAmountChanged: (v) => setState(() => _sendAmount = v),
       ),
@@ -90,10 +90,10 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
     setState(() => _creatingMission = true);
     try {
       await ref.read(parentMissionRepositoryProvider).createMission(
-            childId:     widget.child.id,
-            title:       result.title,
+            childId: widget.child.id,
+            title: result.title,
             description: result.description,
-            coinReward:  result.coinReward,
+            coinReward: result.coinReward,
           );
       ref.invalidate(missionsCreatedForChildProvider(widget.child.id));
       _snack('¡Misión creada para ${widget.child.displayName}! 🎯',
@@ -117,7 +117,7 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final statsAsync  = ref.watch(childStatsProvider(widget.child));
+    final statsAsync = ref.watch(childStatsProvider(widget.child));
     final walletAsync = ref.watch(currentWalletProvider);
     final parentCoins = walletAsync.valueOrNull?.totalCoins ?? 0;
 
@@ -143,11 +143,14 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: OutlinedButton.icon(
-              onPressed: _creatingMission ? null : () => _handleCreateMission(parentCoins),
+              onPressed: _creatingMission
+                  ? null
+                  : () => _handleCreateMission(parentCoins),
               icon: const Icon(Icons.add_task_rounded, size: 18),
               label: const Text(
                 'Crear misión',
-                style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    fontFamily: 'Nunito', fontWeight: FontWeight.w700),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF7C3AED),
@@ -162,7 +165,8 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
               icon: const AnimatedCoin(size: 16),
               label: const Text(
                 'Enviar monedas',
-                style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700),
+                style: TextStyle(
+                    fontFamily: 'Nunito', fontWeight: FontWeight.w700),
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFFFD600),
@@ -178,7 +182,8 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
         ),
         error: (e, _) => Center(
           child: Text('Error: $e',
-              style: const TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
+              style:
+                  const TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
         ),
         data: (stats) => _ChildDetailBody(child: widget.child, stats: stats),
       ),
@@ -191,7 +196,7 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _ChildDetailBody extends StatelessWidget {
   const _ChildDetailBody({required this.child, required this.stats});
-  final Profile    child;
+  final Profile child;
   final ChildStats stats;
 
   @override
@@ -229,9 +234,10 @@ class _LeftCharPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Avatar del personaje
-          const Text('🦊', style: TextStyle(fontSize: 72))
-              .animate()
-              .scale(begin: const Offset(0.7, 0.7), duration: 400.ms, curve: Curves.elasticOut),
+          const Text('🦊', style: TextStyle(fontSize: 72)).animate().scale(
+              begin: const Offset(0.7, 0.7),
+              duration: 400.ms,
+              curve: Curves.elasticOut),
           const SizedBox(height: 8),
           // Nivel
           Container(
@@ -302,10 +308,10 @@ class _LeftCharPanel extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
-                  value:            stats.levelProgress,
-                  backgroundColor:  Colors.white12,
-                  valueColor:       const AlwaysStoppedAnimation(Color(0xFF7C3AED)),
-                  minHeight:        8,
+                  value: stats.levelProgress,
+                  backgroundColor: Colors.white12,
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFF7C3AED)),
+                  minHeight: 8,
                 ),
               ),
             ],
@@ -314,9 +320,10 @@ class _LeftCharPanel extends StatelessWidget {
           const Divider(color: Colors.white10),
           const SizedBox(height: 12),
           // Stat chips
-          _StatRow(emoji: '🪙', label: 'Monedas',   value: '${stats.totalCoins}'),
-          _StatRow(emoji: '⭐', label: 'XP total',   value: '${stats.xp}'),
-          _StatRow(emoji: '🏆', label: 'Misiones',  value: '${stats.missionsJoined}'),
+          _StatRow(emoji: '🪙', label: 'Monedas', value: '${stats.totalCoins}'),
+          _StatRow(emoji: '⭐', label: 'XP total', value: '${stats.xp}'),
+          _StatRow(
+              emoji: '🏆', label: 'Misiones', value: '${stats.missionsJoined}'),
           const SizedBox(height: 16),
           const Divider(color: Colors.white10),
           const SizedBox(height: 8),
@@ -325,10 +332,10 @@ class _LeftCharPanel extends StatelessWidget {
             child: Text(
               '🏅 Medallas',
               style: TextStyle(
-                color:      Colors.white70,
+                color: Colors.white70,
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w700,
-                fontSize:   13,
+                fontSize: 13,
               ),
             ),
           ),
@@ -338,11 +345,11 @@ class _LeftCharPanel extends StatelessWidget {
       ).animate().fadeIn(duration: 300.ms),
     );
   }
-
 }
 
 class _StatRow extends StatelessWidget {
-  const _StatRow({required this.emoji, required this.label, required this.value});
+  const _StatRow(
+      {required this.emoji, required this.label, required this.value});
   final String emoji, label, value;
 
   @override
@@ -385,7 +392,7 @@ class _StatRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _RightActivityPanel extends StatefulWidget {
   const _RightActivityPanel({required this.child, required this.stats});
-  final Profile    child;
+  final Profile child;
   final ChildStats stats;
 
   @override
@@ -406,14 +413,15 @@ class _RightActivityPanelState extends State<_RightActivityPanel> {
     try {
       final rows = await Supabase.instance.client
           .from('mission_participants')
-          .select('mission_id, joined_at, missions(name, coin_reward, xp_reward)')
+          .select(
+              'mission_id, joined_at, missions(name, coin_reward, xp_reward)')
           .eq('user_id', widget.child.id)
           .order('joined_at', ascending: false)
           .limit(15);
       if (mounted) {
         setState(() {
           _missions = (rows as List).cast<Map<String, dynamic>>();
-          _loading  = false;
+          _loading = false;
         });
       }
     } catch (_) {
@@ -445,7 +453,8 @@ class _RightActivityPanelState extends State<_RightActivityPanel> {
             const Spacer(),
             IconButton(
               onPressed: _loadActivity,
-              icon: const Icon(Icons.refresh_rounded, color: Colors.white38, size: 20),
+              icon: const Icon(Icons.refresh_rounded,
+                  color: Colors.white38, size: 20),
               tooltip: 'Actualizar',
             ),
           ]),
@@ -463,29 +472,34 @@ class _RightActivityPanelState extends State<_RightActivityPanel> {
           // Lista
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF7C3AED)))
                 : _missions.isEmpty
                     ? _EmptyActivity()
                     : ListView.separated(
                         itemCount: _missions.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (ctx, i) {
-                          final entry   = _missions[i];
-                          final mission = entry['missions'] as Map<String, dynamic>?;
-                          final name    = mission?['name'] as String? ?? 'Misión desconocida';
-                          final coins   = mission?['coin_reward'] as int? ?? 0;
-                          final xp      = mission?['xp_reward']  as int? ?? 0;
+                          final entry = _missions[i];
+                          final mission =
+                              entry['missions'] as Map<String, dynamic>?;
+                          final name = mission?['name'] as String? ??
+                              'Misión desconocida';
+                          final coins = mission?['coin_reward'] as int? ?? 0;
+                          final xp = mission?['xp_reward'] as int? ?? 0;
                           final dateStr = entry['joined_at'] as String?;
-                          final date    = dateStr != null
+                          final date = dateStr != null
                               ? DateTime.tryParse(dateStr)
                               : null;
 
                           return _ActivityCard(
-                            name:  name,
+                            name: name,
                             coins: coins,
-                            xp:    xp,
-                            date:  date,
-                          ).animate(delay: (40 * i).ms).fadeIn(duration: 250.ms);
+                            xp: xp,
+                            date: date,
+                          )
+                              .animate(delay: (40 * i).ms)
+                              .fadeIn(duration: 250.ms);
                         },
                       ),
           ),
@@ -502,9 +516,9 @@ class _ActivityCard extends StatelessWidget {
     required this.xp,
     this.date,
   });
-  final String    name;
-  final int       coins;
-  final int       xp;
+  final String name;
+  final int coins;
+  final int xp;
   final DateTime? date;
 
   @override
@@ -512,7 +526,7 @@ class _ActivityCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color:        const Color(0xFF0D1230),
+        color: const Color(0xFF0D1230),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white10),
       ),
@@ -579,8 +593,8 @@ class _ActivityCard extends StatelessWidget {
 
   String _formatDate(DateTime d) {
     final diff = DateTime.now().difference(d);
-    if (diff.inDays == 0)  return 'Hoy';
-    if (diff.inDays == 1)  return 'Ayer';
+    if (diff.inDays == 0) return 'Hoy';
+    if (diff.inDays == 1) return 'Ayer';
     return 'Hace ${diff.inDays} días';
   }
 }
@@ -588,13 +602,13 @@ class _ActivityCard extends StatelessWidget {
 class _EmptyActivity extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('🎮', style: TextStyle(fontSize: 48)),
-          const SizedBox(height: 12),
-          const Text(
+          Text('🎮', style: TextStyle(fontSize: 48)),
+          SizedBox(height: 12),
+          Text(
             '¡Aún no hay actividad!',
             style: TextStyle(
               color: Colors.white70,
@@ -603,8 +617,8 @@ class _EmptyActivity extends StatelessWidget {
               fontSize: 16,
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'Cuando tu hijo complete misiones\naparecerán aquí.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -623,16 +637,18 @@ class _EmptyActivity extends StatelessWidget {
 // Diálogo para crear una misión de papá
 // ─────────────────────────────────────────────────────────────────────────────
 class _NewMissionData {
-  const _NewMissionData({required this.title, this.description, required this.coinReward});
-  final String  title;
+  const _NewMissionData(
+      {required this.title, this.description, required this.coinReward});
+  final String title;
   final String? description;
-  final int     coinReward;
+  final int coinReward;
 }
 
 class _CreateMissionDialog extends StatefulWidget {
-  const _CreateMissionDialog({required this.child, required this.parentBalance});
+  const _CreateMissionDialog(
+      {required this.child, required this.parentBalance});
   final Profile child;
-  final int     parentBalance;
+  final int parentBalance;
 
   @override
   State<_CreateMissionDialog> createState() => _CreateMissionDialogState();
@@ -640,8 +656,8 @@ class _CreateMissionDialog extends StatefulWidget {
 
 class _CreateMissionDialogState extends State<_CreateMissionDialog> {
   final _titleCtrl = TextEditingController();
-  final _descCtrl  = TextEditingController();
-  final _steps     = [10, 20, 50, 100];
+  final _descCtrl = TextEditingController();
+  final _steps = [10, 20, 50, 100];
   int _reward = 20;
 
   @override
@@ -688,10 +704,13 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
               style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
               decoration: const InputDecoration(
                 labelText: 'Título de la misión',
-                labelStyle: TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
+                labelStyle:
+                    TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
                 counterStyle: TextStyle(color: Colors.white30),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C3AED))),
+                enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24)),
+                focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF7C3AED))),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -700,13 +719,17 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
               controller: _descCtrl,
               maxLines: 2,
               maxLength: 140,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 13),
+              style: const TextStyle(
+                  color: Colors.white, fontFamily: 'Nunito', fontSize: 13),
               decoration: const InputDecoration(
                 labelText: 'Descripción (opcional)',
-                labelStyle: TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
+                labelStyle:
+                    TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
                 counterStyle: TextStyle(color: Colors.white30),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C3AED))),
+                enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24)),
+                focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Color(0xFF7C3AED))),
               ),
             ),
             const SizedBox(height: 16),
@@ -715,7 +738,10 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
               children: [
                 Text(
                   'Tu saldo: ${widget.parentBalance}',
-                  style: const TextStyle(color: Colors.white54, fontFamily: 'Nunito', fontSize: 13),
+                  style: const TextStyle(
+                      color: Colors.white54,
+                      fontFamily: 'Nunito',
+                      fontSize: 13),
                 ),
                 const SizedBox(width: 4),
                 const AnimatedCoin(size: 13),
@@ -724,7 +750,8 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
             const SizedBox(height: 8),
             const Text(
               'Recompensa',
-              style: TextStyle(color: Colors.white38, fontFamily: 'Nunito', fontSize: 12),
+              style: TextStyle(
+                  color: Colors.white38, fontFamily: 'Nunito', fontSize: 12),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -736,7 +763,8 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
                 return GestureDetector(
                   onTap: affordable ? () => setState(() => _reward = s) : null,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       color: selected
                           ? const Color(0xFFFFD600)
@@ -745,7 +773,8 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
                               : Colors.white.withAlpha(10),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: selected ? const Color(0xFFFFD600) : Colors.white24,
+                        color:
+                            selected ? const Color(0xFFFFD600) : Colors.white24,
                       ),
                     ),
                     child: Row(
@@ -778,7 +807,8 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar', style: TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
+          child: const Text('Cancelar',
+              style: TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
         ),
         FilledButton(
           onPressed: (titleOk && canAfford)
@@ -786,7 +816,9 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
                     context,
                     _NewMissionData(
                       title: _titleCtrl.text.trim(),
-                      description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
+                      description: _descCtrl.text.trim().isEmpty
+                          ? null
+                          : _descCtrl.text.trim(),
                       coinReward: _reward,
                     ),
                   )
@@ -794,9 +826,12 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF7C3AED),
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          child: const Text('Crear misión', style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+          child: const Text('Crear misión',
+              style:
+                  TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
         ),
       ],
     );
@@ -813,9 +848,9 @@ class _SendCoinsDialog extends StatefulWidget {
     required this.parentBalance,
     required this.onAmountChanged,
   });
-  final Profile  child;
-  final int      amount;
-  final int      parentBalance;
+  final Profile child;
+  final int amount;
+  final int parentBalance;
   final void Function(int) onAmountChanged;
 
   @override
@@ -909,7 +944,8 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
                       }
                     : null,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: selected
                         ? const Color(0xFFFFD600)
@@ -918,7 +954,8 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
                             : Colors.white.withAlpha(10),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: selected ? const Color(0xFFFFD600) : Colors.white24,
+                      color:
+                          selected ? const Color(0xFFFFD600) : Colors.white24,
                     ),
                   ),
                   child: Row(
@@ -938,7 +975,7 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
                         ),
                       ),
                       const SizedBox(width: 3),
-                      AnimatedCoin(
+                      const AnimatedCoin(
                         size: 13,
                       ),
                     ],
@@ -964,7 +1001,8 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFFFFD600),
             foregroundColor: Colors.black87,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

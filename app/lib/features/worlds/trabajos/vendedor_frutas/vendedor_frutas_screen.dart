@@ -11,6 +11,7 @@ import '../../../../shared/providers/wallet_provider.dart';
 import '../../../../shared/providers/character_provider.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../shared/widgets/coin_display.dart';
+import '../../../../shared/widgets/badges_row.dart';
 
 // ─── Denominaciones de monedas/billetes disponibles ──────────────────────────
 class _Denom {
@@ -147,11 +148,12 @@ class _VendedorFrutasScreenState
     final xpReward   = widget.job?.xpReward   ?? 15;
     final userId     = Supabase.instance.client.auth.currentUser?.id;
 
+    List<String> newBadges = [];
     if (userId != null) {
       // Otorgar monedas, XP y registrar completado en paralelo
+      final xpFuture = awardXp(ref, xpReward);
       final futures = <Future>[
         WalletRepository().awardStarterCoins(userId, coinReward).catchError((_) => null),
-        awardXp(ref, xpReward),
       ];
       if (widget.job != null) {
         futures.add(JobRepository().recordCompletion(
@@ -161,9 +163,11 @@ class _VendedorFrutasScreenState
         ));
       }
       await Future.wait(futures);
+      newBadges = await xpFuture;
       ref.invalidate(currentWalletProvider);
     }
 
+    if (mounted) showBadgeUnlockToasts(context, ref, newBadges);
     if (mounted) context.go('/world/trabajos');
   }
 

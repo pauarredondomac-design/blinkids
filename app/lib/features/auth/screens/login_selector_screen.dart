@@ -25,7 +25,7 @@ class LoginSelectorScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    BlinkCharacterWidget(width: 180, enableBounce: true)
+                    const BlinkCharacterWidget(width: 180, enableBounce: true)
                         .animate()
                         .scale(duration: 600.ms, curve: Curves.elasticOut),
                     const SizedBox(height: 24),
@@ -65,25 +65,28 @@ class LoginSelectorScreen extends StatelessWidget {
                         subtitle: 'Entra a tu aventura',
                         color: const Color(0xFF4FC3F7),
                         onTap: () => _showChildOptions(context),
-                      ).animate().fadeIn(delay: 500.ms).slideX(begin: 0.3, end: 0),
-
+                      )
+                          .animate()
+                          .fadeIn(delay: 500.ms)
+                          .slideX(begin: 0.3, end: 0),
                       const SizedBox(height: 20),
-
                       _RoleCard(
                         emoji: '👨‍👩‍👧',
                         title: 'Soy papá / mamá',
                         subtitle: 'Panel de padres',
                         color: const Color(0xFFFFD700),
                         onTap: () => context.push('/parent-auth'),
-                      ).animate().fadeIn(delay: 650.ms).slideX(begin: 0.3, end: 0),
-
+                      )
+                          .animate()
+                          .fadeIn(delay: 650.ms)
+                          .slideX(begin: 0.3, end: 0),
                       const SizedBox(height: 32),
-
                       TextButton(
                         onPressed: () => context.go('/world'),
                         child: const Text(
                           'Continuar en demo',
-                          style: TextStyle(color: Colors.white38, fontFamily: 'Nunito'),
+                          style: TextStyle(
+                              color: Colors.white38, fontFamily: 'Nunito'),
                         ),
                       ).animate().fadeIn(delay: 800.ms),
                     ],
@@ -162,10 +165,10 @@ class _RoleCard extends StatelessWidget {
     required this.color,
     required this.onTap,
   });
-  final String   emoji;
-  final String   title;
-  final String   subtitle;
-  final Color    color;
+  final String emoji;
+  final String title;
+  final String subtitle;
+  final Color color;
   final VoidCallback onTap;
 
   @override
@@ -187,7 +190,8 @@ class _RoleCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
+                  Text(
+                    title,
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w800,
@@ -195,7 +199,8 @@ class _RoleCard extends StatelessWidget {
                       color: color,
                     ),
                   ),
-                  Text(subtitle,
+                  Text(
+                    subtitle,
                     style: const TextStyle(
                       fontFamily: 'Nunito',
                       fontSize: 13,
@@ -221,8 +226,8 @@ class _BottomSheetBtn extends StatelessWidget {
     required this.onTap,
   });
   final IconData icon;
-  final String   label;
-  final Color    color;
+  final String label;
+  final Color color;
   final VoidCallback onTap;
 
   @override
@@ -240,7 +245,8 @@ class _BottomSheetBtn extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 32),
             const SizedBox(height: 8),
-            Text(label,
+            Text(
+              label,
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w700,

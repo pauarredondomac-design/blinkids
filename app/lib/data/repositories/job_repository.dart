@@ -45,8 +45,8 @@ class JobRepository {
   }) async {
     try {
       await _db.from('job_completions').insert({
-        'user_id':      userId,
-        'job_id':       jobId,
+        'user_id': userId,
+        'job_id': jobId,
         'coins_earned': coinsEarned,
       });
     } catch (_) {
@@ -55,37 +55,37 @@ class JobRepository {
   }
 
   List<Job> _fallbackJobs() => [
-        Job(
-          id:   'job-local-1',
+        const Job(
+          id: 'job-local-1',
           name: 'Vendedor de Frutas',
           description:
               'Atiende tu puesto y da el cambio exacto a los clientes. ¡Rápido, hay fila!',
-          coinReward:      25,
-          xpReward:        15,
+          coinReward: 25,
+          xpReward: 15,
           durationSeconds: 60,
           cooldownMinutes: 60,
           mechanics: 'drag_coins',
           intro:
               'Los clientes llegan con billetes. Tu tarea es dar el cambio correcto.',
-          levels: const [
+          levels: [
             JobLevel(price: 15, paid: 20, change: 5),
             JobLevel(price: 32, paid: 50, change: 18),
             JobLevel(price: 67, paid: 100, change: 33),
           ],
         ),
-        Job(
-          id:   'job-local-2',
+        const Job(
+          id: 'job-local-2',
           name: 'Tiendita del Bosque',
           description:
               'Anota ingresos y gastos del día para saber si tuviste ganancia.',
-          coinReward:      20,
-          xpReward:        10,
+          coinReward: 20,
+          xpReward: 10,
           durationSeconds: 90,
           cooldownMinutes: 120,
           mechanics: 'income_expense_entry',
           intro:
               'Registra cuánto ganaste y cuánto gastaste para calcular tu ganancia.',
-          levels: const [],
+          levels: [],
         ),
       ];
 }

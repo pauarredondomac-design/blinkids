@@ -13,13 +13,13 @@ import '../../features/auth/screens/redeem_code_screen.dart';
 import '../../features/tutorial/screens/tutorial_screen.dart';
 import '../../features/worlds/space/space_world_map.dart';
 import '../../features/worlds/space/banco_estelar_screen.dart';
+import '../../features/worlds/forest/forest_world_map.dart';
 import '../../features/worlds/world_selector_screen.dart';
 import '../../features/parent/screens/parent_home_screen.dart';
 import '../../features/wallet/screens/wallet_screen.dart';
 import '../../features/worlds/demo/demo_building_screen.dart';
 import '../../features/worlds/trabajos/trabajos_screen.dart';
 import '../../features/worlds/misiones/misiones_screen.dart';
-import '../../features/worlds/mercado/mercado_screen.dart';
 import '../../features/worlds/tienda/tienda_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -31,15 +31,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ),
     redirect: (context, state) {
       final user = Supabase.instance.client.auth.currentUser;
-      final loc  = state.matchedLocation;
+      final loc = state.matchedLocation;
 
       // Splash maneja su propia navegación
       if (loc == '/') return null;
 
       // Rutas de auth y demo — siempre accesibles
       const openRoutes = [
-        '/login-selector', '/child-signup', '/child-login', '/parent-auth',
-        '/world', '/tutorial',
+        '/login-selector',
+        '/child-signup',
+        '/child-login',
+        '/parent-auth',
+        '/world',
+        '/tutorial',
       ];
       if (openRoutes.contains(loc)) return null;
       if (loc.startsWith('/space/') || loc.startsWith('/world/')) return null;
@@ -179,12 +183,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/wallet',
         name: 'wallet',
-        builder: (_, __) => const _ProximamenteScreen(titulo: 'Mi Bolsa', bloque: '3'),
+        builder: (_, __) =>
+            const _ProximamenteScreen(titulo: 'Mi Bolsa', bloque: '3'),
       ),
       GoRoute(
-        path: '/world-forest',
+        path: '/world/forest',
         name: 'world-forest',
-        builder: (_, __) => const _ProximamenteScreen(titulo: 'Mundo Bosque', bloque: '3'),
+        builder: (_, __) => const ForestWorldMap(),
       ),
     ],
     errorBuilder: (_, state) => _ErrorScreen(error: state.error.toString()),
@@ -213,8 +218,12 @@ class _ProximamenteScreen extends StatelessWidget {
           children: [
             const Text('🚀', style: TextStyle(fontSize: 72)),
             const SizedBox(height: 24),
-            Text(titulo,
-              style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+            Text(
+              titulo,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -225,15 +234,20 @@ class _ProximamenteScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: const Color(0xFF7C6AF7)),
               ),
-              child: Text('Disponible en Bloque $bloque',
-                style: const TextStyle(color: Color(0xFF7C6AF7), fontWeight: FontWeight.bold, fontSize: 14),
+              child: Text(
+                'Disponible en Bloque $bloque',
+                style: const TextStyle(
+                    color: Color(0xFF7C6AF7),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14),
               ),
             ),
             const SizedBox(height: 40),
             TextButton.icon(
               onPressed: () => context.pop(),
               icon: const Icon(Icons.arrow_back, color: Color(0xFF7C6AF7)),
-              label: const Text('Volver', style: TextStyle(color: Color(0xFF7C6AF7), fontSize: 16)),
+              label: const Text('Volver',
+                  style: TextStyle(color: Color(0xFF7C6AF7), fontSize: 16)),
             ),
           ],
         ),
@@ -255,7 +269,8 @@ class _ErrorScreen extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Página no encontrada', style: Theme.of(context).textTheme.headlineMedium),
+            Text('Página no encontrada',
+                style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(error, style: Theme.of(context).textTheme.bodyMedium),
           ],

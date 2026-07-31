@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +14,7 @@ import '../../../shared/providers/character_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/badges_row.dart';
 import '../../../core/constants/app_sizes.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,13 +59,13 @@ class PreguntasScreen extends ConsumerStatefulWidget {
 }
 
 class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
-  int            _currentIndex  = 0;
-  _AnswerState   _answerState   = _AnswerState.unanswered;
-  String?        _selectedId;
-  int            _coinsEarned   = 0;
-  int            _correctCount  = 0;
-  bool           _showSummary   = false;
-  bool           _showExplain   = false;
+  int _currentIndex = 0;
+  _AnswerState _answerState = _AnswerState.unanswered;
+  String? _selectedId;
+  int _coinsEarned = 0;
+  int _correctCount = 0;
+  bool _showSummary = false;
+  bool _showExplain = false;
 
   @override
   void initState() {
@@ -85,14 +85,12 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
       steps: const [
         TutorialStep(
           title: '¡Hora de Preguntas! ❓',
-          body:
-              'Responde preguntas de finanzas para ganar monedas. '
+          body: 'Responde preguntas de finanzas para ganar monedas. '
               'Cada respuesta correcta te da monedas y experiencia.',
         ),
         TutorialStep(
           title: 'Lee con calma 📖',
-          body:
-              'Lee bien la pregunta antes de elegir. Después de responder '
+          body: 'Lee bien la pregunta antes de elegir. Después de responder '
               'verás la explicación correcta con Juan.',
         ),
       ],
@@ -160,14 +158,14 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
             }
             final q = questions[_currentIndex];
             return _QuizBody(
-              question:     q,
-              questionNum:  _currentIndex + 1,
+              question: q,
+              questionNum: _currentIndex + 1,
               totalQuestions: questions.length,
-              answerState:  _answerState,
-              selectedId:   _selectedId,
-              showExplain:  _showExplain,
-              onAnswer:     (id) => _handleAnswer(q, id),
-              onNext:       () => _handleNext(questions.length),
+              answerState: _answerState,
+              selectedId: _selectedId,
+              showExplain: _showExplain,
+              onAnswer: (id) => _handleAnswer(q, id),
+              onNext: () => _handleNext(questions.length),
             );
           },
         ),
@@ -180,7 +178,7 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
 
     final isCorrect = q.isCorrect(optionId);
     setState(() {
-      _selectedId  = optionId;
+      _selectedId = optionId;
       _answerState = isCorrect ? _AnswerState.correct : _AnswerState.wrong;
       _showExplain = true;
     });
@@ -191,13 +189,17 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
 
       // Otorgar monedas y XP en paralelo + registrar para misiones
       final userId = Supabase.instance.client.auth.currentUser?.id;
+      final xpFuture = awardXp(ref, q.xpReward);
       await Future.wait<void>([
         if (userId != null)
-          WalletRepository().awardStarterCoins(userId, q.coinReward).catchError((_) => null),
-        awardXp(ref, q.xpReward),
+          WalletRepository()
+              .awardStarterCoins(userId, q.coinReward)
+              .catchError((_) => null),
         MissionTracker().recordQuiz(), // ← conteo para misiones
       ]);
+      final newBadges = await xpFuture;
       if (userId != null) ref.invalidate(currentWalletProvider);
+      if (mounted) showBadgeUnlockToasts(context, ref, newBadges);
     }
 
     // Registrar en historial
@@ -216,7 +218,7 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
       setState(() {
         _currentIndex++;
         _answerState = _AnswerState.unanswered;
-        _selectedId  = null;
+        _selectedId = null;
         _showExplain = false;
       });
     } else {
@@ -238,12 +240,12 @@ class _QuizBody extends StatelessWidget {
     required this.onNext,
   });
 
-  final Question     question;
-  final int          questionNum;
-  final int          totalQuestions;
+  final Question question;
+  final int questionNum;
+  final int totalQuestions;
   final _AnswerState answerState;
-  final String?      selectedId;
-  final bool         showExplain;
+  final String? selectedId;
+  final bool showExplain;
   final void Function(String) onAnswer;
   final VoidCallback onNext;
 
@@ -285,12 +287,12 @@ class _QuizBody extends StatelessWidget {
                 // Opciones
                 ...question.options.map(
                   (opt) => _OptionTile(
-                    option:        opt,
-                    isSelected:    selectedId == opt.id,
-                    isCorrect:     question.correctAnswer == opt.id,
-                    isAnswered:    _answered,
-                    answerState:   answerState,
-                    onTap:         () => onAnswer(opt.id),
+                    option: opt,
+                    isSelected: selectedId == opt.id,
+                    isCorrect: question.correctAnswer == opt.id,
+                    isAnswered: _answered,
+                    answerState: answerState,
+                    onTap: () => onAnswer(opt.id),
                   ),
                 ),
 
@@ -542,30 +544,30 @@ class _OptionTile extends StatelessWidget {
   });
 
   final QuestionOption option;
-  final bool           isSelected;
-  final bool           isCorrect;
-  final bool           isAnswered;
-  final _AnswerState   answerState;
-  final VoidCallback   onTap;
+  final bool isSelected;
+  final bool isCorrect;
+  final bool isAnswered;
+  final _AnswerState answerState;
+  final VoidCallback onTap;
 
   Color get _bgColor {
     if (!isAnswered) return Colors.white;
-    if (isCorrect)   return const Color(0xFFE8F5E9);
-    if (isSelected)  return const Color(0xFFFFEBEE);
+    if (isCorrect) return const Color(0xFFE8F5E9);
+    if (isSelected) return const Color(0xFFFFEBEE);
     return Colors.white.withAlpha(180);
   }
 
   Color get _borderColor {
-    if (!isAnswered)           return Colors.transparent;
-    if (isCorrect)             return const Color(0xFF2E7D32);
-    if (isSelected)            return const Color(0xFFC62828);
+    if (!isAnswered) return Colors.transparent;
+    if (isCorrect) return const Color(0xFF2E7D32);
+    if (isSelected) return const Color(0xFFC62828);
     return Colors.transparent;
   }
 
   String get _trailingIcon {
     if (!isAnswered) return '';
-    if (isCorrect)   return '✅';
-    if (isSelected)  return '❌';
+    if (isCorrect) return '✅';
+    if (isSelected) return '❌';
     return '';
   }
 
@@ -615,16 +617,14 @@ class _ExplanationCard extends StatelessWidget {
     required this.isCorrect,
   });
   final String explanation;
-  final bool   isCorrect;
+  final bool isCorrect;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
-        color: isCorrect
-            ? const Color(0xFF1B5E20)
-            : const Color(0xFF7F0000),
+        color: isCorrect ? const Color(0xFF1B5E20) : const Color(0xFF7F0000),
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
       ),
       child: Row(
@@ -648,10 +648,7 @@ class _ExplanationCard extends StatelessWidget {
           ),
         ],
       ),
-    )
-        .animate()
-        .fadeIn(duration: 300.ms)
-        .slideY(begin: 0.1, end: 0);
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
   }
 }
 
@@ -664,24 +661,24 @@ class _SummaryView extends StatelessWidget {
     required this.onFinish,
   });
 
-  final int          correctCount;
-  final int          totalCount;
-  final int          coinsEarned;
+  final int correctCount;
+  final int totalCount;
+  final int coinsEarned;
   final VoidCallback onFinish;
 
   String get _medal {
     final pct = totalCount == 0 ? 0 : correctCount / totalCount;
-    if (pct == 1.0)    return '🥇';
-    if (pct >= 0.75)   return '🥈';
-    if (pct >= 0.5)    return '🥉';
+    if (pct == 1.0) return '🥇';
+    if (pct >= 0.75) return '🥈';
+    if (pct >= 0.5) return '🥉';
     return '📚';
   }
 
   String get _message {
     final pct = totalCount == 0 ? 0 : correctCount / totalCount;
-    if (pct == 1.0)    return '¡Perfecto! ¡Eres un genio financiero!';
-    if (pct >= 0.75)   return '¡Muy bien! ¡Casi perfecto!';
-    if (pct >= 0.5)    return '¡Buen intento! Sigue practicando.';
+    if (pct == 1.0) return '¡Perfecto! ¡Eres un genio financiero!';
+    if (pct >= 0.75) return '¡Muy bien! ¡Casi perfecto!';
+    if (pct >= 0.5) return '¡Buen intento! Sigue practicando.';
     return '¡No te rindas! Repasa y vuelve a intentarlo.';
   }
 
@@ -772,10 +769,7 @@ class _SummaryView extends StatelessWidget {
                       ],
                     ),
                   ),
-                )
-                    .animate()
-                    .fadeIn(duration: 400.ms)
-                    .scale(
+                ).animate().fadeIn(duration: 400.ms).scale(
                       begin: const Offset(0.85, 0.85),
                       end: const Offset(1, 1),
                       curve: Curves.easeOutBack,
@@ -798,8 +792,8 @@ class _StatChip extends StatelessWidget {
   });
   final String label;
   final String value;
-  final Color  color;
-  final bool   showCoin;
+  final Color color;
+  final bool showCoin;
 
   @override
   Widget build(BuildContext context) {

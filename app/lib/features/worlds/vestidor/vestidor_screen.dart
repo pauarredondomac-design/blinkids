@@ -6,6 +6,8 @@ import '../../../data/models/item.dart';
 import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/blink_ambient_provider.dart';
+import '../../../shared/providers/badge_provider.dart';
+import '../../../data/models/badge.dart';
 import '../../../shared/widgets/blink_character.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -604,13 +606,16 @@ class _InventoryCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Panel de badges (próximamente)
+// Panel de badges — catálogo completo, con estado bloqueado/desbloqueado
 // ─────────────────────────────────────────────────────────────────────────────
-class _BadgesPanel extends StatelessWidget {
+class _BadgesPanel extends ConsumerWidget {
   const _BadgesPanel();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final defsAsync   = ref.watch(badgeDefinitionsProvider);
+    final earnedAsync = ref.watch(playerBadgesProvider);
+
     return Container(
       color: const Color(0xFF0A0818),
       child: Column(
@@ -638,26 +643,138 @@ class _BadgesPanel extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('🏅', style: TextStyle(fontSize: 48)),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Próximamente',
-                    style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Aquí verás las insignias que ganes',
-                    style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 11),
-                  ),
-                ],
+            child: defsAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Colors.white54),
               ),
+              error: (_, __) => Center(
+                child: Text(
+                  'No se pudieron cargar las medallas',
+                  style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+                ),
+              ),
+              data: (defs) {
+                if (defs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🏅', style: TextStyle(fontSize: 48)),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Próximamente',
+                          style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final earnedIds = earnedAsync.asData?.value
+                        .map((b) => b.badgeId)
+                        .toSet() ??
+                    <String>{};
+                return GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 0.85,
+                  ),
+                  itemCount: defs.length,
+                  itemBuilder: (_, i) {
+                    final def     = defs[i];
+                    final earned  = earnedIds.contains(def.id);
+                    return _BadgeCard(def: def, earned: earned);
+                  },
+                );
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BadgeCard extends StatelessWidget {
+  const _BadgeCard({required this.def, required this.earned});
+  final BadgeDefinition def;
+  final bool             earned;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1140),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Opacity(
+                opacity: earned ? 1.0 : 0.35,
+                child: Text(def.emoji, style: const TextStyle(fontSize: 28)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  def.name,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            def.description,
+            style: TextStyle(color: Colors.white.withOpacity(0.75)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: earned ? const Color(0xFF241858) : const Color(0xFF150E33),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: earned ? const Color(0xFFFFC107).withOpacity(0.55) : const Color(0xFF2A1A5E),
+            width: earned ? 1.4 : 1,
+          ),
+          boxShadow: earned
+              ? [BoxShadow(color: const Color(0xFFFFC107).withOpacity(0.25), blurRadius: 10)]
+              : null,
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Opacity(
+              opacity: earned ? 1.0 : 0.25,
+              child: Text(def.emoji, style: const TextStyle(fontSize: 32)),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              def.name,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: earned ? Colors.white : Colors.white.withOpacity(0.35),
+                fontWeight: FontWeight.w700,
+                fontSize: 10.5,
+              ),
+            ),
+            if (!earned) ...[
+              const SizedBox(height: 3),
+              const Icon(Icons.lock, color: Colors.white24, size: 12),
+            ],
+          ],
+        ),
       ),
     );
   }

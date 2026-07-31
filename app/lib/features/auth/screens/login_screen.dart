@@ -44,7 +44,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await repo.signInWithGoogle();
       }
     } catch (e) {
-      if (mounted) context.showError('Error al conectar con Google: ${e.toString()}');
+      if (mounted)
+        context.showError('Error al conectar con Google: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -60,9 +61,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final password = _passwordController.text;
 
       if (_isSignUp) {
-        final res = await repo.signUpWithEmail(email: email, password: password);
+        final res =
+            await repo.signUpWithEmail(email: email, password: password);
         if (mounted && res.user != null) {
-          context.showSuccess('¡Cuenta creada! Revisa tu correo para confirmar.');
+          context
+              .showSuccess('¡Cuenta creada! Revisa tu correo para confirmar.');
         }
       } else {
         await repo.signInWithEmail(email: email, password: password);
@@ -94,7 +97,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (m.contains('email not confirmed')) {
       return 'Debes confirmar tu correo antes de entrar. Revisa tu bandeja de entrada.';
     }
-    if (m.contains('invalid login') || m.contains('invalid credentials') || m.contains('wrong password')) {
+    if (m.contains('invalid login') ||
+        m.contains('invalid credentials') ||
+        m.contains('wrong password')) {
       return 'Correo o contraseña incorrectos.';
     }
     if (m.contains('user not found')) {
@@ -114,7 +119,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Correo sin confirmar 📧',
-            style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+            style:
+                TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
         content: Text(
           'La cuenta "$email" aún no está confirmada.\n\n'
           '¿Quieres que te enviemos el correo de confirmación de nuevo?',
@@ -130,9 +136,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Navigator.pop(context);
               try {
                 await ref.read(authRepositoryProvider).resetPassword(email);
-                if (mounted) context.showSuccess('¡Correo enviado! Revisa tu bandeja de entrada.');
+                if (mounted)
+                  context.showSuccess(
+                      '¡Correo enviado! Revisa tu bandeja de entrada.');
               } catch (_) {
-                if (mounted) context.showError('No se pudo enviar el correo. Inténtalo más tarde.');
+                if (mounted)
+                  context.showError(
+                      'No se pudo enviar el correo. Inténtalo más tarde.');
               }
             },
             child: const Text('Reenviar correo'),
@@ -153,131 +163,142 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         resizeToAvoidBottomInset: false,
         body: Container(
           // Gradiente como base absoluta — cubre status bar, nav bar y todo
-          width:  double.infinity,
+          width: double.infinity,
           height: double.infinity,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.forestGreen, AppColors.primary, Color(0xFF66BB6A)],
+              colors: [
+                AppColors.forestGreen,
+                AppColors.primary,
+                Color(0xFF66BB6A)
+              ],
             ),
           ),
           child: Stack(
-          children: [
-            Positioned(
-              left: -20,
-              bottom: -20,
-              child: Icon(Icons.park, size: 200, color: Colors.white.withAlpha(20)),
-            ),
-            Positioned(
-              right: -30,
-              top: -30,
-              child: Icon(Icons.star, size: 180, color: Colors.white.withAlpha(15)),
-            ),
-            SafeArea(
-              left: false,
-              right: false,
-              child: Row(
-                children: [
-                  // Panel izquierdo: branding
-                  Expanded(
-                    flex: 5,
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSizes.xl),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Image.asset(
-                            'assets/blink/blink_dressed.png',
-                            width: 200,
-                            filterQuality: FilterQuality.high,
-                          ).animate().scale(duration: 800.ms, curve: Curves.elasticOut),
-                          const SizedBox(height: AppSizes.md),
-                          ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              colors: [Colors.white, Color(0xFFB9F6CA)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ).createShader(bounds),
-                            child: const Text(
-                              'Blinkids',
-                              style: TextStyle(
-                                fontSize: 64,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                fontFamily: 'Nunito',
-                                letterSpacing: 2,
-                                height: 1,
+            children: [
+              Positioned(
+                left: -20,
+                bottom: -20,
+                child: Icon(Icons.park,
+                    size: 200, color: Colors.white.withAlpha(20)),
+              ),
+              Positioned(
+                right: -30,
+                top: -30,
+                child: Icon(Icons.star,
+                    size: 180, color: Colors.white.withAlpha(15)),
+              ),
+              SafeArea(
+                left: false,
+                right: false,
+                child: Row(
+                  children: [
+                    // Panel izquierdo: branding
+                    Expanded(
+                      flex: 5,
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.xl),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Image.asset(
+                              'assets/blink/blink_dressed.png',
+                              width: 200,
+                              filterQuality: FilterQuality.high,
+                            ).animate().scale(
+                                duration: 800.ms, curve: Curves.elasticOut),
+                            const SizedBox(height: AppSizes.md),
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [Colors.white, Color(0xFFB9F6CA)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ).createShader(bounds),
+                              child: const Text(
+                                'Blinkids',
+                                style: TextStyle(
+                                  fontSize: 64,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  fontFamily: 'Nunito',
+                                  letterSpacing: 2,
+                                  height: 1,
+                                ),
                               ),
-                            ),
-                          ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.3, end: 0),
-                        ],
+                            )
+                                .animate()
+                                .fadeIn(delay: 200.ms)
+                                .slideX(begin: -0.3, end: 0),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  // Panel derecho: formulario
-                  Expanded(
-                    flex: 5,
-                    child: AnimatedPadding(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOut,
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom * 0.5,
-                      ),
-                      child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 400),
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: AppSizes.lg,
-                            vertical: AppSizes.sm,
+                    // Panel derecho: formulario
+                    Expanded(
+                      flex: 5,
+                      child: AnimatedPadding(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut,
+                        padding: EdgeInsets.only(
+                          bottom:
+                              MediaQuery.of(context).viewInsets.bottom * 0.5,
+                        ),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 400),
+                            child: Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: AppSizes.lg,
+                                vertical: AppSizes.sm,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSizes.xl,
+                                  vertical: AppSizes.md,
+                                ),
+                                child: _showEmailForm
+                                    ? _EmailForm(
+                                        formKey: _formKey,
+                                        emailController: _emailController,
+                                        passwordController: _passwordController,
+                                        isSignUp: _isSignUp,
+                                        onSubmit: _submitEmailForm,
+                                        onToggleMode: () => setState(() {
+                                          _isSignUp = !_isSignUp;
+                                          _formKey.currentState?.reset();
+                                        }),
+                                        onBack: () => setState(() {
+                                          _showEmailForm = false;
+                                          _isSignUp = false;
+                                        }),
+                                      )
+                                    : _MainLoginOptions(
+                                        onGoogleTap: _signInWithGoogle,
+                                        onEmailTap: () => setState(() {
+                                          _showEmailForm = true;
+                                          _isSignUp = false;
+                                        }),
+                                        onRegisterTap: () => setState(() {
+                                          _showEmailForm = true;
+                                          _isSignUp = true;
+                                        }),
+                                      ),
+                              ),
+                            )
+                                .animate()
+                                .fadeIn(delay: 300.ms, duration: 500.ms)
+                                .slideX(begin: 0.3, end: 0),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSizes.xl,
-                              vertical: AppSizes.md,
-                            ),
-                            child: _showEmailForm
-                                ? _EmailForm(
-                                    formKey: _formKey,
-                                    emailController: _emailController,
-                                    passwordController: _passwordController,
-                                    isSignUp: _isSignUp,
-                                    onSubmit: _submitEmailForm,
-                                    onToggleMode: () => setState(() {
-                                      _isSignUp = !_isSignUp;
-                                      _formKey.currentState?.reset();
-                                    }),
-                                    onBack: () => setState(() {
-                                      _showEmailForm = false;
-                                      _isSignUp = false;
-                                    }),
-                                  )
-                                : _MainLoginOptions(
-                                    onGoogleTap: _signInWithGoogle,
-                                    onEmailTap: () => setState(() {
-                                      _showEmailForm = true;
-                                      _isSignUp = false;
-                                    }),
-                                    onRegisterTap: () => setState(() {
-                                      _showEmailForm = true;
-                                      _isSignUp = true;
-                                    }),
-                                  ),
-                          ),
-                        )
-                            .animate()
-                            .fadeIn(delay: 300.ms, duration: 500.ms)
-                            .slideX(begin: 0.3, end: 0),
-                      ),
-                      ), // Center
-                    ), // AnimatedPadding
-                  ),
-                ],
+                        ), // Center
+                      ), // AnimatedPadding
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
           ), // Stack
         ), // Container gradiente
       ),
@@ -334,11 +355,11 @@ class _MainLoginOptions extends StatelessWidget {
                 ),
               ],
             ),
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const _GoogleGLogo(size: 22),
-                const SizedBox(width: 12),
+                _GoogleGLogo(size: 22),
+                SizedBox(width: 12),
                 Text(
                   AppStrings.signInWithGoogle,
                   style: TextStyle(
@@ -411,65 +432,65 @@ class _EmailForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Form(
-      key: formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            isSignUp ? 'Crear cuenta' : 'Iniciar sesión',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: AppSizes.lg),
-          TextFormField(
-            controller: emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: AppStrings.emailLabel,
-              prefixIcon: Icon(Icons.email_outlined),
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              isSignUp ? 'Crear cuenta' : 'Iniciar sesión',
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return AppStrings.emailRequired;
-              if (!v.isValidEmail) return AppStrings.emailInvalid;
-              return null;
-            },
-          ),
-          const SizedBox(height: AppSizes.md),
-          TextFormField(
-            controller: passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: AppStrings.passwordLabel,
-              prefixIcon: Icon(Icons.lock_outline),
+            const SizedBox(height: AppSizes.lg),
+            TextFormField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: AppStrings.emailLabel,
+                prefixIcon: Icon(Icons.email_outlined),
+              ),
+              validator: (v) {
+                if (v == null || v.isEmpty) return AppStrings.emailRequired;
+                if (!v.isValidEmail) return AppStrings.emailInvalid;
+                return null;
+              },
             ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return AppStrings.passwordRequired;
-              if (v.length < 6) return AppStrings.passwordTooShort;
-              return null;
-            },
-            onFieldSubmitted: (_) => onSubmit(),
-          ),
-          const SizedBox(height: AppSizes.xl),
-          FinButton(
-            label: isSignUp ? 'Crear cuenta' : 'Iniciar sesión',
-            icon: isSignUp ? Icons.person_add_rounded : Icons.login_rounded,
-            onPressed: onSubmit,
-          ),
-          const SizedBox(height: AppSizes.md),
-          TextButton(
-            onPressed: onToggleMode,
-            child: Text(
-              isSignUp
-                  ? '¿Ya tienes cuenta? Inicia sesión'
-                  : '¿No tienes cuenta? Regístrate',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+            const SizedBox(height: AppSizes.md),
+            TextFormField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: AppStrings.passwordLabel,
+                prefixIcon: Icon(Icons.lock_outline),
+              ),
+              validator: (v) {
+                if (v == null || v.isEmpty) return AppStrings.passwordRequired;
+                if (v.length < 6) return AppStrings.passwordTooShort;
+                return null;
+              },
+              onFieldSubmitted: (_) => onSubmit(),
             ),
-          ),
-          TextButton(
-            onPressed: onBack,
-            child: const Text(AppStrings.back),
-          ),
-        ],
-      ),
+            const SizedBox(height: AppSizes.xl),
+            FinButton(
+              label: isSignUp ? 'Crear cuenta' : 'Iniciar sesión',
+              icon: isSignUp ? Icons.person_add_rounded : Icons.login_rounded,
+              onPressed: onSubmit,
+            ),
+            const SizedBox(height: AppSizes.md),
+            TextButton(
+              onPressed: onToggleMode,
+              child: Text(
+                isSignUp
+                    ? '¿Ya tienes cuenta? Inicia sesión'
+                    : '¿No tienes cuenta? Regístrate',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            TextButton(
+              onPressed: onBack,
+              child: const Text(AppStrings.back),
+            ),
+          ],
+        ),
       ), // Form
     ); // SingleChildScrollView
   }
@@ -499,7 +520,7 @@ class _GoogleGPainter extends CustomPainter {
     final h = size.height;
     final cx = w / 2;
     final cy = h / 2;
-    final r  = w * 0.46;
+    final r = w * 0.46;
     final stroke = w * 0.22;
 
     final paint = Paint()
@@ -529,10 +550,10 @@ class _GoogleGPainter extends CustomPainter {
     final barPaint = Paint()
       ..color = const Color(0xFF4285F4)
       ..style = PaintingStyle.fill;
-    final barTop    = cy - stroke / 2;
+    final barTop = cy - stroke / 2;
     final barBottom = cy + stroke / 2;
-    final barLeft   = cx;
-    final barRight  = w * 0.92;
+    final barLeft = cx;
+    final barRight = w * 0.92;
     canvas.drawRect(
       Rect.fromLTRB(barLeft, barTop, barRight, barBottom),
       barPaint,

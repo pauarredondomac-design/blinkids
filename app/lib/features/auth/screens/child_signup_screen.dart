@@ -21,13 +21,13 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
   final _focusNode = FocusNode();
 
   // Pasos: 0 = nombre, 1 = crear PIN, 2 = confirmar PIN
-  int    _step         = 0;
-  String _pin          = '';
-  String _pinConfirm   = '';
-  bool   _checking     = false;
-  bool   _loading      = false;
-  String _errorMsg     = '';
-  bool   _nameOk       = false;
+  int _step = 0;
+  String _pin = '';
+  String _pinConfirm = '';
+  bool _checking = false;
+  bool _loading = false;
+  String _errorMsg = '';
+  bool _nameOk = false;
 
   static const _minLen = 3;
   static const _maxLen = 20;
@@ -44,16 +44,22 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
   String _fakeEmail(String name) =>
       'child_${name.toLowerCase().replaceAll(' ', '_')}@blinkids.app';
 
-  String _hashPin(String pin) =>
-      sha256.convert(utf8.encode(pin)).toString();
+  String _hashPin(String pin) => sha256.convert(utf8.encode(pin)).toString();
 
   Future<void> _checkName(String value) async {
     final name = _sanitize(value);
     if (name.length < _minLen) {
-      setState(() { _nameOk = false; _errorMsg = ''; });
+      setState(() {
+        _nameOk = false;
+        _errorMsg = '';
+      });
       return;
     }
-    setState(() { _checking = true; _errorMsg = ''; _nameOk = false; });
+    setState(() {
+      _checking = true;
+      _errorMsg = '';
+      _nameOk = false;
+    });
     try {
       final result = await Supabase.instance.client
           .from('profiles')
@@ -63,22 +69,31 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
       final available = (result as List).isEmpty;
       if (mounted) {
         setState(() {
-          _nameOk  = available;
-          _errorMsg = available ? '' : '¡Ese nombre ya está ocupado! 😅 Prueba con otro.';
+          _nameOk = available;
+          _errorMsg = available
+              ? ''
+              : '¡Ese nombre ya está ocupado! 😅 Prueba con otro.';
           _checking = false;
         });
       }
     } catch (_) {
       // RLS puede bloquear la lectura antes de tener sesión.
       // Permitimos continuar; _createAccount() hace la verificación final.
-      if (mounted) setState(() { _checking = false; _nameOk = true; });
+      if (mounted)
+        setState(() {
+          _checking = false;
+          _nameOk = true;
+        });
     }
   }
 
   void _onPinDigit(String digit) {
     if (_step == 1) {
       if (_pin.length >= 6) return;
-      setState(() { _pin += digit; _errorMsg = ''; });
+      setState(() {
+        _pin += digit;
+        _errorMsg = '';
+      });
       if (_pin.length == 6) {
         Future.delayed(200.ms, () {
           if (mounted) setState(() => _step = 2);
@@ -86,7 +101,10 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
       }
     } else if (_step == 2) {
       if (_pinConfirm.length >= 6) return;
-      setState(() { _pinConfirm += digit; _errorMsg = ''; });
+      setState(() {
+        _pinConfirm += digit;
+        _errorMsg = '';
+      });
       if (_pinConfirm.length == 6) _confirmPin();
     }
   }
@@ -95,14 +113,15 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
     if (_step == 1 && _pin.isNotEmpty) {
       setState(() => _pin = _pin.substring(0, _pin.length - 1));
     } else if (_step == 2 && _pinConfirm.isNotEmpty) {
-      setState(() => _pinConfirm = _pinConfirm.substring(0, _pinConfirm.length - 1));
+      setState(
+          () => _pinConfirm = _pinConfirm.substring(0, _pinConfirm.length - 1));
     }
   }
 
   void _confirmPin() {
     if (_pin != _pinConfirm) {
       setState(() {
-        _errorMsg   = 'Los PINs no coinciden. Inténtalo de nuevo.';
+        _errorMsg = 'Los PINs no coinciden. Inténtalo de nuevo.';
         _pinConfirm = '';
       });
       return;
@@ -111,8 +130,11 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
   }
 
   Future<void> _createAccount() async {
-    setState(() { _loading = true; _errorMsg = ''; });
-    final name  = _sanitize(_nameCtrl.text);
+    setState(() {
+      _loading = true;
+      _errorMsg = '';
+    });
+    final name = _sanitize(_nameCtrl.text);
     final email = _fakeEmail(name);
     final client = Supabase.instance.client;
 
@@ -126,18 +148,18 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
       if ((existing as List? ?? []).isNotEmpty) {
         setState(() {
           _errorMsg = '¡Ese nombre ya está ocupado! Elige otro.';
-          _loading  = false;
-          _step     = 0;
-          _pin      = '';
+          _loading = false;
+          _step = 0;
+          _pin = '';
           _pinConfirm = '';
-          _nameOk   = false;
+          _nameOk = false;
         });
         return;
       }
 
       // Crear cuenta con email interno + PIN como contraseña
       final authRes = await client.auth.signUp(
-        email:    email,
+        email: email,
         password: _pin,
       );
       final userId = authRes.user?.id;
@@ -152,7 +174,7 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
       // Crear perfil + cartera via RPC (SECURITY DEFINER, bypasea RLS)
       await client.rpc('create_child_profile', params: {
         'p_display_name': name,
-        'p_pin_hash':     _hashPin(_pin),
+        'p_pin_hash': _hashPin(_pin),
       });
 
       // Invalidar caché del perfil para que se vuelva a cargar con el nuevo perfil
@@ -160,7 +182,11 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
 
       if (mounted) context.go('/tutorial');
     } on AuthException catch (e) {
-      if (mounted) setState(() { _errorMsg = 'Error: ${e.message}'; _loading = false; });
+      if (mounted)
+        setState(() {
+          _errorMsg = 'Error: ${e.message}';
+          _loading = false;
+        });
     } catch (e) {
       final msg = e.toString();
       final friendly = msg.contains('ya está en uso') || msg.contains('already')
@@ -168,7 +194,11 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
           : msg.contains('network') || msg.contains('SocketException')
               ? 'Sin conexión. Verifica tu internet.'
               : 'Error: $msg';
-      if (mounted) setState(() { _errorMsg = friendly; _loading = false; });
+      if (mounted)
+        setState(() {
+          _errorMsg = friendly;
+          _loading = false;
+        });
     }
   }
 
@@ -197,7 +227,8 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          BlinkCharacterWidget(width: 160, enableBounce: true),
+                          const BlinkCharacterWidget(
+                              width: 160, enableBounce: true),
                           const SizedBox(height: 20),
                           AnimatedSwitcher(
                             duration: 300.ms,
@@ -221,16 +252,21 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
                           const SizedBox(height: 12),
                           if (_errorMsg.isNotEmpty)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
                               decoration: BoxDecoration(
                                 color: Colors.red.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red.withOpacity(0.4)),
+                                border: Border.all(
+                                    color: Colors.red.withOpacity(0.4)),
                               ),
                               child: Text(
                                 _errorMsg,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.redAccent, fontFamily: 'Nunito', fontSize: 13),
+                                style: const TextStyle(
+                                    color: Colors.redAccent,
+                                    fontFamily: 'Nunito',
+                                    fontSize: 13),
                               ),
                             ),
                         ],
@@ -264,7 +300,7 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Indicador de pasos
-        _StepIndicator(current: 0),
+        const _StepIndicator(current: 0),
         const SizedBox(height: 32),
 
         // Campo nombre
@@ -290,22 +326,32 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
             ),
             decoration: InputDecoration(
               hintText: 'Tu nombre de héroe',
-              hintStyle: const TextStyle(color: Color(0xFF9EA3B8), fontSize: 18, fontFamily: 'Nunito'),
-              counterStyle: const TextStyle(color: Color(0xFF9EA3B8), fontSize: 11),
+              hintStyle: const TextStyle(
+                  color: Color(0xFF9EA3B8), fontSize: 18, fontFamily: 'Nunito'),
+              counterStyle:
+                  const TextStyle(color: Color(0xFF9EA3B8), fontSize: 11),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               suffixIcon: _checking
                   ? const Padding(
                       padding: EdgeInsets.all(14),
-                      child: SizedBox(width: 20, height: 20,
-                        child: CircularProgressIndicator(color: Colors.white54, strokeWidth: 2)),
+                      child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white54, strokeWidth: 2)),
                     )
                   : _nameOk
-                      ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 28)
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: Color(0xFF4CAF50), size: 28)
                       : null,
             ),
             onChanged: (v) {
-              setState(() { _nameOk = false; _errorMsg = ''; });
+              setState(() {
+                _nameOk = false;
+                _errorMsg = '';
+              });
               if (_sanitize(v).length >= _minLen) _checkName(v);
             },
           ),
@@ -314,7 +360,8 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
         const SizedBox(height: 8),
         const Text(
           'Mín. 3 letras · Único en Blinkids',
-          style: TextStyle(color: Colors.white38, fontSize: 12, fontFamily: 'Nunito'),
+          style: TextStyle(
+              color: Colors.white38, fontSize: 12, fontFamily: 'Nunito'),
         ),
 
         const SizedBox(height: 28),
@@ -329,14 +376,18 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]),
+                gradient: const LinearGradient(
+                    colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]),
                 borderRadius: BorderRadius.circular(30),
               ),
               child: const Text(
                 'Siguiente →',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w900,
-                    fontSize: 18, color: Colors.white),
+                style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    color: Colors.white),
               ),
             ),
           ),
@@ -345,7 +396,8 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
         const SizedBox(height: 16),
         TextButton(
           onPressed: () => context.pop(),
-          child: const Text('← Volver', style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
+          child: const Text('← Volver',
+              style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
         ),
       ],
     );
@@ -391,8 +443,14 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
         const SizedBox(height: 16),
         if (_step == 2)
           TextButton(
-            onPressed: () => setState(() { _step = 1; _pin = ''; _pinConfirm = ''; _errorMsg = ''; }),
-            child: const Text('← Cambiar PIN', style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
+            onPressed: () => setState(() {
+              _step = 1;
+              _pin = '';
+              _pinConfirm = '';
+              _errorMsg = '';
+            }),
+            child: const Text('← Cambiar PIN',
+                style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
           ),
       ],
     );
@@ -409,14 +467,18 @@ class _StepIndicator extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(3, (i) {
         final active = i == current;
-        final done   = i < current;
+        final done = i < current;
         return AnimatedContainer(
           duration: 300.ms,
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: active ? 28 : 8,
           height: 8,
           decoration: BoxDecoration(
-            color: done ? const Color(0xFF4CAF50) : active ? const Color(0xFF4FC3F7) : Colors.white24,
+            color: done
+                ? const Color(0xFF4CAF50)
+                : active
+                    ? const Color(0xFF4FC3F7)
+                    : Colors.white24,
             borderRadius: BorderRadius.circular(4),
           ),
         );

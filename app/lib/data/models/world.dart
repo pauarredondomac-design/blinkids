@@ -68,6 +68,7 @@ const allWorlds = [
     description:      'Un bosque lleno de misterios\ny riquezas naturales.',
     accentColor:      Color(0xFF4CAF50),
     lockedImagePath:  'assets/worlds/forest/locked.png',
+    unlockedImagePath: 'assets/worlds/forest/unlocked.png',
     backgroundImagePath: 'assets/worlds/forest/forest_background.png',
   ),
   World(

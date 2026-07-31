@@ -43,6 +43,29 @@ class QuestionRepository {
     }
   }
 
+  /// Trae actividades de un módulo (trabajos, mi_bolsa, banco_estelar, misiones...)
+  /// ordenadas por sort_order. Usado por el catálogo nuevo de actividades narrativas.
+  Future<List<Question>> getQuestionsForModule(
+    String moduleSlug, {
+    int? limit,
+  }) async {
+    try {
+      var query = _db
+          .from('questions')
+          .select()
+          .eq('is_active', true)
+          .eq('module_slug', moduleSlug)
+          .order('sort_order');
+
+      final rows = limit != null ? await query.limit(limit) : await query;
+      return (rows as List)
+          .map((r) => Question.fromJson(r as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   /// Registra la respuesta del jugador en historial.
   Future<void> recordAnswer({
     required String userId,
@@ -61,16 +84,17 @@ class QuestionRepository {
   }
 
   List<Question> _fallbackQuestions() => [
-        Question(
+        const Question(
           id: 'q-local-1',
           type: QuestionType.multipleChoice,
           questionText: '¿Qué es el ahorro?',
-          options: const [
+          options: [
             QuestionOption(id: 'a', text: 'Gastar todo tu dinero', icon: '🛒'),
             QuestionOption(
-                id: 'b', text: 'Guardar parte del dinero para el futuro', icon: '🐷'),
-            QuestionOption(
-                id: 'c', text: 'Pedir dinero prestado', icon: '🤝'),
+                id: 'b',
+                text: 'Guardar parte del dinero para el futuro',
+                icon: '🐷'),
+            QuestionOption(id: 'c', text: 'Pedir dinero prestado', icon: '🤝'),
             QuestionOption(id: 'd', text: 'Perder dinero jugando', icon: '🎲'),
           ],
           correctAnswer: 'b',
@@ -80,11 +104,12 @@ class QuestionRepository {
               'El ahorro es guardar una parte de tu dinero para usarlo después, '
               'ya sea para una emergencia o para una meta importante.',
         ),
-        Question(
+        const Question(
           id: 'q-local-2',
           type: QuestionType.trueFalse,
-          questionText: '¿Es buena idea gastar todo tu dinero apenas lo recibes?',
-          options: const [
+          questionText:
+              '¿Es buena idea gastar todo tu dinero apenas lo recibes?',
+          options: [
             QuestionOption(id: 'true', text: 'Verdadero'),
             QuestionOption(id: 'false', text: 'Falso'),
           ],
@@ -95,11 +120,11 @@ class QuestionRepository {
               'No es buena idea. Es mejor guardar una parte para el futuro '
               'y otra para emergencias antes de gastar.',
         ),
-        Question(
+        const Question(
           id: 'q-local-3',
           type: QuestionType.multipleChoice,
           questionText: '¿Cuántas categorías tiene la bolsa de Blinkids?',
-          options: const [
+          options: [
             QuestionOption(id: 'a', text: '3', icon: '3️⃣'),
             QuestionOption(id: 'b', text: '4', icon: '4️⃣'),
             QuestionOption(id: 'c', text: '5', icon: '5️⃣'),
@@ -108,17 +133,18 @@ class QuestionRepository {
           correctAnswer: 'c',
           coinReward: 10,
           xpReward: 5,
-          explanation:
-              'La bolsa tiene 5 categorías: Ahorro 🐷, Inversión 📈, '
+          explanation: 'La bolsa tiene 5 categorías: Ahorro 🐷, Inversión 📈, '
               'Emergencia 🚨, Gastos 🛒 y Metas 🎯.',
         ),
-        Question(
+        const Question(
           id: 'q-local-4',
           type: QuestionType.multipleChoice,
           questionText: '¿Qué es un presupuesto?',
-          options: const [
+          options: [
             QuestionOption(
-                id: 'a', text: 'Un plan para gastar e invertir tu dinero', icon: '📋'),
+                id: 'a',
+                text: 'Un plan para gastar e invertir tu dinero',
+                icon: '📋'),
             QuestionOption(
                 id: 'b', text: 'Una lista de juguetes que quieres', icon: '🎮'),
             QuestionOption(
@@ -133,12 +159,12 @@ class QuestionRepository {
               'Un presupuesto es un plan que te ayuda a decidir cuánto dinero vas a '
               'gastar, ahorrar e invertir. ¡Es como un mapa para tu dinero!',
         ),
-        Question(
+        const Question(
           id: 'q-local-5',
           type: QuestionType.trueFalse,
           questionText:
               '¿La inversión es cuando usas tu dinero para que crezca con el tiempo?',
-          options: const [
+          options: [
             QuestionOption(id: 'true', text: 'Verdadero'),
             QuestionOption(id: 'false', text: 'Falso'),
           ],

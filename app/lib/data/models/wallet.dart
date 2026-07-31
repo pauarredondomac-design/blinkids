@@ -1,12 +1,25 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // WalletCategoryType
 //
-// Las 3 categorías del PDF de Blinkids:
-//   guardar       → alcancía tradicional (ahorro)
-//   banco_estelar → cuenta de inversión virtual (gana interés semanal)
-//   gastar        → pool de gastos inmediatos
+// Las 4 misiones del dinero de Blinkids (documento maestro del cliente):
+//   guardar   → 🛡 ¿lo necesitaré pronto? (barra de progreso en Banco Estelar)
+//   invertir  → 🚀 ¿puede crecer?
+//   donar     → ❤️ ¿puedo ayudar?
+//   gastar    → 🎉 ¿lo quiero hoy? (se muestra como "Disfrutar")
+//
+// 'banco_estelar' se conserva en el enum solo por compatibilidad con filas
+// viejas — ya no se usa como categoría asignable (ver [[reconstruir_banco_estelar]]).
 // ─────────────────────────────────────────────────────────────────────────────
-enum WalletCategoryType { guardar, banco_estelar, gastar }
+enum WalletCategoryType { guardar, banco_estelar, gastar, invertir, donar }
+
+/// Las 4 categorías que el niño puede elegir al repartir monedas en Mi Bolsa.
+/// 'banco_estelar' queda fuera: es un valor heredado, no una misión del dinero.
+const assignableWalletCategories = [
+  WalletCategoryType.guardar,
+  WalletCategoryType.invertir,
+  WalletCategoryType.donar,
+  WalletCategoryType.gastar,
+];
 
 extension WalletCategoryTypeX on WalletCategoryType {
   String get displayName {
@@ -16,29 +29,41 @@ extension WalletCategoryTypeX on WalletCategoryType {
       case WalletCategoryType.banco_estelar:
         return 'Banco Estelar';
       case WalletCategoryType.gastar:
-        return 'Gastar';
+        return 'Disfrutar';
+      case WalletCategoryType.invertir:
+        return 'Invertir';
+      case WalletCategoryType.donar:
+        return 'Donar';
     }
   }
 
   String get emoji {
     switch (this) {
       case WalletCategoryType.guardar:
-        return '🐷';
+        return '🛡';
       case WalletCategoryType.banco_estelar:
         return '🏦';
       case WalletCategoryType.gastar:
-        return '🛒';
+        return '🎉';
+      case WalletCategoryType.invertir:
+        return '🚀';
+      case WalletCategoryType.donar:
+        return '❤️';
     }
   }
 
   String get description {
     switch (this) {
       case WalletCategoryType.guardar:
-        return 'Guarda para el futuro';
+        return '¿Lo necesitaré pronto?';
       case WalletCategoryType.banco_estelar:
         return 'Gana interés cada semana';
       case WalletCategoryType.gastar:
-        return 'Para tus gastos de hoy';
+        return '¿Lo quiero hoy?';
+      case WalletCategoryType.invertir:
+        return '¿Puede crecer?';
+      case WalletCategoryType.donar:
+        return '¿Puedo ayudar?';
     }
   }
 
@@ -51,6 +76,10 @@ extension WalletCategoryTypeX on WalletCategoryType {
         return 0xFF4A148C;
       case WalletCategoryType.gastar:
         return 0xFFBF360C;
+      case WalletCategoryType.invertir:
+        return 0xFF1B5E20;
+      case WalletCategoryType.donar:
+        return 0xFFB71C1C;
     }
   }
 
@@ -62,6 +91,10 @@ extension WalletCategoryTypeX on WalletCategoryType {
         return 0xFFCE93D8;
       case WalletCategoryType.gastar:
         return 0xFFFFCC80;
+      case WalletCategoryType.invertir:
+        return 0xFF81C784;
+      case WalletCategoryType.donar:
+        return 0xFFEF9A9A;
     }
   }
 }

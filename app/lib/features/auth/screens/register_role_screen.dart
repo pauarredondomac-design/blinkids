@@ -39,9 +39,9 @@ class _RegisterRoleScreenState extends State<RegisterRoleScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
+                const Text(
                   AppStrings.selectRole,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,

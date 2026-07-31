@@ -21,8 +21,8 @@ class BadgesRow extends ConsumerWidget {
 
     return badgesAsync.when(
       loading: () => const SizedBox(height: 40),
-      error:   (_, __) => const SizedBox.shrink(),
-      data:    (badges) => _BadgesContent(badges: badges, maxVisible: maxVisible),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (badges) => _BadgesContent(badges: badges, maxVisible: maxVisible),
     );
   }
 }
@@ -31,10 +31,11 @@ class BadgesRow extends ConsumerWidget {
 // BadgesRowForChild — para la vista del padre pasando badgeId externos
 // ─────────────────────────────────────────────────────────────────────────────
 class BadgesRowForChild extends StatefulWidget {
-  const BadgesRowForChild({super.key, required this.childId, this.maxVisible = 6});
+  const BadgesRowForChild(
+      {super.key, required this.childId, this.maxVisible = 6});
 
   final String childId;
-  final int    maxVisible;
+  final int maxVisible;
 
   @override
   State<BadgesRowForChild> createState() => _BadgesRowForChildState();
@@ -68,23 +69,23 @@ class _BadgesContent extends StatelessWidget {
   const _BadgesContent({required this.badges, required this.maxVisible});
 
   final List<PlayerBadge> badges;
-  final int               maxVisible;
+  final int maxVisible;
 
   @override
   Widget build(BuildContext context) {
     if (badges.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
         child: Row(
-          children: const [
+          children: [
             Text('🔒', style: TextStyle(fontSize: 20)),
             SizedBox(width: 8),
             Text(
               'Aún no tienes medallas. ¡Sigue jugando!',
               style: TextStyle(
-                color:      Colors.white38,
+                color: Colors.white38,
                 fontFamily: 'Nunito',
-                fontSize:   12,
+                fontSize: 12,
               ),
             ),
           ],
@@ -93,15 +94,14 @@ class _BadgesContent extends StatelessWidget {
     }
 
     final visible = badges.take(maxVisible).toList();
-    final extra   = badges.length - maxVisible;
+    final extra = badges.length - maxVisible;
 
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
         ...visible.map((b) => _BadgeChip(badge: b)),
-        if (extra > 0)
-          _MoreChip(count: extra, allBadges: badges),
+        if (extra > 0) _MoreChip(count: extra, allBadges: badges),
       ],
     );
   }
@@ -121,7 +121,7 @@ class _BadgeChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color:        const Color(0xFF1A1F3C),
+          color: const Color(0xFF1A1F3C),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFF7C3AED).withAlpha(100)),
         ),
@@ -133,10 +133,10 @@ class _BadgeChip extends StatelessWidget {
             Text(
               badge.displayName,
               style: const TextStyle(
-                color:      Colors.white70,
+                color: Colors.white70,
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w700,
-                fontSize:   11,
+                fontSize: 11,
               ),
             ),
           ],
@@ -151,7 +151,7 @@ class _BadgeChip extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _MoreChip extends StatelessWidget {
   const _MoreChip({required this.count, required this.allBadges});
-  final int              count;
+  final int count;
   final List<PlayerBadge> allBadges;
 
   @override
@@ -164,15 +164,15 @@ class _MoreChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color:        Colors.white.withAlpha(15),
+          color: Colors.white.withAlpha(15),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           '+$count más',
           style: const TextStyle(
-            color:      Colors.white54,
+            color: Colors.white54,
             fontFamily: 'Nunito',
-            fontSize:   11,
+            fontSize: 11,
           ),
         ),
       ),
@@ -203,10 +203,10 @@ class _AllBadgesDialog extends StatelessWidget {
               const Text(
                 '🏅 Mis Medallas',
                 style: TextStyle(
-                  color:      Colors.white,
+                  color: Colors.white,
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w800,
-                  fontSize:   18,
+                  fontSize: 18,
                 ),
               ),
               const SizedBox(height: 16),
@@ -229,7 +229,8 @@ class _AllBadgesDialog extends StatelessWidget {
                   ),
                   child: const Text(
                     'Cerrar',
-                    style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        fontFamily: 'Nunito', fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -248,13 +249,17 @@ class BadgeUnlockToast extends StatelessWidget {
   const BadgeUnlockToast({super.key, required this.badgeId});
   final String badgeId;
 
-  static void show(BuildContext context, String badgeId) {
+  static void show(BuildContext context, String badgeId,
+      {String? name, String? emoji}) {
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
-    entry = OverlayEntry(builder: (_) => _ToastEntry(
-      badgeId: badgeId,
-      onDone: () => entry.remove(),
-    ));
+    entry = OverlayEntry(
+        builder: (_) => _ToastEntry(
+              badgeId: badgeId,
+              name: name,
+              emoji: emoji,
+              onDone: () => entry.remove(),
+            ));
     overlay.insert(entry);
   }
 
@@ -262,9 +267,36 @@ class BadgeUnlockToast extends StatelessWidget {
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
+/// Muestra un toast por cada medalla nueva (con nombre/emoji reales) en
+/// secuencia, para usar tras `awardXp()` u otra acción que pueda otorgar
+/// medallas. Seguro de llamar con una lista vacía.
+Future<void> showBadgeUnlockToasts(
+  BuildContext context,
+  WidgetRef ref,
+  List<String> newBadgeIds,
+) async {
+  if (newBadgeIds.isEmpty) return;
+  final defs = await ref.read(badgeDefinitionsProvider.future);
+  for (final id in newBadgeIds) {
+    if (!context.mounted) return;
+    BadgeDefinition? def;
+    for (final d in defs) {
+      if (d.id == id) {
+        def = d;
+        break;
+      }
+    }
+    BadgeUnlockToast.show(context, id, name: def?.name, emoji: def?.emoji);
+    await Future.delayed(const Duration(milliseconds: 3500));
+  }
+}
+
 class _ToastEntry extends StatefulWidget {
-  const _ToastEntry({required this.badgeId, required this.onDone});
-  final String       badgeId;
+  const _ToastEntry(
+      {required this.badgeId, required this.onDone, this.name, this.emoji});
+  final String badgeId;
+  final String? name;
+  final String? emoji;
   final VoidCallback onDone;
 
   @override
@@ -274,7 +306,7 @@ class _ToastEntry extends StatefulWidget {
 class _ToastEntryState extends State<_ToastEntry>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
-  late final Animation<double>   _anim;
+  late final Animation<double> _anim;
 
   @override
   void initState() {
@@ -316,16 +348,21 @@ class _ToastEntryState extends State<_ToastEntry>
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: const [
-                BoxShadow(color: Colors.black54, blurRadius: 16, offset: Offset(0, 4)),
+                BoxShadow(
+                    color: Colors.black54,
+                    blurRadius: 16,
+                    offset: Offset(0, 4)),
               ],
             ),
             child: Text(
-              '🏅 ¡Nueva medalla desbloqueada!',
+              widget.name != null
+                  ? '${widget.emoji ?? '🏅'} ¡Medalla: ${widget.name}!'
+                  : '🏅 ¡Nueva medalla desbloqueada!',
               style: const TextStyle(
-                color:      Colors.white,
+                color: Colors.white,
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w800,
-                fontSize:   14,
+                fontSize: 14,
               ),
             ),
           ),

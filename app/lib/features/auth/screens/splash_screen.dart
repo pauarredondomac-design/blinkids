@@ -13,7 +13,6 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
-
   static const _navDelay = Duration(milliseconds: 5500);
 
   @override
@@ -47,7 +46,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     final client = Supabase.instance.client;
-    final user   = client.auth.currentUser;
+    final user = client.auth.currentUser;
 
     // Sin sesión → modo demo: mostrar tutorial la primera vez
     if (user == null) {
@@ -105,7 +104,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
-                end:   Alignment.bottomRight,
+                end: Alignment.bottomRight,
                 colors: [
                   Color(0xFF060618),
                   Color(0xFF0D0D2B),
@@ -125,14 +124,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-
                 // Blink cae desde arriba con rebote
                 _BlinkHero(),
 
                 const SizedBox(height: 28),
 
                 // "Blinkids" letra por letra
-                _LetterByLetter(text: 'Blinkids'),
+                const _LetterByLetter(text: 'Blinkids'),
 
                 const SizedBox(height: 14),
 
@@ -170,14 +168,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     borderRadius: BorderRadius.circular(4),
                     child: const LinearProgressIndicator(
                       backgroundColor: Colors.white12,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
                       minHeight: 3,
                     ),
                   ),
                 ).animate().fadeIn(
-                  delay: const Duration(milliseconds: 2800),
-                  duration: const Duration(milliseconds: 500),
-                ),
+                      delay: const Duration(milliseconds: 2800),
+                      duration: const Duration(milliseconds: 500),
+                    ),
               ],
             ),
           ),
@@ -198,23 +197,23 @@ class _BlinkHero extends StatelessWidget {
         'assets/blink/blink_base.png',
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const RadialGradient(
-                colors: [Color(0xFF3D5AFE), Color(0xFF1A237E)],
-              ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x883D5AFE),
-                  blurRadius: 30,
-                  spreadRadius: 4,
-                ),
-              ],
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [Color(0xFF3D5AFE), Color(0xFF1A237E)],
             ),
-            child: const Icon(Icons.pets_rounded, size: 80, color: Colors.white),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x883D5AFE),
+                blurRadius: 30,
+                spreadRadius: 4,
+              ),
+            ],
           ),
+          child: const Icon(Icons.pets_rounded, size: 80, color: Colors.white),
         ),
-      )
+      ),
+    )
         .animate()
         .fadeIn(
           delay: const Duration(milliseconds: 150),
@@ -235,9 +234,9 @@ class _LetterByLetter extends StatelessWidget {
   const _LetterByLetter({required this.text});
   final String text;
 
-  static const _startDelay  = 1000; // ms cuando empieza la primera letra
-  static const _letterGap   = 90;   // ms entre letras
-  static const _letterDur   = 380;  // duración de cada letra
+  static const _startDelay = 1000; // ms cuando empieza la primera letra
+  static const _letterGap = 90; // ms entre letras
+  static const _letterDur = 380; // duración de cada letra
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +245,7 @@ class _LetterByLetter extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: List.generate(text.length, (i) {
-        final delay   = Duration(milliseconds: _startDelay + i * _letterGap);
+        final delay = Duration(milliseconds: _startDelay + i * _letterGap);
         final isFirst = i == 0;
 
         return Text(
@@ -260,9 +259,8 @@ class _LetterByLetter extends StatelessWidget {
             height: 1.0,
             shadows: [
               Shadow(
-                color: isFirst
-                    ? const Color(0xAAFFD700)
-                    : const Color(0x553D5AFE),
+                color:
+                    isFirst ? const Color(0xAAFFD700) : const Color(0x553D5AFE),
                 blurRadius: isFirst ? 24 : 14,
                 offset: const Offset(0, 4),
               ),
@@ -272,20 +270,20 @@ class _LetterByLetter extends StatelessWidget {
             .animate()
             .fadeIn(
               delay: delay,
-              duration: Duration(milliseconds: _letterDur),
+              duration: const Duration(milliseconds: _letterDur),
             )
             .slideY(
               begin: 0.8,
               end: 0,
               delay: delay,
-              duration: Duration(milliseconds: _letterDur),
+              duration: const Duration(milliseconds: _letterDur),
               curve: Curves.easeOutBack,
             )
             .scaleXY(
               begin: 0.4,
               end: 1.0,
               delay: delay,
-              duration: Duration(milliseconds: _letterDur),
+              duration: const Duration(milliseconds: _letterDur),
               curve: Curves.easeOutBack,
             );
       }),
@@ -303,20 +301,20 @@ class _StarField extends StatelessWidget {
         final h = constraints.maxHeight;
         return Stack(
           children: List.generate(45, (i) {
-            final rng     = i * 2971 + 53;
-            final left    = (rng % 1000) / 1000 * w;
-            final top     = ((rng * 137) % 1000) / 1000 * h;
-            final radius  = 0.7 + (rng % 4) * 0.6;
+            final rng = i * 2971 + 53;
+            final left = (rng % 1000) / 1000 * w;
+            final top = ((rng * 137) % 1000) / 1000 * h;
+            final radius = 0.7 + (rng % 4) * 0.6;
             final opacity = 0.1 + (rng % 6) / 15.0;
-            final delay   = Duration(milliseconds: (i * 60) % 1000);
+            final delay = Duration(milliseconds: (i * 60) % 1000);
 
             return Positioned(
               left: left,
-              top:  top,
+              top: top,
               child: Opacity(
                 opacity: opacity,
                 child: Container(
-                  width:  radius * 2,
+                  width: radius * 2,
                   height: radius * 2,
                   decoration: const BoxDecoration(
                     color: Colors.white,

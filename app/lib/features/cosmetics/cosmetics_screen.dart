@@ -21,7 +21,6 @@ class CosmeticsScreen extends ConsumerStatefulWidget {
 
 class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
     with SingleTickerProviderStateMixin {
-
   late final TabController _tabs;
   bool _busy = false;
 
@@ -45,7 +44,8 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
     if (_busy) return;
     final coins = ref.read(currentWalletProvider).valueOrNull?.totalCoins ?? 0;
     if (coins < cosmetic.price) {
-      _snack('Necesitas ${cosmetic.price} 🪙 (tienes $coins)', Colors.red.shade700);
+      _snack('Necesitas ${cosmetic.price} 🪙 (tienes $coins)',
+          Colors.red.shade700);
       return;
     }
 
@@ -59,8 +59,10 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
     try {
       await ref.read(cosmeticShopProvider.notifier).buy(cosmetic.id);
       ref.invalidate(currentWalletProvider);
-      if (mounted) _snack('¡Compraste ${cosmetic.emoji} ${cosmetic.name}!',
-          const Color(0xFF2E7D32));
+      if (mounted) {
+        _snack('¡Compraste ${cosmetic.emoji} ${cosmetic.name}!',
+            const Color(0xFF2E7D32));
+      }
     } catch (e) {
       if (mounted) _snack(_friendlyError(e), Colors.red.shade700);
     } finally {
@@ -73,8 +75,10 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
     setState(() => _busy = true);
     try {
       await ref.read(cosmeticShopProvider.notifier).equip(cosmetic.id);
-      if (mounted) _snack('${cosmetic.emoji} Equipado: ${cosmetic.name}',
-          const Color(0xFF1565C0));
+      if (mounted) {
+        _snack('${cosmetic.emoji} Equipado: ${cosmetic.name}',
+            const Color(0xFF1565C0));
+      }
     } catch (e) {
       if (mounted) _snack(_friendlyError(e), Colors.red.shade700);
     } finally {
@@ -88,7 +92,8 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
     try {
       await ref.read(cosmeticShopProvider.notifier).unequip(slot);
       if (mounted) _snack('Slot vacío', Colors.grey.shade700);
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
@@ -114,7 +119,7 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
   @override
   Widget build(BuildContext context) {
     final loadoutAsync = ref.watch(equippedLoadoutProvider);
-    final ownedAsync   = ref.watch(ownedCosmeticIdsProvider);
+    final ownedAsync = ref.watch(ownedCosmeticIdsProvider);
     final catalogAsync = ref.watch(cosmeticCatalogProvider);
     final coins = ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0;
 
@@ -157,15 +162,21 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
           labelColor: const Color(0xFFCE93D8),
           unselectedLabelColor: Colors.white38,
           indicatorColor: const Color(0xFF7C3AED),
-          labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700),
-          tabs: CosmeticSlot.values.map((s) => Tab(
-            text: '${s.defaultEmoji} ${s.displayName}',
-          )).toList(),
+          labelStyle: const TextStyle(
+              fontFamily: 'Nunito', fontWeight: FontWeight.w700),
+          tabs: CosmeticSlot.values
+              .map((s) => Tab(
+                    text: '${s.defaultEmoji} ${s.displayName}',
+                  ))
+              .toList(),
         ),
       ),
       body: catalogAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: Colors.purpleAccent)),
-        error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: Colors.white54))),
+        loading: () => const Center(
+            child: CircularProgressIndicator(color: Colors.purpleAccent)),
+        error: (e, _) => Center(
+            child: Text('Error: $e',
+                style: const TextStyle(color: Colors.white54))),
         data: (catalog) {
           final owned = ownedAsync.valueOrNull ?? {};
           final loadout = loadoutAsync.valueOrNull ?? EquippedLoadout.empty;
@@ -175,7 +186,8 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
               // ── Panel izquierdo: mannequin ─────────────────────────────
               SizedBox(
                 width: 200,
-                child: _MannequinPanel(loadout: loadout, onUnequip: _handleUnequip),
+                child: _MannequinPanel(
+                    loadout: loadout, onUnequip: _handleUnequip),
               ),
               const VerticalDivider(width: 1, color: Colors.white10),
               // ── Panel derecho: catálogo por slot ───────────────────────
@@ -185,12 +197,12 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
                   children: CosmeticSlot.values.map((slot) {
                     final items = catalog.where((c) => c.slot == slot).toList();
                     return _SlotGrid(
-                      items:     items,
-                      owned:     owned,
-                      loadout:   loadout,
-                      busy:      _busy,
-                      onBuy:     _handleBuy,
-                      onEquip:   _handleEquip,
+                      items: items,
+                      owned: owned,
+                      loadout: loadout,
+                      busy: _busy,
+                      onBuy: _handleBuy,
+                      onEquip: _handleEquip,
                     );
                   }).toList(),
                 ),
@@ -221,10 +233,10 @@ class _MannequinPanel extends StatelessWidget {
           const Text(
             '🦊 Blink',
             style: TextStyle(
-              color:      Colors.white,
+              color: Colors.white,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w800,
-              fontSize:   16,
+              fontSize: 16,
             ),
           ),
           const SizedBox(height: 8),
@@ -240,7 +252,10 @@ class _MannequinPanel extends StatelessWidget {
             child: Column(
               children: [
                 // Casco
-                _SlotBadge(slot: CosmeticSlot.helmet,   loadout: loadout, onTap: onUnequip),
+                _SlotBadge(
+                    slot: CosmeticSlot.helmet,
+                    loadout: loadout,
+                    onTap: onUnequip),
                 const SizedBox(height: 4),
                 // Personaje base
                 const Text('🦊', style: TextStyle(fontSize: 48)),
@@ -249,9 +264,15 @@ class _MannequinPanel extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _SlotBadge(slot: CosmeticSlot.suit,    loadout: loadout, onTap: onUnequip),
+                    _SlotBadge(
+                        slot: CosmeticSlot.suit,
+                        loadout: loadout,
+                        onTap: onUnequip),
                     const SizedBox(width: 8),
-                    _SlotBadge(slot: CosmeticSlot.backpack, loadout: loadout, onTap: onUnequip),
+                    _SlotBadge(
+                        slot: CosmeticSlot.backpack,
+                        loadout: loadout,
+                        onTap: onUnequip),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -259,9 +280,15 @@ class _MannequinPanel extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _SlotBadge(slot: CosmeticSlot.boots, loadout: loadout, onTap: onUnequip),
+                    _SlotBadge(
+                        slot: CosmeticSlot.boots,
+                        loadout: loadout,
+                        onTap: onUnequip),
                     const SizedBox(width: 8),
-                    _SlotBadge(slot: CosmeticSlot.flag,  loadout: loadout, onTap: onUnequip),
+                    _SlotBadge(
+                        slot: CosmeticSlot.flag,
+                        loadout: loadout,
+                        onTap: onUnequip),
                   ],
                 ),
               ],
@@ -273,9 +300,9 @@ class _MannequinPanel extends StatelessWidget {
             'Toca un slot equipado para quitarlo',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color:      Colors.white30,
+              color: Colors.white30,
               fontFamily: 'Nunito',
-              fontSize:   10,
+              fontSize: 10,
             ),
           ),
         ],
@@ -285,7 +312,8 @@ class _MannequinPanel extends StatelessWidget {
 }
 
 class _SlotBadge extends StatelessWidget {
-  const _SlotBadge({required this.slot, required this.loadout, required this.onTap});
+  const _SlotBadge(
+      {required this.slot, required this.loadout, required this.onTap});
   final CosmeticSlot slot;
   final EquippedLoadout loadout;
   final void Function(CosmeticSlot) onTap;
@@ -293,11 +321,12 @@ class _SlotBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final equipped = loadout[slot];
-    final isEmpty  = equipped == null;
+    final isEmpty = equipped == null;
     return GestureDetector(
       onTap: isEmpty ? null : () => onTap(slot),
       child: Container(
-        width: 44, height: 44,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: isEmpty
               ? Colors.white.withAlpha(8)
@@ -336,10 +365,10 @@ class _SlotGrid extends StatelessWidget {
     required this.onEquip,
   });
 
-  final List<CosmeticDefinition>     items;
-  final Set<String>                  owned;
-  final EquippedLoadout              loadout;
-  final bool                         busy;
+  final List<CosmeticDefinition> items;
+  final Set<String> owned;
+  final EquippedLoadout loadout;
+  final bool busy;
   final void Function(CosmeticDefinition) onBuy;
   final void Function(CosmeticDefinition) onEquip;
 
@@ -364,16 +393,16 @@ class _SlotGrid extends StatelessWidget {
       ),
       itemCount: items.length,
       itemBuilder: (ctx, i) {
-        final cosmetic   = items[i];
-        final isOwned    = owned.contains(cosmetic.id);
+        final cosmetic = items[i];
+        final isOwned = owned.contains(cosmetic.id);
         final isEquipped = loadout[cosmetic.slot]?.id == cosmetic.id;
         return _CosmeticCard(
-          cosmetic:   cosmetic,
-          isOwned:    isOwned,
+          cosmetic: cosmetic,
+          isOwned: isOwned,
           isEquipped: isEquipped,
-          busy:       busy,
-          onBuy:      () => onBuy(cosmetic),
-          onEquip:    () => onEquip(cosmetic),
+          busy: busy,
+          onBuy: () => onBuy(cosmetic),
+          onEquip: () => onEquip(cosmetic),
         )
             .animate(delay: (50 * i).ms)
             .fadeIn(duration: 250.ms)
@@ -404,7 +433,7 @@ class _CosmeticCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color:        const Color(0xFF0D1230),
+        color: const Color(0xFF0D1230),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isEquipped
@@ -434,10 +463,10 @@ class _CosmeticCard extends StatelessWidget {
                 child: const Text(
                   '✓ PUESTO',
                   style: TextStyle(
-                    color:      Colors.white,
+                    color: Colors.white,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w800,
-                    fontSize:   8,
+                    fontSize: 8,
                   ),
                 ),
               )
@@ -451,10 +480,10 @@ class _CosmeticCard extends StatelessWidget {
                 child: const Text(
                   '✓ TUYO',
                   style: TextStyle(
-                    color:      Colors.greenAccent,
+                    color: Colors.greenAccent,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w800,
-                    fontSize:   8,
+                    fontSize: 8,
                   ),
                 ),
               )
@@ -469,10 +498,10 @@ class _CosmeticCard extends StatelessWidget {
               cosmetic.name,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color:      Colors.white,
+                color: Colors.white,
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w700,
-                fontSize:   10,
+                fontSize: 10,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -488,10 +517,10 @@ class _CosmeticCard extends StatelessWidget {
                   Text(
                     '${cosmetic.price}',
                     style: const TextStyle(
-                      color:      Color(0xFFFFD600),
+                      color: Color(0xFFFFD600),
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w800,
-                      fontSize:   12,
+                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -510,17 +539,23 @@ class _CosmeticCard extends StatelessWidget {
                       : isOwned
                           ? Colors.green.shade700
                           : const Color(0xFFFFD600),
-                  foregroundColor: isEquipped || isOwned ? Colors.white : Colors.black87,
+                  foregroundColor:
+                      isEquipped || isOwned ? Colors.white : Colors.black87,
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   textStyle: const TextStyle(
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w700,
-                    fontSize:   10,
+                    fontSize: 10,
                   ),
                 ),
                 child: Text(
-                  isEquipped ? 'Equipado' : isOwned ? 'Equipar' : 'Comprar',
+                  isEquipped
+                      ? 'Equipado'
+                      : isOwned
+                          ? 'Equipar'
+                          : 'Comprar',
                 ),
               ),
             ),
@@ -557,10 +592,10 @@ class _BuyDialog extends StatelessWidget {
             '¿Comprar\n"${cosmetic.name}"?',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color:      Colors.white,
+              color: Colors.white,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w800,
-              fontSize:   16,
+              fontSize: 16,
             ),
           ),
           const SizedBox(height: 8),
@@ -568,9 +603,9 @@ class _BuyDialog extends StatelessWidget {
             cosmetic.description,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color:      Colors.white54,
+              color: Colors.white54,
               fontFamily: 'Nunito',
-              fontSize:   12,
+              fontSize: 12,
             ),
           ),
           const SizedBox(height: 12),
@@ -579,23 +614,24 @@ class _BuyDialog extends StatelessWidget {
             children: [
               Text('$coins',
                   style: const TextStyle(
-                    color:      Color(0xFFFFD600),
+                    color: Color(0xFFFFD600),
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.bold,
-                    fontSize:   14,
+                    fontSize: 14,
                   )),
               const SizedBox(width: 4),
               const AnimatedCoin(size: 14),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(Icons.arrow_forward_rounded, color: Colors.white38, size: 16),
+                child: Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white38, size: 16),
               ),
               Text('$after',
                   style: TextStyle(
-                    color:      after >= 0 ? Colors.greenAccent : Colors.redAccent,
+                    color: after >= 0 ? Colors.greenAccent : Colors.redAccent,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.bold,
-                    fontSize:   14,
+                    fontSize: 14,
                   )),
               const SizedBox(width: 4),
               const AnimatedCoin(size: 14),
@@ -614,10 +650,12 @@ class _BuyDialog extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF7C3AED),
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           child: const Text('¡Comprar!',
-              style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+              style:
+                  TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
         ),
       ],
     );

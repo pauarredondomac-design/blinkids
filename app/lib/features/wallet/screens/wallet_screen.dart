@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../data/models/wallet.dart';
 import '../../../shared/providers/fuel_provider.dart';
@@ -48,56 +47,63 @@ class WalletScreen extends ConsumerWidget {
     final walletAsync = ref.watch(currentWalletProvider);
     final categoriesAsync = ref.watch(walletCategoriesProvider);
 
+    final wallet = walletAsync.valueOrNull;
+    final available = wallet?.totalCoins ?? 0;
+
     return ScreenTutorial(
-      tutorialKey: 'wallet',
+      tutorialKey: 'wallet_v2',
       steps: const [
         TutorialStep(
-          title: '🏠 Mi Bolsa',
-          body: 'Aquí guardas tus monedas en 3 categorías: Guardar 🐷, Banco Estelar 🏦 y Gastar 🛒. ¡Ser ordenado es un súper poder!',
+          title: '🎯 Mi Bolsa',
+          body:
+              'Cada moneda que ganas pasa por aquí primero. Repártela entre 4 misiones: Guardar 🛡, Invertir 🚀, Donar ❤️ y Disfrutar 🎉.',
         ),
         TutorialStep(
-          title: '🪙 ¿Cómo distribuir?',
-          body: 'Toca cualquier categoría, mueve el slider y pulsa ¡Guardar! Las monedas se mueven al instante.',
+          title: '🪙 ¿Cómo reparto?',
+          body:
+              'Arrastra la pila de monedas hasta la misión que elijas. Una moneda cae a la vez, con su "cling".',
         ),
         TutorialStep(
-          title: '↩️ ¿Y si me equivoco?',
-          body: 'Sin problema — puedes retirar monedas de una categoría en cualquier momento y redistribuirlas.',
+          title: '✅ Es una decisión',
+          body:
+              'Una vez que una moneda tiene su misión, se queda ahí — así aprendemos que decidir tiene consecuencia.',
         ),
       ],
       child: Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1565C0), Color(0xFF283593), Color(0xFF1A237E)],
-          ),
-        ),
-        child: SafeArea(
+        backgroundColor: const Color(0xFF060B1F),
+        body: SafeArea(
           child: Column(
             children: [
-              _Header(walletAsync: walletAsync, categoriesAsync: categoriesAsync),
-              const _Subtitle(),
+              const SizedBox(height: 4),
+              _OrnateHeader(onClose: () => Navigator.of(context).pop()),
+              const SizedBox(height: 6),
+              _CoinStackSource(available: available, enabled: true),
+              const SizedBox(height: 6),
               Expanded(
-                child: categoriesAsync.when(
-                  data: (cats) {
-                    final wallet = walletAsync.valueOrNull;
-                    final available = wallet?.totalCoins ?? 0;
-                    final totalEver = available + cats.fold<int>(0, (s, c) => s + c.balance);
-                    return _CategoriesRow(
-                      categories: cats,
-                      wallet: wallet,
-                      totalEver: totalEver,
-                      ref: ref,
-                    );
-                  },
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                  error: (_, __) => const Center(
-                    child: Text(
-                      'No se pudo cargar la bolsa',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                  child: categoriesAsync.when(
+                    data: (cats) {
+                      final totalEver = available +
+                          cats.fold<int>(0, (s, c) => s + c.balance);
+                      return _CategoriesRow(
+                        categories: cats,
+                        wallet: wallet,
+                        totalEver: totalEver,
+                        ref: ref,
+                      );
+                    },
+                    loading: () => const Center(
+                      child:
+                          CircularProgressIndicator(color: Color(0xFF4FC3F7)),
+                    ),
+                    error: (_, __) => const Center(
+                      child: Text(
+                        'No se pudo cargar la bolsa',
+                        style: TextStyle(
+                            color: Colors.white, fontFamily: 'Nunito'),
+                      ),
                     ),
                   ),
                 ),
@@ -107,110 +113,88 @@ class WalletScreen extends ConsumerWidget {
           ),
         ),
       ),
-      ),
     );
   }
 }
 
 // ─────────────────────────────────────────────
-// Header
+// Cabecera ornamentada — placa dorada con cierre
 // ─────────────────────────────────────────────
-class _Header extends StatelessWidget {
-  const _Header({required this.walletAsync, required this.categoriesAsync});
-  final AsyncValue<Wallet?> walletAsync;
-  final AsyncValue<List<WalletCategory>> categoriesAsync;
+class _OrnateHeader extends StatelessWidget {
+  const _OrnateHeader({required this.onClose});
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    final available = walletAsync.valueOrNull?.totalCoins ?? 0;
-    final allocated = categoriesAsync.valueOrNull
-            ?.fold<int>(0, (s, c) => s + c.balance) ??
-        0;
-
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.md,
-        vertical: AppSizes.sm,
-      ),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: AppSizes.xs),
-          const Text(
-            '🏠 Mi Bolsa',
-            style: TextStyle(
-              fontSize: AppSizes.fontXl,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              fontFamily: 'Nunito',
-              shadows: [Shadow(blurRadius: 4, color: Colors.black38)],
-            ),
-          ),
-          const Spacer(),
-          // Monedas en categorías (secundario)
-          if (allocated > 0)
-            Container(
-              margin: const EdgeInsets.only(right: AppSizes.sm),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.md,
-                vertical: AppSizes.xs,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(AppSizes.radiusRound),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('📊', style: TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$allocated en categorías',
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontXs,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white60,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF13203F),
+                  Color(0xFF1F3A63),
+                  Color(0xFF13203F)
                 ],
               ),
-            ),
-          // Monedas disponibles (principal)
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.md,
-              vertical: AppSizes.xs,
-            ),
-            decoration: BoxDecoration(
-              color: available > 0
-                  ? const Color(0xFFFFC107).withOpacity(0.25)
-                  : Colors.white.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(AppSizes.radiusRound),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: available > 0 ? const Color(0xFFFFC107) : Colors.white30,
-                width: 1.5,
-              ),
+                  color: const Color(0xFFFFD54F).withOpacity(0.75), width: 1.4),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFFFFD54F).withOpacity(0.18),
+                    blurRadius: 12,
+                    spreadRadius: 1),
+              ],
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const AnimatedCoin(size: 18),
-                const SizedBox(width: AppSizes.xs),
+                Text('◆',
+                    style: TextStyle(color: Color(0xFFFFD54F), fontSize: 10)),
+                SizedBox(width: 10),
                 Text(
-                  '$available disponibles',
+                  'MI BOLSA',
                   style: TextStyle(
-                    fontSize: AppSizes.fontMd,
-                    fontWeight: FontWeight.w800,
                     color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    letterSpacing: 3,
                     fontFamily: 'Nunito',
+                    shadows: [Shadow(color: Color(0xFFFFD54F), blurRadius: 10)],
                   ),
                 ),
+                SizedBox(width: 10),
+                Text('◆',
+                    style: TextStyle(color: Color(0xFFFFD54F), fontSize: 10)),
               ],
+            ),
+          ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(
+                duration: 3.seconds,
+                color: const Color(0xFFFFD54F).withOpacity(0.25),
+              ),
+          Positioned(
+            right: 0,
+            child: GestureDetector(
+              onTap: onClose,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF13203F),
+                  border: Border.all(
+                      color: const Color(0xFFFFD54F).withOpacity(0.7),
+                      width: 1.4),
+                ),
+                child: const Icon(Icons.close_rounded,
+                    color: Colors.white70, size: 16),
+              ),
             ),
           ),
         ],
@@ -219,29 +203,10 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _Subtitle extends StatelessWidget {
-  const _Subtitle();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(bottom: AppSizes.sm),
-      child: Text(
-        'Toca una categoría para distribuir tus monedas',
-        style: TextStyle(
-          color: Colors.white60,
-          fontSize: AppSizes.fontMd,
-          fontFamily: 'Nunito',
-        ),
-      ),
-    );
-  }
-}
-
 // ─────────────────────────────────────────────
 // Categories row
 // ─────────────────────────────────────────────
-class _CategoriesRow extends StatelessWidget {
+class _CategoriesRow extends StatefulWidget {
   const _CategoriesRow({
     required this.categories,
     required this.wallet,
@@ -255,58 +220,461 @@ class _CategoriesRow extends StatelessWidget {
   final WidgetRef ref;
 
   @override
-  Widget build(BuildContext context) {
-    final available = wallet?.totalCoins ?? 0;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (int i = 0; i < categories.length; i++)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.xs),
-                child: _CategoryCard(
-                  category: categories[i],
-                  totalEver: totalEver,
-                  available: available,
-                  onAdjust: (newBalance) async {
-                    final delta = newBalance - categories[i].balance;
-                    final newWalletTotal = available - delta;
-                    await ref
-                        .read(walletRepositoryProvider)
-                        .distributeCoins(
-                          categoryId: categories[i].id,
-                          newCategoryBalance: newBalance,
-                          walletId: wallet!.id,
-                          newWalletTotal: newWalletTotal,
-                        );
-                    ref.invalidate(walletCategoriesProvider);
-                    ref.invalidate(currentWalletProvider);
+  State<_CategoriesRow> createState() => _CategoriesRowState();
+}
 
-                    // Distribuir monedas agrega combustible al cohete 🚀
-                    // Solo cuando se agrega (delta > 0), no cuando se retira.
-                    if (delta > 0) {
-                      // Guardar y Banco Estelar recompensan más (ahorro)
-                      final cat = categories[i].category;
-                      final fuelAmount = (cat == WalletCategoryType.banco_estelar ||
-                                          cat == WalletCategoryType.guardar)
-                          ? 5
-                          : 3;
-                      final reachedFullFuel = await ref
-                          .read(fuelNotifierProvider.notifier)
-                          .addFuel('space', fuelAmount);
-                      if (reachedFullFuel && context.mounted) {
-                        showRocketLaunchOverlay(context);
-                      }
-                    }
-                  },
-                )
-                    .animate()
-                    .fadeIn(delay: (i * 80).ms, duration: 350.ms)
-                    .slideY(begin: 0.25, end: 0, curve: Curves.easeOut),
+class _CategoriesRowState extends State<_CategoriesRow> {
+  bool _assigning = false;
+
+  Future<void> _assignOneCoin(WalletCategory category) =>
+      _assignCoins(category, 1);
+
+  /// Asigna [amount] monedas del pool libre a [category]. Solo suma —
+  /// nunca se puede quitar de una categoría ya asignada.
+  Future<void> _assignCoins(WalletCategory category, int amount) async {
+    if (_assigning || amount <= 0) return;
+    final available = widget.wallet?.totalCoins ?? 0;
+    if (available <= 0 || widget.wallet == null) return;
+    final toAssign = amount.clamp(1, available);
+    setState(() => _assigning = true);
+    try {
+      await widget.ref.read(walletRepositoryProvider).distributeCoins(
+            categoryId: category.id,
+            newCategoryBalance: category.balance + toAssign,
+            walletId: widget.wallet!.id,
+            newWalletTotal: available - toAssign,
+          );
+      widget.ref.invalidate(walletCategoriesProvider);
+      widget.ref.invalidate(currentWalletProvider);
+
+      // Guardar recompensa más combustible (ahorro es la misión más valiosa).
+      // Una sola vez por acción, sin importar cuántas monedas se repartieron.
+      final fuelAmount =
+          category.category == WalletCategoryType.guardar ? 5 : 3;
+      final reachedFullFuel = await widget.ref
+          .read(fuelNotifierProvider.notifier)
+          .addFuel('space', fuelAmount);
+      if (reachedFullFuel && mounted) {
+        await handleFuelReachedFull(context, widget.ref);
+      }
+    } finally {
+      if (mounted) setState(() => _assigning = false);
+    }
+  }
+
+  Future<void> _openAddDialog(WalletCategory category) async {
+    final available = widget.wallet?.totalCoins ?? 0;
+    if (available <= 0) return;
+    final amount = await showDialog<int>(
+      context: context,
+      builder: (_) => _AddCoinsDialog(category: category, available: available),
+    );
+    if (amount != null) await _assignCoins(category, amount);
+  }
+
+  Widget _cardFor(WalletCategory cat, int i) {
+    return _CategoryDropZone(
+      category: cat,
+      totalEver: widget.totalEver,
+      onCoinDropped: () => _assignOneCoin(cat),
+      onTap: () => _openAddDialog(cat),
+    )
+        .animate()
+        .fadeIn(delay: (i * 80).ms, duration: 350.ms)
+        .slideY(begin: 0.25, end: 0, curve: Curves.easeOut);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final byType = {for (final c in widget.categories) c.category: c};
+    final ordered = assignableWalletCategories
+        .map((t) => byType[t])
+        .whereType<WalletCategory>()
+        .toList();
+    if (ordered.length < 4) return const SizedBox.shrink();
+
+    // Cuadrícula 2x2 manual (no GridView): siempre llena exactamente el
+    // espacio disponible, sin scroll y sin que las tarjetas queden gigantes.
+    return Column(
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: _cardFor(ordered[0], 0)),
+              const SizedBox(width: AppSizes.sm),
+              Expanded(child: _cardFor(ordered[1], 1)),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSizes.sm),
+        Expanded(
+          child: Row(
+            children: [
+              Expanded(child: _cardFor(ordered[2], 2)),
+              const SizedBox(width: AppSizes.sm),
+              Expanded(child: _cardFor(ordered[3], 3)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Fuente arrastrable — pila de monedas sin repartir
+// ─────────────────────────────────────────────
+class _CoinStackSource extends StatelessWidget {
+  const _CoinStackSource({required this.available, required this.enabled});
+  final int available;
+  final bool enabled;
+
+  Widget _visual({required bool dragging}) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: available > 0
+                ? [const Color(0xFF4A3208), const Color(0xFF241804)]
+                : [
+                    Colors.white.withOpacity(0.05),
+                    Colors.white.withOpacity(0.02)
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: available > 0
+                ? const Color(0xFFFFD54F).withOpacity(dragging ? 1 : 0.85)
+                : Colors.white24,
+            width: dragging ? 2.2 : 1.6,
+          ),
+          boxShadow: available > 0
+              ? [
+                  BoxShadow(
+                      color: const Color(0xFFFFD54F)
+                          .withOpacity(dragging ? 0.45 : 0.22),
+                      blurRadius: dragging ? 16 : 8,
+                      spreadRadius: 1)
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AnimatedCoin(size: 18),
+            const SizedBox(width: 6),
+            Text(
+              available > 0
+                  ? '$available monedas por repartir'
+                  : '¡Ya repartiste todo! 🎉',
+              style: TextStyle(
+                color: available > 0 ? const Color(0xFFFFD54F) : Colors.white70,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Nunito',
+                fontSize: AppSizes.fontSm,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (available <= 0 || !enabled) return _visual(dragging: false);
+    return Draggable<int>(
+      data: 1,
+      feedback:
+          Material(color: Colors.transparent, child: _visual(dragging: true)),
+      childWhenDragging:
+          Opacity(opacity: 0.35, child: _visual(dragging: false)),
+      child: _visual(dragging: false),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Category drop zone — recibe monedas una por una
+// ─────────────────────────────────────────────
+class _CategoryDropZone extends StatelessWidget {
+  const _CategoryDropZone({
+    required this.category,
+    required this.totalEver,
+    required this.onCoinDropped,
+    required this.onTap,
+  });
+
+  final WalletCategory category;
+  final int totalEver;
+  final VoidCallback onCoinDropped;
+  final VoidCallback onTap;
+
+  static const _cut = 16.0;
+
+  /// Gradiente tipo gema por categoría — mismo espíritu visual en todas
+  /// las "casas" del juego, pero cada misión con su propia piedra preciosa.
+  static List<Color> _gemColors(WalletCategoryType cat) {
+    switch (cat) {
+      case WalletCategoryType.guardar:
+        return const [Color(0xFF3B82F6), Color(0xFF0F2A63)];
+      case WalletCategoryType.invertir:
+        return const [Color(0xFF34D399), Color(0xFF0B4A32)];
+      case WalletCategoryType.donar:
+        return const [Color(0xFFF59E0B), Color(0xFF5C3A05)];
+      case WalletCategoryType.gastar:
+        return const [Color(0xFF2DD4BF), Color(0xFF0A4A45)];
+      case WalletCategoryType.banco_estelar:
+        return const [Color(0xFFCE93D8), Color(0xFF4A148C)];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _gemColors(category.category);
+    final pct =
+        totalEver > 0 ? (category.balance / totalEver).clamp(0.0, 1.0) : 0.0;
+    final pctLabel = '${(pct * 100).toStringAsFixed(0)}%';
+
+    return DragTarget<int>(
+      onAcceptWithDetails: (_) => onCoinDropped(),
+      builder: (context, candidate, __) {
+        final hovering = candidate.isNotEmpty;
+        return GestureDetector(
+          onTap: onTap,
+          child: ClipPath(
+            clipper: const _GemClipper(_cut),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _GemPainter(
+                      colors: colors,
+                      borderColor: hovering
+                          ? Colors.white
+                          : const Color(0xFFFFD54F).withOpacity(0.75),
+                      borderWidth: hovering ? 3 : 2,
+                      cut: _cut,
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+                    child: Center(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Icono con halo
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(colors: [
+                                Colors.white.withOpacity(0.30),
+                                Colors.white.withOpacity(0.02)
+                              ]),
+                              border: Border.all(
+                                  color: Colors.white.withOpacity(0.55),
+                                  width: 1.3),
+                            ),
+                            child: Center(
+                              child: Text(category.category.emoji,
+                                  style: const TextStyle(fontSize: 21)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  category.category.displayName,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    fontFamily: 'Nunito',
+                                    shadows: [
+                                      Shadow(
+                                          blurRadius: 3, color: Colors.black45)
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  category.category.description,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white.withOpacity(0.80),
+                                    fontFamily: 'Nunito',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: LinearProgressIndicator(
+                                          value: pct,
+                                          backgroundColor:
+                                              Colors.black.withOpacity(0.30),
+                                          valueColor:
+                                              const AlwaysStoppedAnimation<
+                                                  Color>(Colors.white),
+                                          minHeight: 5,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      pctLabel,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          fontFamily: 'Nunito'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                _GoldCoinPill(balance: category.balance),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Recorte "gema" con esquinas cortadas
+// ─────────────────────────────────────────────
+Path _gemPath(Size size, double cut) {
+  final w = size.width, h = size.height;
+  return Path()
+    ..moveTo(cut, 0)
+    ..lineTo(w - cut, 0)
+    ..lineTo(w, cut)
+    ..lineTo(w, h - cut)
+    ..lineTo(w - cut, h)
+    ..lineTo(cut, h)
+    ..lineTo(0, h - cut)
+    ..lineTo(0, cut)
+    ..close();
+}
+
+class _GemClipper extends CustomClipper<Path> {
+  const _GemClipper(this.cut);
+  final double cut;
+  @override
+  Path getClip(Size size) => _gemPath(size, cut);
+  @override
+  bool shouldReclip(covariant _GemClipper oldClipper) => oldClipper.cut != cut;
+}
+
+class _GemPainter extends CustomPainter {
+  _GemPainter(
+      {required this.colors,
+      required this.borderColor,
+      required this.borderWidth,
+      required this.cut});
+  final List<Color> colors;
+  final Color borderColor;
+  final double borderWidth;
+  final double cut;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _gemPath(size, cut);
+    final rect = Offset.zero & size;
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: colors)
+            .createShader(rect),
+    );
+    // brillo diagonal para dar sensación de piedra pulida
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white.withOpacity(0.22), Colors.transparent],
+          stops: const [0.0, 0.55],
+        ).createShader(rect),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = borderWidth,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GemPainter oldDelegate) =>
+      oldDelegate.colors != colors ||
+      oldDelegate.borderColor != borderColor ||
+      oldDelegate.borderWidth != borderWidth;
+}
+
+// ─────────────────────────────────────────────
+// Píldora dorada con el saldo — como una moneda de recompensa
+// ─────────────────────────────────────────────
+class _GoldCoinPill extends StatelessWidget {
+  const _GoldCoinPill({required this.balance});
+  final int balance;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+            colors: [Color(0xFFFFE082), Color(0xFFB8860B)]),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF6B4A00), width: 1),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.30),
+              blurRadius: 3,
+              offset: const Offset(0, 2))
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AnimatedCoin(size: 15),
+          const SizedBox(width: 5),
+          Text(
+            '$balance',
+            style: const TextStyle(
+                color: Color(0xFF3E2400),
+                fontWeight: FontWeight.w900,
+                fontSize: 13,
+                fontFamily: 'Nunito'),
+          ),
         ],
       ),
     );
@@ -314,357 +682,157 @@ class _CategoriesRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// Category card
+// Diálogo — agregar la cantidad que el niño quiera (solo suma)
 // ─────────────────────────────────────────────
-class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({
-    required this.category,
-    required this.totalEver,
-    required this.available,
-    required this.onAdjust,
-  });
-
-  final WalletCategory category;
-  final int totalEver;
-  final int available;
-  final Future<void> Function(int newBalance) onAdjust;
-
-  // Colores derivados directamente del enum para evitar duplicación
-  static Color _dark(WalletCategoryType cat) => Color(cat.colorDarkHex);
-  static Color _light(WalletCategoryType cat) => Color(cat.colorLightHex);
-
-  void _openAdjustDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => _AdjustDialog(
-        category: category,
-        available: available,
-        onConfirm: (newBalance) => onAdjust(newBalance),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dark  = _CategoryCard._dark(category.category);
-    final light = _CategoryCard._light(category.category);
-    final pct = totalEver > 0 ? (category.balance / totalEver).clamp(0.0, 1.0) : 0.0;
-    final pctLabel = totalEver > 0 ? '${(pct * 100).toStringAsFixed(0)}%' : '0%';
-    final canTap = available > 0 || category.balance > 0;
-
-    return GestureDetector(
-      onTap: canTap ? () => _openAdjustDialog(context) : null,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [light.withOpacity(0.9), dark],
-          ),
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-          boxShadow: [
-            BoxShadow(
-              color: dark.withOpacity(0.5),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: canTap
-              ? Border.all(color: Colors.white38, width: 1.5)
-              : null,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.md),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Text(category.category.emoji,
-                  style: const TextStyle(fontSize: 38)),
-              Text(
-                category.category.displayName,
-                style: const TextStyle(
-                  fontSize: AppSizes.fontMd,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  fontFamily: 'Nunito',
-                ),
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                category.category.description,
-                style: const TextStyle(
-                  fontSize: AppSizes.fontXs,
-                  color: Colors.white70,
-                  fontFamily: 'Nunito',
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusRound),
-                    child: LinearProgressIndicator(
-                      value: pct,
-                      backgroundColor: Colors.white24,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                      minHeight: 7,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    pctLabel,
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontXs,
-                      color: Colors.white60,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const AnimatedCoin(size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${category.balance}',
-                    style: const TextStyle(
-                      fontSize: AppSizes.fontXxl,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      fontFamily: 'Nunito',
-                      shadows: [Shadow(blurRadius: 4, color: Colors.black38)],
-                    ),
-                  ),
-                ],
-              ),
-              if (canTap)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.sm,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusRound),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        category.balance > 0
-                            ? Icons.tune_rounded
-                            : Icons.add_circle_outline,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        category.balance > 0 ? 'Ajustar' : 'Distribuir',
-                        style: const TextStyle(
-                          fontSize: AppSizes.fontXs,
-                          color: Colors.white,
-                          fontFamily: 'Nunito',
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// Adjust dialog (distribute + withdraw)
-// ─────────────────────────────────────────────
-class _AdjustDialog extends StatefulWidget {
-  const _AdjustDialog({
-    required this.category,
-    required this.available,
-    required this.onConfirm,
-  });
-
+class _AddCoinsDialog extends StatefulWidget {
+  const _AddCoinsDialog({required this.category, required this.available});
   final WalletCategory category;
   final int available;
-  final Future<void> Function(int newBalance) onConfirm;
 
   @override
-  State<_AdjustDialog> createState() => _AdjustDialogState();
+  State<_AddCoinsDialog> createState() => _AddCoinsDialogState();
 }
 
-class _AdjustDialogState extends State<_AdjustDialog> {
-  late double _sliderValue;
-  bool _saving = false;
+class _AddCoinsDialogState extends State<_AddCoinsDialog> {
+  late double _amount;
 
   @override
   void initState() {
     super.initState();
-    _sliderValue = widget.category.balance.toDouble();
+    _amount = widget.available.clamp(1, widget.available).toDouble();
   }
 
-  int get _newBalance => _sliderValue.toInt();
-  int get _delta => _newBalance - widget.category.balance;
-  int get _maxBalance => widget.category.balance + widget.available;
-
-  Future<void> _confirm() async {
-    if (_delta == 0) return;
-    setState(() => _saving = true);
-    try {
-      await widget.onConfirm(_newBalance);
-      if (mounted) Navigator.of(context).pop();
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
+  Color get _accent => Color(widget.category.category.colorLightHex);
 
   @override
   Widget build(BuildContext context) {
-    final isAdding = _delta > 0;
-    final isWithdrawing = _delta < 0;
-    final deltaColor = isAdding
-        ? Colors.green[700]!
-        : isWithdrawing
-            ? Colors.orange[700]!
-            : Colors.grey[500]!;
-    final deltaLabel = _delta == 0
-        ? 'Sin cambios'
-        : isAdding
-            ? '+$_delta monedas'
-            : '${_delta} monedas';
-
+    final amount = _amount.round();
     return Dialog(
+      backgroundColor: const Color(0xFF0D1B3E),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        side: BorderSide(color: _accent.withOpacity(0.45)),
       ),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSizes.lg,
-            vertical: AppSizes.md,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(widget.category.category.emoji,
-                  style: const TextStyle(fontSize: 40)),
-              const SizedBox(height: AppSizes.xs),
-              Text(
-                widget.category.category.displayName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontFamily: 'Nunito',
-                    ),
-                textAlign: TextAlign.center,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.lg, vertical: AppSizes.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.category.category.emoji,
+                style: const TextStyle(fontSize: 36)),
+            const SizedBox(height: 6),
+            Text(
+              widget.category.category.displayName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Nunito',
+                fontSize: AppSizes.fontLg,
               ),
-              const SizedBox(height: AppSizes.xs),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Actual: ${widget.category.balance}',
-                      style: TextStyle(
-                          color: Colors.grey[600], fontSize: AppSizes.fontSm)),
-                  const SizedBox(width: 3),
-                  AnimatedCoin(size: AppSizes.fontSm),
-                  const SizedBox(width: AppSizes.sm),
-                  if (widget.available > 0) ...[
-                    Text('• Disponible: ${widget.available}',
-                        style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: AppSizes.fontSm)),
-                    const SizedBox(width: 3),
-                    AnimatedCoin(size: AppSizes.fontSm),
-                  ],
-                ],
-              ),
-              const SizedBox(height: AppSizes.sm),
-              // New balance big display
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const AnimatedCoin(size: 28),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$_newBalance',
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                ],
-              ),
-              // Delta indicator
-              Text(
-                deltaLabel,
-                style: TextStyle(
-                  fontSize: AppSizes.fontSm,
-                  fontWeight: FontWeight.w700,
-                  color: deltaColor,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Tienes ${widget.available} monedas por repartir',
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.55),
                   fontFamily: 'Nunito',
+                  fontSize: AppSizes.fontSm),
+            ),
+            const SizedBox(height: AppSizes.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const AnimatedCoin(size: 26),
+                const SizedBox(width: 8),
+                Text(
+                  '$amount',
+                  style: TextStyle(
+                      color: _accent,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 40,
+                      fontFamily: 'Nunito'),
                 ),
-              ),
-              // Slider
-              Slider(
-                value: _sliderValue,
-                min: 0,
-                max: _maxBalance.toDouble(),
-                divisions: _maxBalance > 0 ? _maxBalance : 1,
-                onChanged: (v) => setState(() => _sliderValue = v),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('0',
-                      style:
-                          TextStyle(color: Colors.grey[500], fontSize: 12)),
-                  Text('$_maxBalance',
-                      style:
-                          TextStyle(color: Colors.grey[500], fontSize: 12)),
-                ],
-              ),
-              const SizedBox(height: AppSizes.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancelar'),
-                    ),
+              ],
+            ),
+            Slider(
+              value: _amount,
+              min: 1,
+              max: widget.available.toDouble(),
+              divisions: widget.available > 1 ? widget.available - 1 : 1,
+              activeColor: _accent,
+              onChanged: (v) => setState(() => _amount = v),
+            ),
+            Wrap(
+              spacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                for (final q in [1, 5, 10, 25])
+                  if (q <= widget.available)
+                    _QuickPickChip(
+                        label: '$q',
+                        accent: _accent,
+                        onTap: () => setState(() => _amount = q.toDouble())),
+                _QuickPickChip(
+                    label: 'Todo',
+                    accent: _accent,
+                    onTap: () =>
+                        setState(() => _amount = widget.available.toDouble())),
+              ],
+            ),
+            const SizedBox(height: AppSizes.md),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
                   ),
-                  const SizedBox(width: AppSizes.md),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _delta != 0 && !_saving ? _confirm : null,
-                      style: _delta != 0
-                          ? ElevatedButton.styleFrom(
-                              backgroundColor: isWithdrawing
-                                  ? Colors.orange[700]
-                                  : null,
-                            )
-                          : null,
-                      child: _saving
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(isWithdrawing ? '¡Retirar!' : '¡Guardar!'),
-                    ),
+                ),
+                const SizedBox(width: AppSizes.md),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(amount),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: Colors.black87),
+                    child: const Text('¡Agregar!'),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSizes.xs),
-            ],
-          ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSizes.xs),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _QuickPickChip extends StatelessWidget {
+  const _QuickPickChip(
+      {required this.label, required this.accent, required this.onTap});
+  final String label;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: accent.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accent.withOpacity(0.5)),
+        ),
+        child: Text(label,
+            style: TextStyle(
+                color: accent,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Nunito',
+                fontSize: 12)),
       ),
     );
   }

@@ -30,33 +30,36 @@ class ParentHomeScreen extends ConsumerStatefulWidget {
 
 class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
     with SingleTickerProviderStateMixin {
-
   bool _showNotifPanel = false;
   late AnimationController _notifCtrl;
-  late Animation<double>   _notifFade;
+  late Animation<double> _notifFade;
 
   @override
   void initState() {
     super.initState();
     _notifCtrl = AnimationController(
-      vsync:    this,
+      vsync: this,
       duration: 220.ms,
     );
     _notifFade = CurvedAnimation(
       parent: _notifCtrl,
-      curve:  Curves.easeOut,
+      curve: Curves.easeOut,
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _grantWeeklyAllowance());
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _grantWeeklyAllowance());
   }
 
   Future<void> _grantWeeklyAllowance() async {
     try {
-      final granted = await ref.read(parentMissionRepositoryProvider).grantWeeklyAllowanceIfDue();
+      final granted = await ref
+          .read(parentMissionRepositoryProvider)
+          .grantWeeklyAllowanceIfDue();
       if (granted > 0 && mounted) {
         ref.invalidate(currentWalletProvider);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('¡Recibiste tu recarga semanal de $granted monedas! 🎉'),
+          content:
+              Text('¡Recibiste tu recarga semanal de $granted monedas! 🎉'),
           backgroundColor: const Color(0xFF2E7D32),
           behavior: SnackBarBehavior.floating,
         ));
@@ -98,15 +101,17 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final profile      = ref.watch(currentProfileProvider);
-    final wallet       = ref.watch(currentWalletProvider);
-    final children     = ref.watch(linkedChildrenProvider);
-    final unreadAsync  = ref.watch(unreadCountProvider);
-    final unreadCount  = unreadAsync.valueOrNull ?? 0;
+    final profile = ref.watch(currentProfileProvider);
+    final wallet = ref.watch(currentWalletProvider);
+    final children = ref.watch(linkedChildrenProvider);
+    final unreadAsync = ref.watch(unreadCountProvider);
+    final unreadCount = unreadAsync.valueOrNull ?? 0;
 
     // Redirigir si el usuario no es padre
     final profileValue = profile.valueOrNull;
-    if (profile.hasValue && profileValue != null && profileValue.role != UserRole.parent) {
+    if (profile.hasValue &&
+        profileValue != null &&
+        profileValue.role != UserRole.parent) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.go('/world');
       });
@@ -117,7 +122,6 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
       backgroundColor: const Color(0xFF06091A),
       body: Stack(
         children: [
-
           // ── Fondo animado ────────────────────────────────────────────────
           _AnimatedBackground(),
 
@@ -125,13 +129,12 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
           SafeArea(
             child: Column(
               children: [
-
                 // ── Top bar ───────────────────────────────────────────────
                 _TopBar(
-                  profile:      profile,
-                  unreadCount:  unreadCount,
-                  onBell:       _toggleNotifications,
-                  onSignOut:    () async {
+                  profile: profile,
+                  unreadCount: unreadCount,
+                  onBell: _toggleNotifications,
+                  onSignOut: () async {
                     await ref.read(authRepositoryProvider).signOut();
                     if (!context.mounted) return;
                     context.go('/world');
@@ -145,7 +148,6 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         // ── Panel izquierdo ───────────────────────────────
                         SizedBox(
                           width: 240,
@@ -156,8 +158,8 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
                         // ── Panel derecho: Mis Hijos ──────────────────────
                         Expanded(
                           child: _RightChildrenPanel(
-                            children:       children,
-                            onAddChild:     _showAddChildDialog,
+                            children: children,
+                            onAddChild: _showAddChildDialog,
                             onViewActivity: (child) => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -178,7 +180,7 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
           if (_showNotifPanel)
             _NotifOverlay(
               animation: _notifFade,
-              onClose:   _toggleNotifications,
+              onClose: _toggleNotifications,
             ),
         ],
       ),
@@ -198,7 +200,7 @@ class _AnimatedBackground extends StatelessWidget {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
-              end:   Alignment.bottomRight,
+              end: Alignment.bottomRight,
               colors: [
                 Color(0xFF06091A),
                 Color(0xFF0E0B2E),
@@ -211,18 +213,19 @@ class _AnimatedBackground extends StatelessWidget {
         for (final s in _stars)
           Positioned(
             left: s.$1,
-            top:  s.$2,
+            top: s.$2,
             child: Text(
               s.$3,
-              style: TextStyle(fontSize: s.$4, color: Colors.white.withAlpha(30)),
+              style:
+                  TextStyle(fontSize: s.$4, color: Colors.white.withAlpha(30)),
             ),
           ),
         // Orbe brillante arriba-derecha
         Positioned(
           right: -80,
-          top:   -80,
+          top: -80,
           child: Container(
-            width:  300,
+            width: 300,
             height: 300,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -241,8 +244,8 @@ class _AnimatedBackground extends StatelessWidget {
 
   // (left, top, emoji, fontSize)
   static const List<(double, double, String, double)> _stars = [
-    (30.0,  20.0, '⭐', 12.0),
-    (80.0,  60.0, '✨', 10.0),
+    (30.0, 20.0, '⭐', 12.0),
+    (80.0, 60.0, '✨', 10.0),
     (200.0, 15.0, '🌟', 14.0),
     (350.0, 45.0, '⭐', 10.0),
     (500.0, 25.0, '✨', 12.0),
@@ -261,7 +264,7 @@ class _TopBar extends StatelessWidget {
     required this.onSignOut,
   });
   final AsyncValue<Profile?> profile;
-  final int          unreadCount;
+  final int unreadCount;
   final VoidCallback onBell;
   final VoidCallback onSignOut;
 
@@ -286,11 +289,11 @@ class _TopBar extends StatelessWidget {
         children: [
           // Avatar
           Container(
-            width:       42,
-            height:      42,
-            decoration: BoxDecoration(
+            width: 42,
+            height: 42,
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 colors: [Color(0xFF7C3AED), Color(0xFFEC4899)],
               ),
             ),
@@ -307,19 +310,19 @@ class _TopBar extends StatelessWidget {
               const Text(
                 'Panel de Padres',
                 style: TextStyle(
-                  color:      Colors.white38,
+                  color: Colors.white38,
                   fontFamily: 'Nunito',
-                  fontSize:   11,
+                  fontSize: 11,
                   letterSpacing: 1,
                 ),
               ),
               Text(
                 'Hola, $name! 👋',
                 style: const TextStyle(
-                  color:       Colors.white,
-                  fontFamily:  'Nunito',
-                  fontWeight:  FontWeight.w800,
-                  fontSize:    18,
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
                 ),
               ),
             ],
@@ -343,20 +346,21 @@ class _TopBar extends StatelessWidget {
               if (unreadCount > 0)
                 Positioned(
                   right: 6,
-                  top:   6,
+                  top: 6,
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
                       color: Color(0xFFEC4899),
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                    constraints:
+                        const BoxConstraints(minWidth: 18, minHeight: 18),
                     child: Text(
                       unreadCount > 9 ? '9+' : '$unreadCount',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color:      Colors.white,
-                        fontSize:   9,
+                        color: Colors.white,
+                        fontSize: 9,
                         fontWeight: FontWeight.w800,
                         fontFamily: 'Nunito',
                       ),
@@ -369,7 +373,8 @@ class _TopBar extends StatelessWidget {
           // Cerrar sesión
           IconButton(
             onPressed: onSignOut,
-            icon: const Icon(Icons.logout_rounded, color: Colors.white38, size: 20),
+            icon: const Icon(Icons.logout_rounded,
+                color: Colors.white38, size: 20),
             tooltip: 'Cerrar sesión',
           ),
         ],
@@ -387,7 +392,7 @@ class _LeftPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final w     = wallet.valueOrNull;
+    final w = wallet.valueOrNull;
     final coins = w?.totalCoins ?? 0;
 
     return SingleChildScrollView(
@@ -403,7 +408,7 @@ class _LeftPanel extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color:        AppColors.secondary.withAlpha(40),
+                      color: AppColors.secondary.withAlpha(40),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -416,10 +421,10 @@ class _LeftPanel extends StatelessWidget {
                   const Text(
                     'Mi Cartera',
                     style: TextStyle(
-                      color:      Colors.white,
+                      color: Colors.white,
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w800,
-                      fontSize:   15,
+                      fontSize: 15,
                     ),
                   ),
                 ]),
@@ -429,7 +434,7 @@ class _LeftPanel extends StatelessWidget {
                   label: 'Monedas juego',
                   value: '$coins',
                   color: const Color(0xFFFFD600),
-                  icon:  '🪙',
+                  icon: '🪙',
                 ),
               ],
             ),
@@ -447,7 +452,7 @@ class _LeftPanel extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color:        AppColors.accent.withAlpha(40),
+                      color: AppColors.accent.withAlpha(40),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -460,10 +465,10 @@ class _LeftPanel extends StatelessWidget {
                   const Text(
                     'Enviar Monedas',
                     style: TextStyle(
-                      color:      Colors.white,
+                      color: Colors.white,
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w800,
-                      fontSize:   15,
+                      fontSize: 15,
                     ),
                   ),
                 ]),
@@ -471,20 +476,20 @@ class _LeftPanel extends StatelessWidget {
                 const Text(
                   'Entra al perfil de tu hijo y usa el botón "Enviar monedas" para premiarlo.',
                   style: TextStyle(
-                    color:      Colors.white54,
+                    color: Colors.white54,
                     fontFamily: 'Nunito',
-                    fontSize:   12,
-                    height:     1.4,
+                    fontSize: 12,
+                    height: 1.4,
                   ),
                 ),
                 const SizedBox(height: 4),
                 const Text(
                   '🏹 Selecciona a tu hijo en el panel derecho',
                   style: TextStyle(
-                    color:      Colors.white38,
+                    color: Colors.white38,
                     fontFamily: 'Nunito',
-                    fontSize:   11,
-                    fontStyle:  FontStyle.italic,
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
                   ),
                 ),
               ],
@@ -494,38 +499,41 @@ class _LeftPanel extends StatelessWidget {
           const SizedBox(height: 12),
 
           // ── Consejo del día ───────────────────────────────────────────────
-          _GlassCard(
-            accentColor: const Color(0xFF10B981),
+          const _GlassCard(
+            accentColor: Color(0xFF10B981),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(children: [
+                Row(children: [
                   Text('💡', style: TextStyle(fontSize: 18)),
                   SizedBox(width: 8),
                   Text(
                     'Consejo del día',
                     style: TextStyle(
-                      color:      Colors.white,
+                      color: Colors.white,
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w800,
-                      fontSize:   14,
+                      fontSize: 14,
                     ),
                   ),
                 ]),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Felicita a tu hijo cuando completa misiones. '
                   'El refuerzo positivo es clave para el aprendizaje financiero. 🌟',
                   style: TextStyle(
-                    color:      Colors.white60,
+                    color: Colors.white60,
                     fontFamily: 'Nunito',
-                    fontSize:   12,
-                    height:     1.4,
+                    fontSize: 12,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
-          ).animate(delay: 160.ms).fadeIn(duration: 350.ms).slideX(begin: -0.15),
+          )
+              .animate(delay: 160.ms)
+              .fadeIn(duration: 350.ms)
+              .slideX(begin: -0.15),
         ],
       ),
     );
@@ -540,16 +548,16 @@ class _BalanceChip extends StatelessWidget {
     required this.icon,
   });
   final String label, value, icon;
-  final Color  color;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color:        color.withAlpha(20),
+        color: color.withAlpha(20),
         borderRadius: BorderRadius.circular(10),
-        border:       Border.all(color: color.withAlpha(60)),
+        border: Border.all(color: color.withAlpha(60)),
       ),
       child: Row(children: [
         icon == '🪙'
@@ -560,17 +568,19 @@ class _BalanceChip extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              color: Colors.white54, fontFamily: 'Nunito', fontSize: 11,
+              color: Colors.white54,
+              fontFamily: 'Nunito',
+              fontSize: 11,
             ),
           ),
         ),
         Text(
           value,
           style: TextStyle(
-            color:      color,
+            color: color,
             fontFamily: 'Nunito',
             fontWeight: FontWeight.w800,
-            fontSize:   13,
+            fontSize: 13,
           ),
         ),
       ]),
@@ -588,8 +598,8 @@ class _RightChildrenPanel extends ConsumerWidget {
     required this.onViewActivity,
   });
   final AsyncValue<List<Profile>> children;
-  final VoidCallback              onAddChild;
-  final void Function(Profile)    onViewActivity;
+  final VoidCallback onAddChild;
+  final void Function(Profile) onViewActivity;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -603,26 +613,31 @@ class _RightChildrenPanel extends ConsumerWidget {
             const Text(
               '👨‍👩‍👧 Mis Hijos',
               style: TextStyle(
-                color:      Colors.white,
+                color: Colors.white,
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w800,
-                fontSize:   20,
+                fontSize: 20,
               ),
             ),
             const Spacer(),
             // Botón agregar hijo
             FilledButton.icon(
               onPressed: onAddChild,
-              icon:  const Icon(Icons.add_rounded, size: 18),
+              icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text(
                 'Agregar hijo',
-                style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700, fontSize: 13),
+                style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13),
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF7C3AED),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
             ),
           ]),
@@ -638,7 +653,7 @@ class _RightChildrenPanel extends ConsumerWidget {
             data: (list) => list.isEmpty
                 ? _EmptyChildren(onAddChild: onAddChild)
                 : _ChildrenGrid(
-                    children:       list,
+                    children: list,
                     onViewActivity: onViewActivity,
                   ),
           ),
@@ -650,20 +665,23 @@ class _RightChildrenPanel extends ConsumerWidget {
 
 class _ChildrenGrid extends ConsumerWidget {
   const _ChildrenGrid({required this.children, required this.onViewActivity});
-  final List<Profile>          children;
+  final List<Profile> children;
   final void Function(Profile) onViewActivity;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView.separated(
-      itemCount:      children.length,
+      itemCount: children.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (ctx, i) {
         final child = children[i];
         return _ChildCard(
-          child:         child,
+          child: child,
           onViewActivity: () => onViewActivity(child),
-        ).animate(delay: (60 * i).ms).fadeIn(duration: 300.ms).slideY(begin: 0.1);
+        )
+            .animate(delay: (60 * i).ms)
+            .fadeIn(duration: 300.ms)
+            .slideY(begin: 0.1);
       },
     );
   }
@@ -674,7 +692,7 @@ class _ChildrenGrid extends ConsumerWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _ChildCard extends ConsumerWidget {
   const _ChildCard({required this.child, required this.onViewActivity});
-  final Profile    child;
+  final Profile child;
   final VoidCallback onViewActivity;
 
   @override
@@ -684,12 +702,12 @@ class _ChildCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
-          end:   Alignment.bottomRight,
+          end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF0D1230),
-            const Color(0xFF12103A),
+            Color(0xFF0D1230),
+            Color(0xFF12103A),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -698,9 +716,9 @@ class _ChildCard extends ConsumerWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color:      const Color(0xFF7C3AED).withAlpha(30),
+            color: const Color(0xFF7C3AED).withAlpha(30),
             blurRadius: 16,
-            offset:     const Offset(0, 4),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -724,7 +742,7 @@ class _ChildCard extends ConsumerWidget {
 // Tarjeta simple (sin stats)
 class _ChildCardBasic extends StatelessWidget {
   const _ChildCardBasic({required this.child, required this.onView});
-  final Profile    child;
+  final Profile child;
   final VoidCallback onView;
 
   @override
@@ -754,13 +772,14 @@ class _ChildCardBasic extends StatelessWidget {
 // Tarjeta completa (con stats)
 class _ChildCardFull extends StatelessWidget {
   const _ChildCardFull({required this.stats, required this.onView});
-  final ChildStats   stats;
+  final ChildStats stats;
   final VoidCallback onView;
 
   void _openSalaryDialog(BuildContext context) {
     showDialog<void>(
       context: context,
-      builder: (_) => _SalaryDialog(childId: stats.childId, childName: stats.displayName),
+      builder: (_) =>
+          _SalaryDialog(childId: stats.childId, childName: stats.displayName),
     );
   }
 
@@ -777,15 +796,15 @@ class _ChildCardFull extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color:        const Color(0xFF7C3AED).withAlpha(60),
+                color: const Color(0xFF7C3AED).withAlpha(60),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 'Nivel ${stats.level}',
                 style: const TextStyle(
-                  color:      Colors.white54,
+                  color: Colors.white54,
                   fontFamily: 'Nunito',
-                  fontSize:   9,
+                  fontSize: 9,
                 ),
               ),
             ),
@@ -804,28 +823,30 @@ class _ChildCardFull extends StatelessWidget {
                   child: Text(
                     stats.displayName,
                     style: const TextStyle(
-                      color:      Colors.white,
+                      color: Colors.white,
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w900,
-                      fontSize:   17,
+                      fontSize: 17,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color:        const Color(0xFFFFD600).withAlpha(30),
+                    color: const Color(0xFFFFD600).withAlpha(30),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFFFD600).withAlpha(80)),
+                    border: Border.all(
+                        color: const Color(0xFFFFD600).withAlpha(80)),
                   ),
                   child: Text(
                     'Nv. ${stats.level}',
                     style: const TextStyle(
-                      color:      Color(0xFFFFD600),
+                      color: Color(0xFFFFD600),
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w800,
-                      fontSize:   11,
+                      fontSize: 11,
                     ),
                   ),
                 ),
@@ -838,10 +859,11 @@ class _ChildCardFull extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
-                      value:           stats.levelProgress,
+                      value: stats.levelProgress,
                       backgroundColor: Colors.white10,
-                      valueColor:      const AlwaysStoppedAnimation(Color(0xFF7C3AED)),
-                      minHeight:       6,
+                      valueColor:
+                          const AlwaysStoppedAnimation(Color(0xFF7C3AED)),
+                      minHeight: 6,
                     ),
                   ),
                 ),
@@ -849,9 +871,9 @@ class _ChildCardFull extends StatelessWidget {
                 Text(
                   '${stats.xp} XP',
                   style: const TextStyle(
-                    color:      Colors.white38,
+                    color: Colors.white38,
                     fontFamily: 'Nunito',
-                    fontSize:   10,
+                    fontSize: 10,
                   ),
                 ),
               ]),
@@ -862,9 +884,11 @@ class _ChildCardFull extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  _MiniChip('${stats.totalCoins}',  const Color(0xFFFFD600), showCoin: true),
-                  _MiniChip('🏆 ${stats.missionsJoined}', const Color(0xFF10B981)),
-                  _MiniChip('⭐ ${stats.xp} XP',       const Color(0xFFBB86FC)),
+                  _MiniChip('${stats.totalCoins}', const Color(0xFFFFD600),
+                      showCoin: true),
+                  _MiniChip(
+                      '🏆 ${stats.missionsJoined}', const Color(0xFF10B981)),
+                  _MiniChip('⭐ ${stats.xp} XP', const Color(0xFFBB86FC)),
                 ],
               ),
             ],
@@ -882,8 +906,10 @@ class _ChildCardFull extends StatelessWidget {
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF7C3AED),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
               child: const Column(
                 children: [
@@ -895,7 +921,7 @@ class _ChildCardFull extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       fontWeight: FontWeight.w700,
-                      fontSize:   11,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -908,8 +934,10 @@ class _ChildCardFull extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFFFD600),
                 side: const BorderSide(color: Color(0xFFFFD600), width: 1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               child: const Column(
                 children: [
@@ -936,17 +964,17 @@ class _ChildCardFull extends StatelessWidget {
 class _MiniChip extends StatelessWidget {
   const _MiniChip(this.label, this.color, {this.showCoin = false});
   final String label;
-  final Color  color;
-  final bool   showCoin;
+  final Color color;
+  final bool showCoin;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color:        color.withAlpha(25),
+        color: color.withAlpha(25),
         borderRadius: BorderRadius.circular(8),
-        border:       Border.all(color: color.withAlpha(70)),
+        border: Border.all(color: color.withAlpha(70)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -958,10 +986,10 @@ class _MiniChip extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color:      color,
+              color: color,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w700,
-              fontSize:   11,
+              fontSize: 11,
             ),
           ),
         ],
@@ -985,15 +1013,18 @@ class _EmptyChildren extends StatelessWidget {
         children: [
           const Text('👨‍👩‍👧', style: TextStyle(fontSize: 56))
               .animate(onPlay: (c) => c.repeat(reverse: true))
-              .scale(begin: const Offset(1, 1), end: const Offset(1.08, 1.08), duration: 1800.ms),
+              .scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.08, 1.08),
+                  duration: 1800.ms),
           const SizedBox(height: 16),
           const Text(
             'Aún no tienes hijos vinculados',
             style: TextStyle(
-              color:      Colors.white,
+              color: Colors.white,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w800,
-              fontSize:   18,
+              fontSize: 18,
             ),
           ),
           const SizedBox(height: 8),
@@ -1001,28 +1032,29 @@ class _EmptyChildren extends StatelessWidget {
             'Toca "Agregar hijo" para generar\nun código y compartirlo con tu hijo.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color:      Colors.white38,
+              color: Colors.white38,
               fontFamily: 'Nunito',
-              fontSize:   13,
-              height:     1.5,
+              fontSize: 13,
+              height: 1.5,
             ),
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onAddChild,
-            icon:  const Icon(Icons.add_rounded),
+            icon: const Icon(Icons.add_rounded),
             label: const Text(
               'Agregar hijo',
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w700,
-                fontSize:   14,
+                fontSize: 14,
               ),
             ),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF7C3AED),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
@@ -1054,7 +1086,7 @@ class _ErrorState extends StatelessWidget {
 class _NotifOverlay extends ConsumerWidget {
   const _NotifOverlay({required this.animation, required this.onClose});
   final Animation<double> animation;
-  final VoidCallback      onClose;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1072,14 +1104,14 @@ class _NotifOverlay extends ConsumerWidget {
         ),
         // Panel deslizante desde la derecha
         Positioned(
-          top:    0,
-          right:  0,
+          top: 0,
+          right: 0,
           bottom: 0,
-          width:  360,
+          width: 360,
           child: SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(1, 0),
-              end:   Offset.zero,
+              end: Offset.zero,
             ).animate(animation),
             child: Container(
               decoration: const BoxDecoration(
@@ -1099,16 +1131,17 @@ class _NotifOverlay extends ConsumerWidget {
                       const Text(
                         '🔔 Notificaciones',
                         style: TextStyle(
-                          color:      Colors.white,
+                          color: Colors.white,
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w800,
-                          fontSize:   16,
+                          fontSize: 16,
                         ),
                       ),
                       const Spacer(),
                       IconButton(
                         onPressed: onClose,
-                        icon: const Icon(Icons.close_rounded, color: Colors.white38),
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.white38),
                       ),
                     ]),
                   ),
@@ -1116,22 +1149,25 @@ class _NotifOverlay extends ConsumerWidget {
                   Expanded(
                     child: notifsAsync.when(
                       loading: () => const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+                        child:
+                            CircularProgressIndicator(color: Color(0xFF7C3AED)),
                       ),
                       error: (_, __) => const Center(
                         child: Text(
                           'Error cargando notificaciones',
-                          style: TextStyle(color: Colors.white38, fontFamily: 'Nunito'),
+                          style: TextStyle(
+                              color: Colors.white38, fontFamily: 'Nunito'),
                         ),
                       ),
                       data: (list) => list.isEmpty
                           ? const _EmptyNotifs()
                           : ListView.builder(
-                              padding:   const EdgeInsets.all(12),
+                              padding: const EdgeInsets.all(12),
                               itemCount: list.length,
-                              itemBuilder: (ctx, i) => _NotifTile(notif: list[i])
-                                  .animate(delay: (30 * i).ms)
-                                  .fadeIn(duration: 200.ms),
+                              itemBuilder: (ctx, i) =>
+                                  _NotifTile(notif: list[i])
+                                      .animate(delay: (30 * i).ms)
+                                      .fadeIn(duration: 200.ms),
                             ),
                     ),
                   ),
@@ -1160,7 +1196,9 @@ class _NotifTile extends StatelessWidget {
             : const Color(0xFF7C3AED).withAlpha(30),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: notif.isRead ? Colors.white10 : const Color(0xFF7C3AED).withAlpha(80),
+          color: notif.isRead
+              ? Colors.white10
+              : const Color(0xFF7C3AED).withAlpha(80),
         ),
       ),
       child: Row(
@@ -1175,29 +1213,29 @@ class _NotifTile extends StatelessWidget {
                 Text(
                   notif.title,
                   style: const TextStyle(
-                    color:      Colors.white,
+                    color: Colors.white,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w700,
-                    fontSize:   13,
+                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   notif.body,
                   style: const TextStyle(
-                    color:      Colors.white54,
+                    color: Colors.white54,
                     fontFamily: 'Nunito',
-                    fontSize:   11,
-                    height:     1.3,
+                    fontSize: 11,
+                    height: 1.3,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   notif.timeAgo,
                   style: const TextStyle(
-                    color:      Colors.white30,
+                    color: Colors.white30,
                     fontFamily: 'Nunito',
-                    fontSize:   10,
+                    fontSize: 10,
                   ),
                 ),
               ],
@@ -1205,11 +1243,11 @@ class _NotifTile extends StatelessWidget {
           ),
           if (!notif.isRead)
             Container(
-              width:  8,
+              width: 8,
               height: 8,
               decoration: const BoxDecoration(
-                color:  Color(0xFFEC4899),
-                shape:  BoxShape.circle,
+                color: Color(0xFFEC4899),
+                shape: BoxShape.circle,
               ),
             ),
         ],
@@ -1232,10 +1270,10 @@ class _EmptyNotifs extends StatelessWidget {
           Text(
             'Sin notificaciones',
             style: TextStyle(
-              color:      Colors.white54,
+              color: Colors.white54,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w700,
-              fontSize:   15,
+              fontSize: 15,
             ),
           ),
           SizedBox(height: 6),
@@ -1243,9 +1281,9 @@ class _EmptyNotifs extends StatelessWidget {
             'Aquí verás cuando tu hijo\nacepte tu solicitud.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color:      Colors.white30,
+              color: Colors.white30,
               fontFamily: 'Nunito',
-              fontSize:   12,
+              fontSize: 12,
             ),
           ),
         ],
@@ -1268,21 +1306,21 @@ class _GlassCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
-          end:   Alignment.bottomRight,
+          end: Alignment.bottomRight,
           colors: [
-            const Color(0xFF0D1230),
-            const Color(0xFF0A0E28),
+            Color(0xFF0D1230),
+            Color(0xFF0A0E28),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: accent.withAlpha(60)),
         boxShadow: [
           BoxShadow(
-            color:      accent.withAlpha(20),
+            color: accent.withAlpha(20),
             blurRadius: 12,
-            offset:     const Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -1305,7 +1343,7 @@ class _AddChildDialog extends ConsumerStatefulWidget {
 
 class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
   String? _code;
-  bool    _loading = false;
+  bool _loading = false;
   String? _error;
 
   @override
@@ -1315,16 +1353,24 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
   }
 
   Future<void> _generateCode() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final result = await Supabase.instance.client
-          .rpc('generate_invite_code');
-      if (mounted) setState(() { _code = result as String; _loading = false; });
+      final result = await Supabase.instance.client.rpc('generate_invite_code');
+      if (mounted)
+        setState(() {
+          _code = result as String;
+          _loading = false;
+        });
     } catch (e) {
-      if (mounted) setState(() {
-        _error   = 'No se pudo generar el código. Verifica tu conexión.';
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'No se pudo generar el código. Verifica tu conexión.';
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -1344,16 +1390,15 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-
               // ── Header ───────────────────────────────────────────────────
               Row(children: [
                 const Text(
                   '👨‍👩‍👧 Agregar Hijo',
                   style: TextStyle(
-                    color:      Colors.white,
+                    color: Colors.white,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w800,
-                    fontSize:   18,
+                    fontSize: 18,
                   ),
                 ),
                 const Spacer(),
@@ -1368,10 +1413,10 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                 'Comparte este código con tu hijo.\nÉl lo escribe en su app y quedan vinculados al instante.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color:      Colors.white54,
+                  color: Colors.white54,
                   fontFamily: 'Nunito',
-                  fontSize:   13,
-                  height:     1.4,
+                  fontSize: 13,
+                  height: 1.4,
                 ),
               ),
               const SizedBox(height: 16),
@@ -1384,9 +1429,9 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                   '⚠️ $_error',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color:      Color(0xFFFBBF24),
+                    color: Color(0xFFFBBF24),
                     fontFamily: 'Nunito',
-                    fontSize:   13,
+                    fontSize: 13,
                   ),
                 ),
               ] else if (_code != null) ...[
@@ -1395,9 +1440,9 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   decoration: BoxDecoration(
-                    color:        const Color(0xFF7C3AED).withAlpha(30),
+                    color: const Color(0xFF7C3AED).withAlpha(30),
                     borderRadius: BorderRadius.circular(16),
-                    border:       Border.all(
+                    border: Border.all(
                       color: const Color(0xFF7C3AED).withAlpha(120),
                       width: 2,
                     ),
@@ -1408,10 +1453,10 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                       Text(
                         '${_code!.substring(0, 3)} ${_code!.substring(3)}',
                         style: const TextStyle(
-                          color:       Colors.white,
-                          fontFamily:  'Courier',
-                          fontWeight:  FontWeight.w900,
-                          fontSize:    36,
+                          color: Colors.white,
+                          fontFamily: 'Courier',
+                          fontWeight: FontWeight.w900,
+                          fontSize: 36,
                           letterSpacing: 6,
                         ),
                       ),
@@ -1419,9 +1464,9 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                       const Text(
                         '⏱ Válido 24 h · un solo uso',
                         style: TextStyle(
-                          color:      Colors.white38,
+                          color: Colors.white38,
                           fontFamily: 'Nunito',
-                          fontSize:   11,
+                          fontSize: 11,
                         ),
                       ),
                     ],
@@ -1442,15 +1487,16 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                               '📋 Código copiado',
                               style: TextStyle(fontFamily: 'Nunito'),
                             ),
-                            duration:  Duration(seconds: 2),
-                            behavior:  SnackBarBehavior.floating,
+                            duration: Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
                           ),
                         );
                       },
-                      icon:  const Icon(Icons.copy_rounded, size: 16),
+                      icon: const Icon(Icons.copy_rounded, size: 16),
                       label: const Text(
                         'Copiar',
-                        style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontFamily: 'Nunito', fontWeight: FontWeight.w700),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white70,
@@ -1466,10 +1512,11 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: _loading ? null : _generateCode,
-                      icon:  const Icon(Icons.refresh_rounded, size: 16),
+                      icon: const Icon(Icons.refresh_rounded, size: 16),
                       label: const Text(
                         'Nuevo código',
-                        style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontFamily: 'Nunito', fontWeight: FontWeight.w700),
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF7C3AED),
@@ -1482,7 +1529,6 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                   ),
                 ]),
               ],
-
             ],
           ),
         ),
@@ -1504,27 +1550,36 @@ class _SalaryDialog extends StatefulWidget {
 }
 
 class _SalaryDialogState extends State<_SalaryDialog> {
-  int    _amount  = 25;
-  bool   _loading = false;
-  bool   _saved   = false;
+  int _amount = 25;
+  bool _loading = false;
+  bool _saved = false;
   String? _error;
 
   static const _min = 20;
   static const _max = 35;
 
   Future<void> _save() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       await SalaryRepository().upsertSalary(
         childId: widget.childId,
-        amount:  _amount,
+        amount: _amount,
       );
-      if (mounted) setState(() { _loading = false; _saved = true; });
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _saved = true;
+        });
     } catch (e) {
-      if (mounted) setState(() {
-        _loading = false;
-        _error   = 'Error al guardar. Verifica tu conexión.';
-      });
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Error al guardar. Verifica tu conexión.';
+        });
+      }
     }
   }
 
@@ -1614,13 +1669,16 @@ class _SalaryDialogState extends State<_SalaryDialog> {
                 divisions: _max - _min,
                 activeColor: const Color(0xFFFFD600),
                 inactiveColor: Colors.white24,
-                onChanged: _saved ? null : (v) => setState(() => _amount = v.toInt()),
+                onChanged:
+                    _saved ? null : (v) => setState(() => _amount = v.toInt()),
               ),
-              Row(
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('$_min', style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                  Text('$_max', style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                  Text('$_min',
+                      style: TextStyle(color: Colors.white38, fontSize: 11)),
+                  Text('$_max',
+                      style: TextStyle(color: Colors.white38, fontSize: 11)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -1646,7 +1704,8 @@ class _SalaryDialogState extends State<_SalaryDialog> {
                   decoration: BoxDecoration(
                     color: Colors.green.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
+                    border:
+                        Border.all(color: Colors.greenAccent.withOpacity(0.5)),
                   ),
                   child: const Text(
                     '✅ ¡Salario guardado!',

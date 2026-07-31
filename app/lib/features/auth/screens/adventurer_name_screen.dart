@@ -16,12 +16,12 @@ class AdventurerNameScreen extends StatefulWidget {
 
 class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
   final _controller = TextEditingController();
-  final _focusNode  = FocusNode();
+  final _focusNode = FocusNode();
 
-  bool   _loading       = false;
-  String _errorMessage  = '';
-  bool   _nameAvailable = false;
-  bool   _checking      = false;
+  bool _loading = false;
+  String _errorMessage = '';
+  bool _nameAvailable = false;
+  bool _checking = false;
 
   static const _minLen = 3;
   static const _maxLen = 20;
@@ -33,16 +33,22 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
     super.dispose();
   }
 
-  String _sanitize(String raw) =>
-      raw.trim().replaceAll(RegExp(r'\s+'), ' ');
+  String _sanitize(String raw) => raw.trim().replaceAll(RegExp(r'\s+'), ' ');
 
   Future<void> _checkName(String value) async {
     final name = _sanitize(value);
     if (name.length < _minLen) {
-      setState(() { _nameAvailable = false; _errorMessage = ''; });
+      setState(() {
+        _nameAvailable = false;
+        _errorMessage = '';
+      });
       return;
     }
-    setState(() { _checking = true; _errorMessage = ''; _nameAvailable = false; });
+    setState(() {
+      _checking = true;
+      _errorMessage = '';
+      _nameAvailable = false;
+    });
     try {
       // Verificamos directamente en profiles con ILIKE (sin RPC para evitar
       // restricciones de auth en esta pantalla donde aún no hay sesión).
@@ -55,31 +61,41 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
       if (mounted) {
         setState(() {
           _nameAvailable = available;
-          _errorMessage  = available ? '' : '¡Ese nombre ya está ocupado! 😅 Prueba con otro.';
-          _checking      = false;
+          _errorMessage = available
+              ? ''
+              : '¡Ese nombre ya está ocupado! 😅 Prueba con otro.';
+          _checking = false;
         });
       }
     } catch (_) {
       // Sin sesión activa RLS puede bloquear la lectura; dejamos indeterminado.
-      if (mounted) setState(() { _checking = false; _nameAvailable = false; });
+      if (mounted)
+        setState(() {
+          _checking = false;
+          _nameAvailable = false;
+        });
     }
   }
 
   Future<void> _start() async {
     final name = _sanitize(_controller.text);
     if (name.length < _minLen) {
-      setState(() => _errorMessage = 'Tu nombre necesita al menos $_minLen letras.');
+      setState(
+          () => _errorMessage = 'Tu nombre necesita al menos $_minLen letras.');
       return;
     }
 
-    setState(() { _loading = true; _errorMessage = ''; });
+    setState(() {
+      _loading = true;
+      _errorMessage = '';
+    });
 
     final client = Supabase.instance.client;
 
     try {
       // 1. Sesión anónima primero (necesaria para que RLS permita leer profiles)
       final authRes = await client.auth.signInAnonymously();
-      final userId  = authRes.user?.id;
+      final userId = authRes.user?.id;
       if (userId == null) throw Exception('No se pudo crear sesión');
 
       // 2. Verificar disponibilidad del nombre (ya con sesión → RLS funciona)
@@ -92,9 +108,9 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
         await client.auth.signOut();
         if (mounted) {
           setState(() {
-            _errorMessage  = '¡Ese nombre ya está ocupado! 😅 Prueba con otro.';
+            _errorMessage = '¡Ese nombre ya está ocupado! 😅 Prueba con otro.';
             _nameAvailable = false;
-            _loading       = false;
+            _loading = false;
           });
         }
         return;
@@ -102,15 +118,15 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
 
       // 3. Crear perfil demo
       await client.from('profiles').insert({
-        'id':           userId,
-        'role':         'child',
+        'id': userId,
+        'role': 'child',
         'display_name': name,
         'account_type': 'demo',
       });
 
       // 4. Crear cartera vacía
       await client.from('wallets').insert({
-        'user_id':    userId,
+        'user_id': userId,
         'total_coins': 0,
       });
 
@@ -119,11 +135,23 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
       final msg = e.code == '23505'
           ? '¡Ese nombre ya está ocupado! 😅 Prueba con otro.'
           : 'Error al guardar: ${e.message}';
-      if (mounted) setState(() { _errorMessage = msg; _loading = false; });
+      if (mounted)
+        setState(() {
+          _errorMessage = msg;
+          _loading = false;
+        });
     } on AuthException catch (e) {
-      if (mounted) setState(() { _errorMessage = 'Error auth: ${e.message}'; _loading = false; });
+      if (mounted)
+        setState(() {
+          _errorMessage = 'Error auth: ${e.message}';
+          _loading = false;
+        });
     } catch (e) {
-      if (mounted) setState(() { _errorMessage = 'Error inesperado: $e'; _loading = false; });
+      if (mounted)
+        setState(() {
+          _errorMessage = 'Error inesperado: $e';
+          _loading = false;
+        });
     }
   }
 
@@ -134,7 +162,7 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
-            end:   Alignment.bottomCenter,
+            end: Alignment.bottomCenter,
             colors: [Color(0xFF0D0D2B), Color(0xFF1A237E), Color(0xFF0D0D2B)],
           ),
         ),
@@ -152,15 +180,16 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // Blink
-                      BlinkCharacterWidget(width: 140, enableBounce: true)
+                      const BlinkCharacterWidget(width: 140, enableBounce: true)
                           .animate()
                           .scale(duration: 600.ms, curve: Curves.elasticOut),
 
                       const SizedBox(height: 20),
 
                       // Globo con saludo
-                      _SpeechBubble(
-                        text: '¡Hola! Soy Blink 👋\n¿Cómo te llamas, aventurero?',
+                      const _SpeechBubble(
+                        text:
+                            '¡Hola! Soy Blink 👋\n¿Cómo te llamas, aventurero?',
                       ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
 
                       const SizedBox(height: 32),
@@ -181,12 +210,15 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
                       // Campo de texto
                       _NameField(
                         controller: _controller,
-                        focusNode:  _focusNode,
-                        maxLength:  _maxLen,
-                        checking:   _checking,
-                        available:  _nameAvailable,
+                        focusNode: _focusNode,
+                        maxLength: _maxLen,
+                        checking: _checking,
+                        available: _nameAvailable,
                         onChanged: (v) {
-                          setState(() { _errorMessage = ''; _nameAvailable = false; });
+                          setState(() {
+                            _errorMessage = '';
+                            _nameAvailable = false;
+                          });
                           if (_sanitize(v).length >= _minLen) _checkName(v);
                         },
                         onSubmitted: (_) => _start(),
@@ -200,16 +232,17 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
                         child: _errorMessage.isNotEmpty
                             ? _StatusChip(
                                 key: const ValueKey('err'),
-                                text:  _errorMessage,
+                                text: _errorMessage,
                                 color: const Color(0xFFFF5252),
-                                icon:  Icons.cancel_rounded,
+                                icon: Icons.cancel_rounded,
                               )
-                            : _nameAvailable && _controller.text.trim().length >= _minLen
-                                ? _StatusChip(
-                                    key: const ValueKey('ok'),
-                                    text:  '¡Nombre disponible! 🎉',
-                                    color: const Color(0xFF4CAF50),
-                                    icon:  Icons.check_circle_rounded,
+                            : _nameAvailable &&
+                                    _controller.text.trim().length >= _minLen
+                                ? const _StatusChip(
+                                    key: ValueKey('ok'),
+                                    text: '¡Nombre disponible! 🎉',
+                                    color: Color(0xFF4CAF50),
+                                    icon: Icons.check_circle_rounded,
                                   )
                                 : const SizedBox.shrink(key: ValueKey('none')),
                       ),
@@ -220,7 +253,7 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
                       _StartButton(
                         loading: _loading,
                         enabled: _nameAvailable && !_loading,
-                        onTap:   _start,
+                        onTap: _start,
                       ).animate().fadeIn(delay: 700.ms),
 
                       const SizedBox(height: 8),
@@ -262,7 +295,10 @@ class _SpeechBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
-            boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 16, offset: Offset(0, 6))],
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.black38, blurRadius: 16, offset: Offset(0, 6))
+            ],
           ),
           child: Text(
             text,
@@ -293,13 +329,14 @@ class _UpTailPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = Colors.white;
-    final path  = Path()
+    final path = Path()
       ..moveTo(0, size.height)
       ..lineTo(size.width, size.height)
       ..lineTo(size.width / 2, 0)
       ..close();
     canvas.drawPath(path, paint);
   }
+
   @override
   bool shouldRepaint(_) => false;
 }
@@ -315,12 +352,12 @@ class _NameField extends StatelessWidget {
     required this.onSubmitted,
   });
   final TextEditingController controller;
-  final FocusNode             focusNode;
-  final int                   maxLength;
-  final bool                  checking;
-  final bool                  available;
-  final ValueChanged<String>  onChanged;
-  final ValueChanged<String>  onSubmitted;
+  final FocusNode focusNode;
+  final int maxLength;
+  final bool checking;
+  final bool available;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -329,21 +366,21 @@ class _NameField extends StatelessWidget {
         color: Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: available
-              ? const Color(0xFF4CAF50)
-              : Colors.white24,
+          color: available ? const Color(0xFF4CAF50) : Colors.white24,
           width: 2,
         ),
-        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 3))
+        ],
       ),
       child: TextField(
-        controller:     controller,
-        focusNode:      focusNode,
-        maxLength:      maxLength,
-        textAlign:      TextAlign.center,
+        controller: controller,
+        focusNode: focusNode,
+        maxLength: maxLength,
+        textAlign: TextAlign.center,
         textInputAction: TextInputAction.done,
-        onChanged:      onChanged,
-        onSubmitted:    onSubmitted,
+        onChanged: onChanged,
+        onSubmitted: onSubmitted,
         style: const TextStyle(
           color: Color(0xFF1A1A2E),
           fontFamily: 'Nunito',
@@ -352,24 +389,30 @@ class _NameField extends StatelessWidget {
           letterSpacing: 1,
         ),
         decoration: InputDecoration(
-          hintText:      '¿Tu nombre de héroe?',
-          hintStyle:     const TextStyle(color: Color(0xFF9EA3B8), fontSize: 18, fontFamily: 'Nunito'),
-          counterStyle:  const TextStyle(color: Color(0xFF9EA3B8), fontSize: 11),
-          border:        InputBorder.none,
-          filled:        true,
-          fillColor:     Colors.transparent,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          hintText: '¿Tu nombre de héroe?',
+          hintStyle: const TextStyle(
+              color: Color(0xFF9EA3B8), fontSize: 18, fontFamily: 'Nunito'),
+          counterStyle: const TextStyle(color: Color(0xFF9EA3B8), fontSize: 11),
+          border: InputBorder.none,
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           suffixIcon: checking
               ? const Padding(
                   padding: EdgeInsets.all(14),
                   child: SizedBox(
-                    width: 20, height: 20,
-                    child: CircularProgressIndicator(color: Colors.white54, strokeWidth: 2),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        color: Colors.white54, strokeWidth: 2),
                   ),
                 )
               : available
-                  ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 28)
-                  : const Icon(Icons.edit_rounded, color: Color(0xFF9EA3B8), size: 22),
+                  ? const Icon(Icons.check_circle_rounded,
+                      color: Color(0xFF4CAF50), size: 28)
+                  : const Icon(Icons.edit_rounded,
+                      color: Color(0xFF9EA3B8), size: 22),
         ),
       ),
     );
@@ -377,9 +420,10 @@ class _NameField extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({super.key, required this.text, required this.color, required this.icon});
-  final String   text;
-  final Color    color;
+  const _StatusChip(
+      {super.key, required this.text, required this.color, required this.icon});
+  final String text;
+  final Color color;
   final IconData icon;
 
   @override
@@ -399,7 +443,11 @@ class _StatusChip extends StatelessWidget {
           Flexible(
             child: Text(
               text,
-              style: TextStyle(color: color, fontFamily: 'Nunito', fontWeight: FontWeight.w600, fontSize: 13),
+              style: TextStyle(
+                  color: color,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13),
             ),
           ),
         ],
@@ -409,9 +457,10 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _StartButton extends StatelessWidget {
-  const _StartButton({required this.loading, required this.enabled, required this.onTap});
-  final bool         loading;
-  final bool         enabled;
+  const _StartButton(
+      {required this.loading, required this.enabled, required this.onTap});
+  final bool loading;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
@@ -430,20 +479,28 @@ class _StartButton extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(30),
             boxShadow: enabled
-                ? const [BoxShadow(color: Color(0x66FFD700), blurRadius: 18, offset: Offset(0, 4))]
+                ? const [
+                    BoxShadow(
+                        color: Color(0x66FFD700),
+                        blurRadius: 18,
+                        offset: Offset(0, 4))
+                  ]
                 : null,
           ),
           child: loading
               ? const Center(
                   child: SizedBox(
-                    width: 24, height: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                        color: Colors.white, strokeWidth: 2.5),
                   ),
                 )
               : const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 22),
+                    Icon(Icons.rocket_launch_rounded,
+                        color: Colors.white, size: 22),
                     SizedBox(width: 10),
                     Text(
                       '¡Comenzar aventura!',
@@ -458,9 +515,11 @@ class _StartButton extends StatelessWidget {
                 ),
         ),
       ),
-    )
-        .animate(onPlay: (c) => enabled ? c.repeat(reverse: true) : null)
-        .scaleXY(begin: 1.0, end: enabled ? 1.02 : 1.0, duration: 900.ms, curve: Curves.easeInOut);
+    ).animate(onPlay: (c) => enabled ? c.repeat(reverse: true) : null).scaleXY(
+        begin: 1.0,
+        end: enabled ? 1.02 : 1.0,
+        duration: 900.ms,
+        curve: Curves.easeInOut);
   }
 }
 
@@ -470,25 +529,28 @@ class _Star extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size    = MediaQuery.of(context).size;
-    final rng     = seed * 1693 + 17;
-    final left    = (rng % 100) / 100 * size.width;
-    final top     = ((rng * 37) % 100) / 100 * size.height;
-    final radius  = 1.0 + (rng % 3).toDouble();
+    final size = MediaQuery.of(context).size;
+    final rng = seed * 1693 + 17;
+    final left = (rng % 100) / 100 * size.width;
+    final top = ((rng * 37) % 100) / 100 * size.height;
+    final radius = 1.0 + (rng % 3).toDouble();
     final opacity = 0.2 + (rng % 5) / 12.0;
 
     return Positioned(
       left: left,
-      top:  top,
+      top: top,
       child: Opacity(
         opacity: opacity,
         child: Container(
-          width:  radius * 2,
+          width: radius * 2,
           height: radius * 2,
-          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          decoration:
+              const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
         ),
       )
-          .animate(onPlay: (c) => c.repeat(reverse: true), delay: Duration(milliseconds: (seed * 317) % 1500))
+          .animate(
+              onPlay: (c) => c.repeat(reverse: true),
+              delay: Duration(milliseconds: (seed * 317) % 1500))
           .fadeIn(duration: Duration(milliseconds: 800 + (seed * 200) % 600)),
     );
   }

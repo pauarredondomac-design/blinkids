@@ -6,7 +6,7 @@ import '../../core/constants/app_sizes.dart';
 import '../../core/utils/extensions.dart';
 
 const _kCoinFrames = 9;
-const _kCoinPath   = 'assets/ui/coin/frame_';
+const _kCoinPath = 'assets/ui/coin/frame_';
 
 /// Moneda animada con sprite de 9 frames.
 /// Úsala en cualquier lugar de la app donde antes se mostraba el emoji 🪙.
@@ -19,7 +19,7 @@ class AnimatedCoin extends StatefulWidget {
 }
 
 class _AnimatedCoinState extends State<AnimatedCoin> {
-  int    _frame = 0;
+  int _frame = 0;
   Timer? _timer;
 
   @override
@@ -40,8 +40,8 @@ class _AnimatedCoinState extends State<AnimatedCoin> {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      '${_kCoinPath}${_frame + 1}.png',
-      width:  widget.size,
+      '$_kCoinPath${_frame + 1}.png',
+      width: widget.size,
       height: widget.size,
       fit: BoxFit.contain,
       // Fallback al ícono si el asset no carga
@@ -64,7 +64,7 @@ class CoinDisplay extends StatelessWidget {
     this.animate = false,
   });
 
-  final int  coins;
+  final int coins;
   final bool isLarge;
   final bool animate;
 
@@ -76,7 +76,7 @@ class CoinDisplay extends StatelessWidget {
     Widget content = Container(
       padding: EdgeInsets.symmetric(
         horizontal: isLarge ? AppSizes.lg : AppSizes.sm,
-        vertical:   isLarge ? AppSizes.sm : AppSizes.xs,
+        vertical: isLarge ? AppSizes.sm : AppSizes.xs,
       ),
       decoration: BoxDecoration(
         color: Colors.black26,

@@ -27,7 +27,7 @@ class FuelBar extends StatelessWidget {
   Color _barColor() {
     if (accentColor != null) return accentColor!;
     if (fuel >= 100) return const Color(0xFF00E676);
-    if (fuel >= 60)  return const Color(0xFFFFD600);
+    if (fuel >= 60) return const Color(0xFFFFD600);
     return const Color(0xFFFF6D00);
   }
 
@@ -46,9 +46,9 @@ class FuelBar extends StatelessWidget {
             children: [
               const Text('🚀', style: TextStyle(fontSize: 11)),
               const SizedBox(width: 4),
-              Text(
+              const Text(
                 'Combustible',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white54,
                   fontFamily: 'Nunito',
                   fontSize: 9,
@@ -79,8 +79,6 @@ class FuelBar extends StatelessWidget {
           ),
         ],
       ),
-    )
-    .animate(key: ValueKey(fuel))
-    .fadeIn(duration: 200.ms);
+    ).animate(key: ValueKey(fuel)).fadeIn(duration: 200.ms);
   }
 }

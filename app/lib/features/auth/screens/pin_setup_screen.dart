@@ -17,11 +17,11 @@ class PinSetupScreen extends StatefulWidget {
 class _PinSetupScreenState extends State<PinSetupScreen> {
   static const _pinLength = 6;
 
-  String _pin        = '';
+  String _pin = '';
   String _confirmPin = '';
-  bool   _confirming = false; // true = segunda pantalla (confirmar PIN)
-  bool   _loading    = false;
-  String _errorMsg   = '';
+  bool _confirming = false; // true = segunda pantalla (confirmar PIN)
+  bool _loading = false;
+  String _errorMsg = '';
 
   void _onDigit(String d) {
     setState(() {
@@ -37,7 +37,8 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       } else {
         if (_confirmPin.length < _pinLength) _confirmPin += d;
         if (_confirmPin.length == _pinLength) {
-          Future.delayed(const Duration(milliseconds: 200), () => _checkAndSave());
+          Future.delayed(
+              const Duration(milliseconds: 200), () => _checkAndSave());
         }
       }
     });
@@ -60,17 +61,17 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
 
   void _reset() {
     setState(() {
-      _pin        = '';
+      _pin = '';
       _confirmPin = '';
       _confirming = false;
-      _errorMsg   = '';
+      _errorMsg = '';
     });
   }
 
   Future<void> _checkAndSave() async {
     if (_pin != _confirmPin) {
       setState(() {
-        _errorMsg   = 'Los PINs no coinciden. Inténtalo de nuevo.';
+        _errorMsg = 'Los PINs no coinciden. Inténtalo de nuevo.';
         _confirmPin = '';
       });
       return;
@@ -84,8 +85,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       // Guardar PIN en Supabase y localmente
       await Supabase.instance.client
           .from('profiles')
-          .update({'pin_hash': _pin})
-          .eq('id', userId);
+          .update({'pin_hash': _pin}).eq('id', userId);
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('child_pin', _pin);
@@ -95,7 +95,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       if (mounted) {
         setState(() {
           _errorMsg = 'No se pudo guardar tu PIN. Verifica tu conexión.';
-          _loading  = false;
+          _loading = false;
           _confirmPin = '';
         });
       }
@@ -111,7 +111,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
-            end:   Alignment.bottomCenter,
+            end: Alignment.bottomCenter,
             colors: [Color(0xFF0D0D2B), Color(0xFF1A237E), Color(0xFF0D0D2B)],
           ),
         ),
@@ -121,7 +121,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
               const SizedBox(height: 24),
 
               // Blink
-              BlinkCharacterWidget(width: 100, enableBounce: true)
+              const BlinkCharacterWidget(width: 100, enableBounce: true)
                   .animate()
                   .scale(duration: 600.ms, curve: Curves.elasticOut),
 
@@ -156,7 +156,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.symmetric(horizontal: 8),
-                    width:  filled ? 22 : 18,
+                    width: filled ? 22 : 18,
                     height: filled ? 22 : 18,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
@@ -164,11 +164,15 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                           ? const Color(0xFFFFD700)
                           : Colors.white.withValues(alpha: 0.2),
                       border: Border.all(
-                        color: filled ? const Color(0xFFFFD700) : Colors.white38,
+                        color:
+                            filled ? const Color(0xFFFFD700) : Colors.white38,
                         width: 2,
                       ),
                       boxShadow: filled
-                          ? [const BoxShadow(color: Color(0x66FFD700), blurRadius: 8)]
+                          ? [
+                              const BoxShadow(
+                                  color: Color(0x66FFD700), blurRadius: 8)
+                            ]
                           : null,
                     ),
                   );
@@ -184,9 +188,11 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
                     ? Container(
                         key: const ValueKey('err'),
                         margin: const EdgeInsets.symmetric(horizontal: 32),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF5252).withValues(alpha: 0.15),
+                          color:
+                              const Color(0xFFFF5252).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -207,7 +213,11 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
 
               // Teclado numérico
               if (!_loading)
-                _NumPad(onDigit: _onDigit, onDelete: _onDelete, onReset: _reset, showReset: _confirming),
+                _NumPad(
+                    onDigit: _onDigit,
+                    onDelete: _onDelete,
+                    onReset: _reset,
+                    showReset: _confirming),
 
               if (_loading)
                 const Padding(
@@ -234,9 +244,9 @@ class _NumPad extends StatelessWidget {
     required this.showReset,
   });
   final ValueChanged<String> onDigit;
-  final VoidCallback         onDelete;
-  final VoidCallback         onReset;
-  final bool                 showReset;
+  final VoidCallback onDelete;
+  final VoidCallback onReset;
+  final bool showReset;
 
   @override
   Widget build(BuildContext context) {
@@ -250,12 +260,14 @@ class _NumPad extends StatelessWidget {
       child: Column(
         children: [
           ...rows.map((row) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: row.map((d) => _NumKey(digit: d, onTap: () => onDigit(d))).toList(),
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: row
+                      .map((d) => _NumKey(digit: d, onTap: () => onDigit(d)))
+                      .toList(),
+                ),
+              )),
           // Última fila: reset / 0 / borrar
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -283,7 +295,7 @@ class _NumPad extends StatelessWidget {
 
 class _NumKey extends StatelessWidget {
   const _NumKey({required this.digit, required this.onTap});
-  final String       digit;
+  final String digit;
   final VoidCallback onTap;
 
   @override
@@ -309,17 +321,17 @@ class _NumKey extends StatelessWidget {
             ),
           ),
         ),
-      )
-          .animate(onPlay: (c) => c.reset())
-          .scaleXY(begin: 1.0, end: 0.92, duration: 80.ms, curve: Curves.easeIn),
+      ).animate(onPlay: (c) => c.reset()).scaleXY(
+          begin: 1.0, end: 0.92, duration: 80.ms, curve: Curves.easeIn),
     );
   }
 }
 
 class _ActionKey extends StatelessWidget {
-  const _ActionKey({required this.icon, required this.color, required this.onTap});
-  final IconData     icon;
-  final Color        color;
+  const _ActionKey(
+      {required this.icon, required this.color, required this.onTap});
+  final IconData icon;
+  final Color color;
   final VoidCallback onTap;
 
   @override

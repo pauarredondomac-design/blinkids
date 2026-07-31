@@ -1,11 +1,15 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/models/wallet.dart';
+import '../../../data/models/child_goal.dart';
 import '../../../shared/providers/wallet_provider.dart';
+import '../../../shared/providers/child_goal_provider.dart';
+import '../../../shared/providers/question_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/activity_player.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC API
@@ -56,7 +60,7 @@ class BancoEstelarScreen extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shell — obtiene datos Supabase y monta el modal
+// Shell — obtiene datos Supabase y decide qué vista mostrar
 // ─────────────────────────────────────────────────────────────────────────────
 class _BEDialogShell extends ConsumerWidget {
   const _BEDialogShell({required this.isFullScreen});
@@ -65,16 +69,8 @@ class _BEDialogShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final size = MediaQuery.of(context).size;
-    final cats = ref.watch(walletCategoriesProvider);
-
-    int balance = 0;
-    if (cats is AsyncData<List<WalletCategory>>) {
-      try {
-        balance = cats.value
-            .firstWhere((c) => c.category == WalletCategoryType.banco_estelar)
-            .balance;
-      } catch (_) {}
-    }
+    final goalAsync = ref.watch(currentGoalProvider);
+    final catsAsync = ref.watch(walletCategoriesProvider);
 
     void onClose() {
       if (isFullScreen) {
@@ -84,30 +80,44 @@ class _BEDialogShell extends ConsumerWidget {
       }
     }
 
+    int savedCoins = 0;
+    if (catsAsync is AsyncData<List<WalletCategory>>) {
+      try {
+        savedCoins = catsAsync.value
+            .firstWhere((c) => c.category == WalletCategoryType.guardar)
+            .balance;
+      } catch (_) {}
+    }
+
     return Center(
       child: Material(
         color: Colors.transparent,
         child: ScreenTutorial(
-          tutorialKey: 'banco_estelar',
+          tutorialKey: 'banco_estelar_v2',
           steps: const [
             TutorialStep(
               title: '¡Bienvenido al Banco Estelar!',
-              body: 'Aquí puedes guardar tus monedas y hacerlas crecer con intereses semanales.',
+              body: 'Aquí guardamos las monedas que tienen una misión importante: cumplir tu meta.',
             ),
             TutorialStep(
-              title: 'Tu inversión trabaja por ti',
-              body: 'Cuanto más tiempo dejes tus créditos aquí, más intereses recibirás cada semana.',
+              title: 'Elige tu meta',
+              body: 'Elige un sueño del catálogo. Cada moneda que pongas en "Guardar" en Mi Bolsa te acerca a cumplirlo.',
             ),
             TutorialStep(
-              title: 'Misiones financieras',
-              body: 'Completa misiones especiales del Banco Estelar para ganar XP y bonos extra.',
+              title: 'No es un banco de verdad',
+              body: 'Aquí no hay saldo ni intereses — solo tu sueño acercándose, poquito a poco.',
             ),
           ],
-          child: _BEModal(
-            size: size,
-            balance: balance,
-            isLoading: cats is AsyncLoading,
-            onClose: onClose,
+          child: SizedBox(
+            width: size.width * (isFullScreen ? 0.85 : 0.90),
+            height: size.height * (isFullScreen ? 0.85 : 0.88),
+            child: goalAsync.when(
+              loading: () => const _BEFrame(child: Center(child: CircularProgressIndicator(color: Color(0xFFFFB300)))),
+              error: (_, __) => _BEFrame(child: _GoalPicker(savedCoins: savedCoins, onClose: onClose)),
+              data: (goal) => goal == null || goal.isCompleted
+                  ? _BEFrame(child: _GoalPicker(savedCoins: savedCoins, onClose: onClose, previousGoal: goal))
+                  : _BEFrame(child: _VaultView(goal: goal, savedCoins: savedCoins, onClose: onClose)),
+            ),
           ),
         ),
       ),
@@ -116,117 +126,34 @@ class _BEDialogShell extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Modal principal
+// Marco visual compartido
 // ─────────────────────────────────────────────────────────────────────────────
-class _BEModal extends StatelessWidget {
-  const _BEModal({
-    required this.size,
-    required this.balance,
-    required this.isLoading,
-    required this.onClose,
-  });
-
-  final Size         size;
-  final int          balance;
-  final bool         isLoading;
-  final VoidCallback onClose;
-
-  static const double _interestPct  = 3.5;
-  static const int    _daysInvested = 3;
-  static const int    _totalDays    = 7;
+class _BEFrame extends StatelessWidget {
+  const _BEFrame({required this.child});
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final mw = size.width  * 0.78;
-    final mh = size.height * 0.88;
-
     return Container(
-      width:  mw,
-      height: mh,
       decoration: BoxDecoration(
         color: const Color(0xFF07101F),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF3A7BD5).withOpacity(0.45),
-          width: 1.5,
-        ),
+        border: Border.all(color: const Color(0xFF3A7BD5).withOpacity(0.45), width: 1.5),
         boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4FC3F7).withOpacity(0.18),
-            blurRadius: 30,
-            spreadRadius: 3,
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.70),
-            blurRadius: 20,
-          ),
+          BoxShadow(color: const Color(0xFF4FC3F7).withOpacity(0.18), blurRadius: 30, spreadRadius: 3),
+          BoxShadow(color: Colors.black.withOpacity(0.70), blurRadius: 20),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Column(
-          children: [
-            // ── Header ──────────────────────────────────────────────────────
-            _BEHeaderBar(onClose: onClose),
-
-            // ── Cuerpo ──────────────────────────────────────────────────────
-            if (isLoading)
-              const Expanded(
-                child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFFFFB300)),
-                ),
-              )
-            else
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 58,
-                        child: _BELeftCol(
-                          balance: balance,
-                          daysInvested: _daysInvested,
-                          totalDays: _totalDays,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 42,
-                        child: _BERightCol(
-                          balance:     balance,
-                          interestPct: _interestPct,
-                          onRetire:    () => _snack(context, 'Retirar fondos'),
-                          onIncrement: () => _snack(context, 'Incrementar inversión'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // ── Footer ──────────────────────────────────────────────────────
-            _BEFooter(onClose: onClose),
-          ],
-        ),
+        child: child,
       ),
     );
-  }
-
-  void _snack(BuildContext context, String label) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('🚀 $label — próximamente disponible'),
-      backgroundColor: const Color(0xFF0D1B3E),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      duration: const Duration(seconds: 2),
-    ));
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Header: placa "BANCO ESTELAR" + botón ✕
+// Header reutilizable con placa "BANCO ESTELAR"
 // ─────────────────────────────────────────────────────────────────────────────
 class _BEHeaderBar extends StatelessWidget {
   const _BEHeaderBar({required this.onClose});
@@ -239,74 +166,37 @@ class _BEHeaderBar extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // ── Placa central ──────────────────────────────────────────────
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color(0xFF0A1835),
-                  Color(0xFF152B5E),
-                  Color(0xFF0A1835),
-                ],
-              ),
+              gradient: const LinearGradient(colors: [Color(0xFF0A1835), Color(0xFF152B5E), Color(0xFF0A1835)]),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFF4FC3F7).withOpacity(0.55),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF4FC3F7).withOpacity(0.28),
-                  blurRadius: 18,
-                  spreadRadius: 1,
-                ),
-              ],
+              border: Border.all(color: const Color(0xFF4FC3F7).withOpacity(0.55), width: 1.5),
+              boxShadow: [BoxShadow(color: const Color(0xFF4FC3F7).withOpacity(0.28), blurRadius: 18, spreadRadius: 1)],
             ),
-            child: Text(
+            child: const Text(
               'BANCO ESTELAR',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 19,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 3.5,
-                shadows: [
-                  Shadow(
-                    color: const Color(0xFF4FC3F7).withOpacity(0.80),
-                    blurRadius: 12,
-                  ),
-                ],
+                shadows: [Shadow(color: Color(0xB84FC3F7), blurRadius: 12)],
               ),
             ),
-          )
-              .animate(onPlay: (c) => c.repeat(reverse: true))
-              .shimmer(
-                duration: 3.seconds,
-                color: const Color(0xFF81D4FA).withOpacity(0.35),
-              ),
-
-          // ── Botón cerrar ───────────────────────────────────────────────
+          ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 3.seconds, color: const Color(0xFF81D4FA).withOpacity(0.35)),
           Positioned(
             right: 0,
             child: GestureDetector(
               onTap: onClose,
               child: Container(
-                width: 30,
-                height: 30,
+                width: 30, height: 30,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.09),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.22),
-                    width: 1,
-                  ),
+                  border: Border.all(color: Colors.white.withOpacity(0.22), width: 1),
                 ),
-                child: const Icon(
-                  Icons.close_rounded,
-                  color: Colors.white70,
-                  size: 17,
-                ),
+                child: const Icon(Icons.close_rounded, color: Colors.white70, size: 17),
               ),
             ),
           ),
@@ -317,609 +207,259 @@ class _BEHeaderBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Columna izquierda: secciones 1, 2, 3
+// Selector de meta — primera vez o tras cumplir una meta
 // ─────────────────────────────────────────────────────────────────────────────
-class _BELeftCol extends StatelessWidget {
-  const _BELeftCol({
-    required this.balance,
-    required this.daysInvested,
-    required this.totalDays,
-  });
-  final int balance;
-  final int daysInvested;
-  final int totalDays;
+class _GoalPicker extends ConsumerWidget {
+  const _GoalPicker({required this.savedCoins, required this.onClose, this.previousGoal});
+  final int savedCoins;
+  final VoidCallback onClose;
+  final ChildGoal? previousGoal;
 
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // ── 1 Estado de Cuenta ─────────────────────────────────────────
-          _SectionCard(
-            number: '1',
-            numColor: const Color(0xFFFFB300),
-            title: 'Estado de Cuenta',
-            chip: 'CRÉDITOS',
-            child: Row(
-              children: [
-                const Text('🏆', style: TextStyle(fontSize: 40))
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .scaleXY(
-                      begin: 1.0, end: 1.09,
-                      duration: 2000.ms,
-                      curve: Curves.easeInOut,
-                    ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Intereses Acumulados',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.65),
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '+${balance > 0 ? balance.toStringAsFixed(2) : '0.00'}',
-                          style: const TextStyle(
-                            color: Color(0xFFFFB300),
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            height: 1.0,
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 3, left: 5),
-                          child: AnimatedCoin(size: 18),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    balance > 0
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '+5',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.45),
-                                  fontSize: 10,
-                                ),
-                              ),
-                              const SizedBox(width: 3),
-                              const AnimatedCoin(size: 10),
-                              Text(
-                                ' esta semana',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.45),
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Text(
-                            'Empieza a invertir hoy',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.45),
-                              fontSize: 10,
-                            ),
-                          ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // ── 2 Inversión Activa ─────────────────────────────────────────
-          _SectionCard(
-            number: '2',
-            numColor: const Color(0xFF4FC3F7),
-            title: 'Inversión Activa',
-            child: Row(
-              children: [
-                const Text('🔷', style: TextStyle(fontSize: 32))
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .moveY(
-                      begin: 0, end: -5,
-                      duration: 2200.ms,
-                      curve: Curves.easeInOut,
-                    ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tiempo de Inversión',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.65),
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      RichText(
-                        text: TextSpan(children: [
-                          TextSpan(
-                            text: '$daysInvested días',
-                            style: const TextStyle(
-                              color: Color(0xFF4FC3F7),
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(
-                            text: ' / $totalDays días',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.55),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: daysInvested / totalDays,
-                          backgroundColor: Colors.white.withOpacity(0.13),
-                          valueColor: const AlwaysStoppedAnimation(
-                              Color(0xFF4FC3F7)),
-                          minHeight: 7,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // ── 3 Misiones Financieras ──────────────────────────────────────
-          _SectionCard(
-            number: '3',
-            numColor: const Color(0xFFCE93D8),
-            title: 'Misiones Financieras',
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF4FC3F7).withOpacity(0.18),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Micro-especifico acanual',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.45),
-                            fontSize: 9,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        const Text(
-                          'Misión: Ahorra 100 C en 3 días',
-                          style: TextStyle(
-                            color: Color(0xFF4FC3F7),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          '⭐ +10 XP + Bonus',
-                          style: TextStyle(
-                            color: Color(0xFFFFB300),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0D1B3E).withOpacity(0.60),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: const Color(0xFF4FC3F7).withOpacity(0.18),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Información',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'El Banco Estelar te ayuda a gestionar tus créditos y aumentar tu riqueza estelar de forma segura.',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.58),
-                            fontSize: 10,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  Future<void> _choose(BuildContext context, WidgetRef ref, SavingsGoalOption goal) async {
+    await ref.read(childGoalRepositoryProvider).chooseGoal(goal);
+    ref.invalidate(currentGoalProvider);
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Columna derecha: edificio 3D + stats + botones
-// ─────────────────────────────────────────────────────────────────────────────
-class _BERightCol extends StatelessWidget {
-  const _BERightCol({
-    required this.balance,
-    required this.interestPct,
-    required this.onRetire,
-    required this.onIncrement,
-  });
-  final int          balance;
-  final double       interestPct;
-  final VoidCallback onRetire;
-  final VoidCallback onIncrement;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
-        // ── Edificio 3D + stats superpuestas ───────────────────────────────
+        _BEHeaderBar(onClose: onClose),
         Expanded(
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/worlds/space/building_bolsa.png',
-                  fit: BoxFit.contain,
-                )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .moveY(
-                      begin: 0, end: -8,
-                      duration: 2800.ms,
-                      curve: Curves.easeInOut,
-                    ),
-              ),
-              // Degradado inferior con estadísticas
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      const Color(0xFF07101F).withOpacity(0.70),
-                      const Color(0xFF07101F).withOpacity(0.96),
-                    ],
-                    stops: const [0.30, 0.65, 1.0],
-                  ),
-                ),
-                padding: const EdgeInsets.fromLTRB(8, 32, 8, 10),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Column(
+              children: [
+                if (previousGoal != null) ...[
+                  Text('${previousGoal!.goalEmoji} ¡Cumpliste tu meta!', textAlign: TextAlign.center,
+                      style: const TextStyle(color: Color(0xFFFFB300), fontWeight: FontWeight.w900, fontSize: 20, fontFamily: 'Nunito')),
+                  const SizedBox(height: 6),
+                  const Text('Elige tu próximo sueño', textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontFamily: 'Nunito', fontSize: 13)),
+                ] else ...[
+                  const Text('🔒', style: TextStyle(fontSize: 44)).animate().scale(begin: const Offset(0.6, 0.6), duration: 500.ms, curve: Curves.elasticOut),
+                  const SizedBox(height: 10),
+                  const Text('CLONK...', textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white54, fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 2)),
+                  const SizedBox(height: 8),
+                  const Text('Bienvenido al Banco Estelar.\nAquí guardamos las monedas que tienen una misión importante.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontFamily: 'Nunito', fontSize: 13, height: 1.4)),
+                  const SizedBox(height: 4),
+                  const Text('Elige tu sueño:', textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontFamily: 'Nunito', fontSize: 15)),
+                ],
+                const SizedBox(height: 16),
+                GridView.count(
+                  crossAxisCount: 4,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.85,
                   children: [
-                    Text(
-                      'Tu dinero crece',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.65),
-                        fontSize: 11,
+                    for (final g in savingsGoalCatalog)
+                      GestureDetector(
+                        onTap: () => _choose(context, ref, g),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D1B3E).withOpacity(0.75),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFF4FC3F7).withOpacity(0.35)),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(g.emoji, style: const TextStyle(fontSize: 30)),
+                              const SizedBox(height: 4),
+                              Text(g.name, textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontWeight: FontWeight.w700, fontSize: 11)),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '+$interestPct%',
-                      style: const TextStyle(
-                        color: Color(0xFFFFB300),
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        height: 1.0,
-                      ),
-                    ),
-                    Text(
-                      'Semanal',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.55),
-                        fontSize: 12,
-                      ),
-                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 8),
-
-        // ── Saldo actual ────────────────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Saldo: $balance',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 4),
-              const AnimatedCoin(size: 13),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 10),
-
-        // ── Botones de acción ───────────────────────────────────────────────
-        Row(
-          children: [
-            Expanded(
-              child: _PillButton(
-                label: 'Retirar\nFondos',
-                icon: Icons.remove_circle_outline_rounded,
-                bgColor: const Color(0xFF455A64),
-                onTap: onRetire,
-              ),
+                const SizedBox(height: 12),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _PillButton(
-                label: 'Incrementar\nInversión',
-                icon: Icons.add_circle_outline_rounded,
-                bgColor: const Color(0xFFD4830A),
-                onTap: onIncrement,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
-        Text(
-          'Tu dinero crece mientras descansas',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.35),
-            fontSize: 9,
           ),
         ),
-
-        const SizedBox(height: 4),
       ],
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Footer: botón Volver
+// Bóveda — meta activa + progreso + actividad del día
 // ─────────────────────────────────────────────────────────────────────────────
-class _BEFooter extends StatelessWidget {
-  const _BEFooter({required this.onClose});
+class _VaultView extends ConsumerStatefulWidget {
+  const _VaultView({required this.goal, required this.savedCoins, required this.onClose});
+  final ChildGoal goal;
+  final int savedCoins;
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Center(
-        child: GestureDetector(
-          onTap: onClose,
-          child: Container(
-            width: 180,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.22),
-                width: 1,
-              ),
-            ),
-            child: const Text(
-              'Volver',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  ConsumerState<_VaultView> createState() => _VaultViewState();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Card de sección — reutilizable (1, 2, 3)
-// ─────────────────────────────────────────────────────────────────────────────
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.number,
-    required this.numColor,
-    required this.title,
-    this.chip,
-    required this.child,
-  });
-  final String  number;
-  final Color   numColor;
-  final String  title;
-  final String? chip;
-  final Widget  child;
+class _VaultViewState extends ConsumerState<_VaultView> {
+  bool _showActivities = false;
+  bool _celebrated = false;
+
+  @override
+  void didUpdateWidget(covariant _VaultView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _maybeCelebrate();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeCelebrate());
+  }
+
+  void _maybeCelebrate() {
+    if (_celebrated) return;
+    if (widget.savedCoins >= widget.goal.goalCost) {
+      _celebrated = true;
+      ref.read(childGoalRepositoryProvider).markCompleted();
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          showDialog<void>(
+            context: context,
+            builder: (_) => _GoalCompletedDialog(goal: widget.goal),
+          ).then((_) => ref.invalidate(currentGoalProvider));
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_showActivities) {
+      return Column(
+        children: [
+          _BEHeaderBar(onClose: () => setState(() => _showActivities = false)),
+          Expanded(
+            child: Consumer(builder: (context, ref, __) {
+              final activitiesAsync = ref.watch(questionsForModuleProvider('banco_estelar'));
+              return activitiesAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFFFB300))),
+                error: (_, __) => const Center(child: Text('No se pudieron cargar las actividades.', style: TextStyle(color: Colors.white70, fontFamily: 'Nunito'))),
+                data: (activities) => ActivityPlayer(
+                  activities: activities,
+                  accentColor: const Color(0xFF4FC3F7),
+                ),
+              );
+            }),
+          ),
+        ],
+      );
+    }
+
+    final pct = (widget.savedCoins / widget.goal.goalCost).clamp(0.0, 1.0);
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Container(
-              width: 21,
-              height: 21,
-              decoration: BoxDecoration(
-                color: numColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: numColor.withOpacity(0.50),
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  number,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
+        _BEHeaderBar(onClose: widget.onClose),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Column(
+              children: [
+                Text(widget.goal.goalEmoji, style: const TextStyle(fontSize: 64))
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scaleXY(begin: 1.0, end: 1.08, duration: 2000.ms, curve: Curves.easeInOut),
+                const SizedBox(height: 4),
+                Text(widget.goal.goalName,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20, fontFamily: 'Nunito')),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: pct,
+                    minHeight: 18,
+                    backgroundColor: Colors.white.withOpacity(0.10),
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFFFFB300)),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 7),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (chip != null) ...[
-              const SizedBox(width: 7),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.28),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.18),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('${widget.savedCoins} de ${widget.goal.goalCost}',
+                        style: const TextStyle(color: Colors.white70, fontFamily: 'Nunito', fontSize: 13, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 5),
+                    const AnimatedCoin(size: 14),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('Cada moneda que pones en "Guardar" en Mi Bolsa te acerca aquí.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white.withOpacity(0.45), fontFamily: 'Nunito', fontSize: 11)),
+                const SizedBox(height: 20),
+                GestureDetector(
+                  onTap: () => setState(() => _showActivities = true),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF1976D2)]),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('⭐', style: TextStyle(fontSize: 18)),
+                        SizedBox(width: 8),
+                        Text('Actividad del día', style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 14)),
+                      ],
+                    ),
                   ),
                 ),
-                child: Text(
-                  chip!,
-                  style: const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 5),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D1B3E).withOpacity(0.75),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.09),
+                const SizedBox(height: 16),
+              ],
             ),
           ),
-          child: child,
         ),
       ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Botón de acción en píldora
-// ─────────────────────────────────────────────────────────────────────────────
-class _PillButton extends StatelessWidget {
-  const _PillButton({
-    required this.label,
-    required this.icon,
-    required this.bgColor,
-    required this.onTap,
-  });
-  final String     label;
-  final IconData   icon;
-  final Color      bgColor;
-  final VoidCallback onTap;
+class _GoalCompletedDialog extends StatelessWidget {
+  const _GoalCompletedDialog({required this.goal});
+  final ChildGoal goal;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 6),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: bgColor.withOpacity(0.40),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    return Dialog(
+      backgroundColor: const Color(0xFF07101F),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: BorderSide(color: const Color(0xFFFFB300).withOpacity(0.5))),
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 16),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  height: 1.25,
-                ),
-                textAlign: TextAlign.left,
+            Text(goal.goalEmoji, style: const TextStyle(fontSize: 56))
+                .animate().scale(begin: const Offset(0.5, 0.5), duration: 400.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 12),
+            const Text('🎉 ¡Meta cumplida!',
+                style: TextStyle(color: Color(0xFFFFB300), fontFamily: 'Nunito', fontWeight: FontWeight.w900, fontSize: 22)),
+            const SizedBox(height: 8),
+            Text('Guardaste lo suficiente para ${goal.goalName}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontFamily: 'Nunito', fontSize: 14)),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFB300),
+                foregroundColor: Colors.black87,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
+              child: const Text('¡Elegir nueva meta!', style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 15)),
             ),
           ],
         ),

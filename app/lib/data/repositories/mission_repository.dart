@@ -71,110 +71,110 @@ class MissionRepository {
   }
 
   List<Mission> _forestMissions() => [
-    Mission(
-      id: 'forest-quiz-5',
-      name: '¡Cerebro de Finanzas! 🧠',
-      description: 'Responde 5 preguntas de finanzas correctamente.',
-      storyText:
-          'El viejo Búho Sabio del bosque quiere ver cuánto sabes de dinero. '
-          '¡Demuestra que eres el más inteligente del bosque respondiendo sus preguntas!',
-      coinReward: 80,
-      xpReward: 50,
-      status: MissionStatus.active,
-      totalParticipantsNeeded: 1,
-      currentParticipants: 0,
-      createdAt: DateTime.now(),
-      objectiveType:   MissionObjectiveType.completeQuizzes,
-      objectiveTarget: 5,
-    ),
-    Mission(
-      id: 'forest-jobs-3',
-      name: '¡Trabajador del Bosque! 🔨',
-      description: 'Completa 3 trabajos de crafting para los habitantes del bosque.',
-      storyText:
-          'Los animales del bosque necesitan tu ayuda. '
-          'Repara cabañas, cura animales y recolecta provisiones. '
-          '¡Juntos haremos del bosque un lugar mejor!',
-      coinReward: 120,
-      xpReward: 70,
-      status: MissionStatus.active,
-      totalParticipantsNeeded: 1,
-      currentParticipants: 0,
-      createdAt: DateTime.now(),
-      objectiveType:   MissionObjectiveType.completeJobs,
-      objectiveTarget: 3,
-      itemReward: ItemReward(itemId: 'fuel_capsule', qty: 2),
-    ),
-    Mission(
-      id: 'forest-shop-3',
-      name: '¡Comprador del Bosque! 🛍️',
-      description: 'Compra 3 productos en la tienda del bosque.',
-      storyText:
-          'La tiendita del bosque está teniendo poca clientela. '
-          '¡Ayuda a la ardilla vendedora comprando algunos productos '
-          'y aprende cómo funciona el comercio!',
-      coinReward: 60,
-      xpReward: 30,
-      status: MissionStatus.active,
-      totalParticipantsNeeded: 1,
-      currentParticipants: 0,
-      createdAt: DateTime.now(),
-      objectiveType:   MissionObjectiveType.buyFromShop,
-      objectiveTarget: 3,
-    ),
-  ];
+        Mission(
+          id: 'forest-quiz-5',
+          name: '¡Cerebro de Finanzas! 🧠',
+          description: 'Responde 5 preguntas de finanzas correctamente.',
+          storyText:
+              'El viejo Búho Sabio del bosque quiere ver cuánto sabes de dinero. '
+              '¡Demuestra que eres el más inteligente del bosque respondiendo sus preguntas!',
+          coinReward: 80,
+          xpReward: 50,
+          status: MissionStatus.active,
+          totalParticipantsNeeded: 1,
+          currentParticipants: 0,
+          createdAt: DateTime.now(),
+          objectiveType: MissionObjectiveType.completeQuizzes,
+          objectiveTarget: 5,
+        ),
+        Mission(
+          id: 'forest-jobs-3',
+          name: '¡Trabajador del Bosque! 🔨',
+          description:
+              'Completa 3 trabajos de crafting para los habitantes del bosque.',
+          storyText: 'Los animales del bosque necesitan tu ayuda. '
+              'Repara cabañas, cura animales y recolecta provisiones. '
+              '¡Juntos haremos del bosque un lugar mejor!',
+          coinReward: 120,
+          xpReward: 70,
+          status: MissionStatus.active,
+          totalParticipantsNeeded: 1,
+          currentParticipants: 0,
+          createdAt: DateTime.now(),
+          objectiveType: MissionObjectiveType.completeJobs,
+          objectiveTarget: 3,
+          itemReward: const ItemReward(itemId: 'fuel_capsule', qty: 2),
+        ),
+        Mission(
+          id: 'forest-shop-3',
+          name: '¡Comprador del Bosque! 🛍️',
+          description: 'Compra 3 productos en la tienda del bosque.',
+          storyText: 'La tiendita del bosque está teniendo poca clientela. '
+              '¡Ayuda a la ardilla vendedora comprando algunos productos '
+              'y aprende cómo funciona el comercio!',
+          coinReward: 60,
+          xpReward: 30,
+          status: MissionStatus.active,
+          totalParticipantsNeeded: 1,
+          currentParticipants: 0,
+          createdAt: DateTime.now(),
+          objectiveType: MissionObjectiveType.buyFromShop,
+          objectiveTarget: 3,
+        ),
+      ];
 
   List<Mission> _spaceMissions() => [
-    Mission(
-      id: 'space-quiz-5',
-      name: '¡Astronauta Inteligente! 🚀',
-      description: 'Responde 5 preguntas de finanzas en el espacio.',
-      storyText:
-          'La Academia Galáctica pone a prueba a todos sus astronautas. '
-          '¡Demuestra que sabes tanto de finanzas como de cohetes!',
-      coinReward: 80,
-      xpReward: 50,
-      status: MissionStatus.active,
-      totalParticipantsNeeded: 1,
-      currentParticipants: 0,
-      createdAt: DateTime.now(),
-      objectiveType:   MissionObjectiveType.completeQuizzes,
-      objectiveTarget: 5,
-    ),
-    Mission(
-      id: 'space-jobs-3',
-      name: '¡Mecánico Galáctico! 🔧',
-      description: 'Completa 3 trabajos de reparación en la estación espacial.',
-      storyText:
-          'La estación espacial Alpha necesita mantenimiento urgente. '
-          'Repara naves, activa estaciones y arregla robots. '
-          '¡La misión depende de ti, astronauta!',
-      coinReward: 120,
-      xpReward: 70,
-      status: MissionStatus.active,
-      totalParticipantsNeeded: 1,
-      currentParticipants: 0,
-      createdAt: DateTime.now(),
-      objectiveType:   MissionObjectiveType.completeJobs,
-      objectiveTarget: 3,
-      itemReward: ItemReward(itemId: 'fuel_capsule', qty: 2),
-    ),
-    Mission(
-      id: 'space-shop-3',
-      name: '¡Comerciante Espacial! 🛒',
-      description: 'Compra 3 piezas en la tienda de la estación.',
-      storyText:
-          'La tienda de suministros de la estación necesita más clientes. '
-          '¡Aprende cómo funciona el comercio intergaláctico comprando piezas '
-          'para tus proyectos espaciales!',
-      coinReward: 60,
-      xpReward: 30,
-      status: MissionStatus.active,
-      totalParticipantsNeeded: 1,
-      currentParticipants: 0,
-      createdAt: DateTime.now(),
-      objectiveType:   MissionObjectiveType.buyFromShop,
-      objectiveTarget: 3,
-    ),
-  ];
+        Mission(
+          id: 'space-quiz-5',
+          name: '¡Astronauta Inteligente! 🚀',
+          description: 'Responde 5 preguntas de finanzas en el espacio.',
+          storyText:
+              'La Academia Galáctica pone a prueba a todos sus astronautas. '
+              '¡Demuestra que sabes tanto de finanzas como de cohetes!',
+          coinReward: 80,
+          xpReward: 50,
+          status: MissionStatus.active,
+          totalParticipantsNeeded: 1,
+          currentParticipants: 0,
+          createdAt: DateTime.now(),
+          objectiveType: MissionObjectiveType.completeQuizzes,
+          objectiveTarget: 5,
+        ),
+        Mission(
+          id: 'space-jobs-3',
+          name: '¡Mecánico Galáctico! 🔧',
+          description:
+              'Completa 3 trabajos de reparación en la estación espacial.',
+          storyText:
+              'La estación espacial Alpha necesita mantenimiento urgente. '
+              'Repara naves, activa estaciones y arregla robots. '
+              '¡La misión depende de ti, astronauta!',
+          coinReward: 120,
+          xpReward: 70,
+          status: MissionStatus.active,
+          totalParticipantsNeeded: 1,
+          currentParticipants: 0,
+          createdAt: DateTime.now(),
+          objectiveType: MissionObjectiveType.completeJobs,
+          objectiveTarget: 3,
+          itemReward: const ItemReward(itemId: 'fuel_capsule', qty: 2),
+        ),
+        Mission(
+          id: 'space-shop-3',
+          name: '¡Comerciante Espacial! 🛒',
+          description: 'Compra 3 piezas en la tienda de la estación.',
+          storyText:
+              'La tienda de suministros de la estación necesita más clientes. '
+              '¡Aprende cómo funciona el comercio intergaláctico comprando piezas '
+              'para tus proyectos espaciales!',
+          coinReward: 60,
+          xpReward: 30,
+          status: MissionStatus.active,
+          totalParticipantsNeeded: 1,
+          currentParticipants: 0,
+          createdAt: DateTime.now(),
+          objectiveType: MissionObjectiveType.buyFromShop,
+          objectiveTarget: 3,
+        ),
+      ];
 }

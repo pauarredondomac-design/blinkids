@@ -2,7 +2,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Persiste los mundos desbloqueados en Supabase (tabla world_progress).
 /// Sobrevive reinstalaciones y cambios de dispositivo.
-/// 'forest' siempre está desbloqueado por defecto (unlock_cost = 0).
 class WorldRepository {
   final _client = Supabase.instance.client;
 
@@ -10,7 +9,7 @@ class WorldRepository {
   /// Devuelve la lista de slugs de mundos desbloqueados por el usuario actual.
   Future<List<String>> getUnlockedWorldIds() async {
     final userId = _client.auth.currentUser?.id;
-    if (userId == null) return ['forest'];
+    if (userId == null) return [];
 
     try {
       // 1. Obtener los UUIDs de mundos desbloqueados del usuario
@@ -24,7 +23,7 @@ class WorldRepository {
           .map((r) => r['world_id'] as String)
           .toList();
 
-      if (worldIds.isEmpty) return ['forest'];
+      if (worldIds.isEmpty) return [];
 
       // 2. Convertir UUIDs → slugs consultando la tabla worlds
       final worldRows = await _client
@@ -32,15 +31,10 @@ class WorldRepository {
           .select('slug')
           .inFilter('id', worldIds);
 
-      final slugs = (worldRows as List)
-          .map((r) => r['slug'] as String)
-          .toList();
-
-      if (!slugs.contains('forest')) slugs.insert(0, 'forest');
-      return slugs;
+      return (worldRows as List).map((r) => r['slug'] as String).toList();
     } catch (_) {
-      // Si falla la red → degradación segura (solo el bosque gratis)
-      return ['forest'];
+      // Si falla la red → degradación segura (ningún mundo extra desbloqueado)
+      return [];
     }
   }
 
@@ -77,5 +71,5 @@ class WorldRepository {
 
   // ── Helper ────────────────────────────────────────────────────────────────
   bool isUnlocked(String worldSlug, List<String> unlockedSlugs) =>
-      worldSlug == 'forest' || unlockedSlugs.contains(worldSlug);
+      unlockedSlugs.contains(worldSlug);
 }

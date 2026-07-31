@@ -9,8 +9,16 @@ final walletRepositoryProvider = Provider<WalletRepository>(
 );
 
 /// Cartera del usuario autenticado (o stub en demo).
+///
+/// IMPORTANTE: `ref.watch(currentUserProvider)` se llama SIEMPRE primero,
+/// sin importar la rama. Si se condiciona antes con `DemoStore.isActive`
+/// (un getter plano, no reactivo), Riverpod nunca registra la dependencia
+/// de auth cuando arranca en modo demo — y el provider se queda pegado
+/// mostrando el wallet demo para siempre, incluso después de iniciar
+/// sesión de verdad (bug real que causaba "monedas siempre en 500").
 final currentWalletProvider = FutureProvider<Wallet?>((ref) async {
-  if (DemoStore.isActive) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) {
     // Rebuild reactivamente cuando cambien las monedas demo.
     final coins = ref.watch(demoProgressProvider).coins;
     return Wallet(
@@ -22,26 +30,24 @@ final currentWalletProvider = FutureProvider<Wallet?>((ref) async {
       updatedAt: DateTime.now(),
     );
   }
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return null;
   return ref.read(walletRepositoryProvider).getWallet(user.id);
 });
 
 /// Categorías de la bolsa del niño (o categorías demo en memoria).
+/// Mismo cuidado que arriba: `currentUserProvider` se observa primero.
 final walletCategoriesProvider = FutureProvider<List<WalletCategory>>((ref) async {
-  if (DemoStore.isActive) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) {
     ref.watch(demoProgressProvider); // rebuild cuando cambien balances
     final balances = DemoStore.instance.walletCategoryBalances;
     final now = DateTime.now();
     return [
-      WalletCategory(id: 'demo_guardar',       walletId: 'demo', category: WalletCategoryType.guardar,       balance: balances[WalletCategoryType.guardar]       ?? 0, updatedAt: now),
-      WalletCategory(id: 'demo_banco_estelar',  walletId: 'demo', category: WalletCategoryType.banco_estelar, balance: balances[WalletCategoryType.banco_estelar] ?? 0, updatedAt: now),
-      WalletCategory(id: 'demo_gastar',         walletId: 'demo', category: WalletCategoryType.gastar,        balance: balances[WalletCategoryType.gastar]        ?? 0, updatedAt: now),
+      WalletCategory(id: 'demo_guardar',  walletId: 'demo', category: WalletCategoryType.guardar,  balance: balances[WalletCategoryType.guardar]  ?? 0, updatedAt: now),
+      WalletCategory(id: 'demo_invertir', walletId: 'demo', category: WalletCategoryType.invertir, balance: balances[WalletCategoryType.invertir] ?? 0, updatedAt: now),
+      WalletCategory(id: 'demo_donar',    walletId: 'demo', category: WalletCategoryType.donar,    balance: balances[WalletCategoryType.donar]    ?? 0, updatedAt: now),
+      WalletCategory(id: 'demo_gastar',   walletId: 'demo', category: WalletCategoryType.gastar,   balance: balances[WalletCategoryType.gastar]   ?? 0, updatedAt: now),
     ];
   }
-
-  final user = ref.watch(currentUserProvider);
-  if (user == null) return [];
 
   final repo = ref.read(walletRepositoryProvider);
   final wallet = await repo.getOrCreateWallet(user.id);

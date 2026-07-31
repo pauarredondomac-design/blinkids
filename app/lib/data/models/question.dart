@@ -1,14 +1,31 @@
-enum QuestionType { multipleChoice, trueFalse }
+enum QuestionType { multipleChoice, trueFalse, orderSteps, classify, dragMatch, fillBlank }
+
+QuestionType _typeFromString(String? raw) {
+  switch (raw) {
+    case 'true_false':   return QuestionType.trueFalse;
+    case 'order_steps':  return QuestionType.orderSteps;
+    case 'classify':     return QuestionType.classify;
+    case 'drag_match':   return QuestionType.dragMatch;
+    case 'fill_blank':   return QuestionType.fillBlank;
+    default:             return QuestionType.multipleChoice;
+  }
+}
 
 class QuestionOption {
   final String id;
   final String text;
   final String? icon;
+  /// Solo para 'classify': a qué bolsa pertenece este ítem ('a' o 'b').
+  final String? bucket;
+  /// Solo para 'drag_match': lado derecho del par (si el ítem es un par ya formado).
+  final String? right;
 
   const QuestionOption({
     required this.id,
     required this.text,
     this.icon,
+    this.bucket,
+    this.right,
   });
 
   factory QuestionOption.fromJson(Map<String, dynamic> json) {
@@ -16,6 +33,8 @@ class QuestionOption {
       id: json['id'] as String,
       text: json['text'] as String,
       icon: json['icon'] as String?,
+      bucket: json['bucket'] as String?,
+      right: json['right'] as String?,
     );
   }
 }
@@ -25,10 +44,21 @@ class Question {
   final QuestionType type;
   final String questionText;
   final List<QuestionOption> options;
-  final String correctAnswer;
+  /// Para multipleChoice/trueFalse: id de la opción correcta.
+  /// Para orderSteps: lista ordenada de ids (secuencia correcta).
+  /// Para classify: mapa {'a': 'Etiqueta bolsa A', 'b': 'Etiqueta bolsa B'}.
+  /// Para dragMatch: lista de ids de pares válidos (vacío si es reflexión sin respuesta única).
+  final dynamic correctAnswer;
   final int coinReward;
   final int xpReward;
+  final int fuelReward;
   final String? explanation;
+  final String? retroWrong;
+  final String? gancho;
+  final String? groupName;
+  final bool isHito;
+  final String? badgeName;
+  final String? catalogId;
 
   const Question({
     required this.id,
@@ -38,24 +68,28 @@ class Question {
     required this.correctAnswer,
     required this.coinReward,
     required this.xpReward,
+    this.fuelReward = 0,
     this.explanation,
+    this.retroWrong,
+    this.gancho,
+    this.groupName,
+    this.isHito = false,
+    this.badgeName,
+    this.catalogId,
   });
 
   factory Question.fromJson(Map<String, dynamic> json) {
-    final rawType = json['type'] as String? ?? 'multiple_choice';
-    final qType = rawType == 'true_false'
-        ? QuestionType.trueFalse
-        : QuestionType.multipleChoice;
+    final qType = _typeFromString(json['type'] as String?);
 
     final rawOptions = json['options'];
-    final List<dynamic> optList =
-        rawOptions is List ? rawOptions : [];
-    final options =
-        optList.map((o) => QuestionOption.fromJson(o as Map<String, dynamic>)).toList();
+    final List<dynamic> optList = rawOptions is List ? rawOptions : [];
+    final options = optList
+        .map((o) => QuestionOption.fromJson(o as Map<String, dynamic>))
+        .toList();
 
-    // correct_answer viene como '"b"' (string JSON) o 'b'
-    String correct = json['correct_answer']?.toString() ?? '';
-    if (correct.startsWith('"') && correct.endsWith('"')) {
+    dynamic correct = json['correct_answer'];
+    // correct_answer puede venir como string JSON serializado ('"b"') o ya decodificado.
+    if (correct is String && correct.startsWith('"') && correct.endsWith('"')) {
       correct = correct.substring(1, correct.length - 1);
     }
 
@@ -67,7 +101,14 @@ class Question {
       correctAnswer: correct,
       coinReward: json['coin_reward'] as int? ?? 10,
       xpReward: json['xp_reward'] as int? ?? 5,
+      fuelReward: json['fuel_reward'] as int? ?? 0,
       explanation: json['explanation'] as String?,
+      retroWrong: json['retro_wrong'] as String?,
+      gancho: json['gancho'] as String?,
+      groupName: json['group_name'] as String?,
+      isHito: json['is_hito'] as bool? ?? false,
+      badgeName: json['badge_name'] as String?,
+      catalogId: json['catalog_id'] as String?,
     );
   }
 

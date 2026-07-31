@@ -42,7 +42,8 @@ class WorldSelectorScreen extends ConsumerStatefulWidget {
   final String currentWorldId;
 
   @override
-  ConsumerState<WorldSelectorScreen> createState() => _WorldSelectorScreenState();
+  ConsumerState<WorldSelectorScreen> createState() =>
+      _WorldSelectorScreenState();
 }
 
 const _kWorldsPerPage = 3;
@@ -50,7 +51,8 @@ const _kWorldsPerPage = 3;
 List<List<World>> _chunkWorlds() {
   final groups = <List<World>>[];
   for (var i = 0; i < allWorlds.length; i += _kWorldsPerPage) {
-    groups.add(allWorlds.sublist(i, (i + _kWorldsPerPage).clamp(0, allWorlds.length)));
+    groups.add(
+        allWorlds.sublist(i, (i + _kWorldsPerPage).clamp(0, allWorlds.length)));
   }
   return groups;
 }
@@ -64,7 +66,8 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
   void initState() {
     super.initState();
     _groups = _chunkWorlds();
-    final worldIndex = allWorlds.indexWhere((w) => w.id == widget.currentWorldId);
+    final worldIndex =
+        allWorlds.indexWhere((w) => w.id == widget.currentWorldId);
     final initialPage = worldIndex < 0 ? 0 : worldIndex ~/ _kWorldsPerPage;
     _pageCtrl = PageController(initialPage: initialPage);
   }
@@ -78,7 +81,8 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
   Future<void> _handlePurchase(World world) async {
     final coins = ref.read(currentWalletProvider).valueOrNull?.totalCoins ?? 0;
     if (coins < world.unlockCost) {
-      _showSnack('Necesitas ${world.unlockCost} monedas. Solo tienes $coins.', Colors.red.shade700);
+      _showSnack('Necesitas ${world.unlockCost} monedas. Solo tienes $coins.',
+          Colors.red.shade700);
       return;
     }
     final confirm = await showDialog<bool>(
@@ -121,10 +125,11 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
   @override
   Widget build(BuildContext context) {
     final unlockedAsync = ref.watch(unlockedWorldsProvider);
-    final walletAsync   = ref.watch(currentWalletProvider);
-    final coins         = walletAsync.valueOrNull?.totalCoins ?? 0;
-    final unlocked      = unlockedAsync.valueOrNull ?? ['space'];
-    final unlockedCount = allWorlds.where((w) => w.isFree || unlocked.contains(w.id)).length;
+    final walletAsync = ref.watch(currentWalletProvider);
+    final coins = walletAsync.valueOrNull?.totalCoins ?? 0;
+    final unlocked = unlockedAsync.valueOrNull ?? ['space'];
+    final unlockedCount =
+        allWorlds.where((w) => w.isFree || unlocked.contains(w.id)).length;
     final current = allWorlds.firstWhere(
       (w) => w.id == widget.currentWorldId,
       orElse: () => allWorlds.first,
@@ -192,7 +197,8 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.white24),
                         ),
-                        child: const Icon(Icons.close_rounded, color: Colors.white60, size: 20),
+                        child: const Icon(Icons.close_rounded,
+                            color: Colors.white60, size: 20),
                       ),
                     ),
                   ],
@@ -205,7 +211,11 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                 height: 1,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.transparent, Colors.white24, Colors.transparent],
+                    colors: [
+                      Colors.transparent,
+                      Colors.white24,
+                      Colors.transparent
+                    ],
                   ),
                 ),
               ),
@@ -219,7 +229,8 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                   itemBuilder: (ctx, pageIndex) {
                     final group = _groups[pageIndex];
                     return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -227,13 +238,14 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                             if (world != group.first) const SizedBox(width: 10),
                             Expanded(
                               child: _WorldCard(
-                                world:      world,
-                                isUnlocked: world.isFree || unlocked.contains(world.id),
-                                isCurrent:  world.id == widget.currentWorldId,
-                                canAfford:  coins >= world.unlockCost,
-                                busy:       _busy,
-                                onEnter:    () => context.go(world.route),
-                                onBuy:      () => _handlePurchase(world),
+                                world: world,
+                                isUnlocked:
+                                    world.isFree || unlocked.contains(world.id),
+                                isCurrent: world.id == widget.currentWorldId,
+                                canAfford: coins >= world.unlockCost,
+                                busy: _busy,
+                                onEnter: () => context.go(world.route),
+                                onBuy: () => _handlePurchase(world),
                               ),
                             ),
                           ],
@@ -249,7 +261,7 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 14, top: 6),
                   child: _PageDots(
-                    count:      _groups.length,
+                    count: _groups.length,
                     controller: _pageCtrl,
                   ),
                 ),
@@ -275,11 +287,11 @@ class _WorldCard extends StatelessWidget {
     required this.onBuy,
   });
 
-  final World        world;
-  final bool         isUnlocked;
-  final bool         isCurrent;
-  final bool         canAfford;
-  final bool         busy;
+  final World world;
+  final bool isUnlocked;
+  final bool isCurrent;
+  final bool canAfford;
+  final bool busy;
   final VoidCallback onEnter;
   final VoidCallback onBuy;
 
@@ -303,7 +315,8 @@ class _WorldCard extends StatelessWidget {
               Image.asset(
                 world.backgroundImagePath!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: world.accentColor.withAlpha(60)),
+                errorBuilder: (_, __, ___) =>
+                    Container(color: world.accentColor.withAlpha(60)),
               )
             else
               Container(color: world.accentColor.withAlpha(60)),
@@ -314,7 +327,10 @@ class _WorldCard extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.black.withAlpha(80), Colors.black.withAlpha(160)],
+                  colors: [
+                    Colors.black.withAlpha(80),
+                    Colors.black.withAlpha(160)
+                  ],
                 ),
               ),
             ),
@@ -328,16 +344,18 @@ class _WorldCard extends StatelessWidget {
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        final side = constraints.maxWidth < constraints.maxHeight
-                            ? constraints.maxWidth
-                            : constraints.maxHeight;
+                        final side =
+                            constraints.maxWidth < constraints.maxHeight
+                                ? constraints.maxWidth
+                                : constraints.maxHeight;
                         return Center(
                           child: SizedBox(
                             width: side,
                             height: side,
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(18),
-                              child: _WorldImage(world: world, isUnlocked: isUnlocked),
+                              child: _WorldImage(
+                                  world: world, isUnlocked: isUnlocked),
                             ),
                           ),
                         );
@@ -368,7 +386,8 @@ class _WorldCard extends StatelessWidget {
 
   Widget _buildStatus() {
     if (world.comingSoon) {
-      return _Pill(label: 'Próximamente', bg: Colors.white24, fg: Colors.white70);
+      return const _Pill(
+          label: 'Próximamente', bg: Colors.white24, fg: Colors.white70);
     }
     if (isUnlocked) {
       if (isCurrent) {
@@ -396,7 +415,7 @@ class _WorldCard extends StatelessWidget {
 class _WorldImage extends StatelessWidget {
   const _WorldImage({required this.world, required this.isUnlocked});
   final World world;
-  final bool  isUnlocked;
+  final bool isUnlocked;
 
   @override
   Widget build(BuildContext context) {
@@ -434,13 +453,11 @@ class _Pill extends StatelessWidget {
     required this.bg,
     required this.fg,
     this.onTap,
-    this.icon,
   });
-  final String        label;
-  final Color         bg;
-  final Color         fg;
+  final String label;
+  final Color bg;
+  final Color fg;
   final VoidCallback? onTap;
-  final IconData?     icon;
 
   @override
   Widget build(BuildContext context) {
@@ -456,10 +473,6 @@ class _Pill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) ...[
-              Icon(icon, color: fg, size: 13),
-              const SizedBox(width: 5),
-            ],
             Text(
               label,
               style: TextStyle(
@@ -481,7 +494,7 @@ class _Pill extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _PageDots extends StatefulWidget {
   const _PageDots({required this.count, required this.controller});
-  final int            count;
+  final int count;
   final PageController controller;
 
   @override
@@ -517,7 +530,7 @@ class _PageDotsState extends State<_PageDots> {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.symmetric(horizontal: 4),
-          width:  active ? 22 : 7,
+          width: active ? 22 : 7,
           height: 7,
           decoration: BoxDecoration(
             color: active ? Colors.white : Colors.white30,
@@ -535,7 +548,7 @@ class _PageDotsState extends State<_PageDots> {
 class _PurchaseDialog extends StatelessWidget {
   const _PurchaseDialog({required this.world, required this.currentCoins});
   final World world;
-  final int   currentCoins;
+  final int currentCoins;
 
   @override
   Widget build(BuildContext context) {
@@ -561,7 +574,8 @@ class _PurchaseDialog extends StatelessWidget {
           Text(
             'Gastar ${world.unlockCost} monedas para acceder a este mundo para siempre.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70, fontFamily: 'Nunito', fontSize: 13),
+            style: const TextStyle(
+                color: Colors.white70, fontFamily: 'Nunito', fontSize: 13),
           ),
           const SizedBox(height: 16),
           Row(
@@ -578,7 +592,8 @@ class _PurchaseDialog extends StatelessWidget {
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(Icons.arrow_forward_rounded, color: Colors.white38, size: 16),
+                child: Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white38, size: 16),
               ),
               Text(
                 '$after monedas',
@@ -596,16 +611,20 @@ class _PurchaseDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancelar', style: TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
+          child: const Text('Cancelar',
+              style: TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, true),
           style: ElevatedButton.styleFrom(
             backgroundColor: world.accentColor,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          child: const Text('Comprar', style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+          child: const Text('Comprar',
+              style:
+                  TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
         ),
       ],
     );

@@ -18,9 +18,9 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
   final _nameCtrl = TextEditingController();
 
   // Pasos: 0 = nombre, 1 = PIN
-  int    _step     = 0;
-  String _pin      = '';
-  bool   _loading  = false;
+  int _step = 0;
+  String _pin = '';
+  bool _loading = false;
   String _errorMsg = '';
 
   String _sanitize(String s) => s.trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -29,22 +29,30 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
 
   void _onPinDigit(String digit) {
     if (_pin.length >= 6) return;
-    setState(() { _pin += digit; _errorMsg = ''; });
+    setState(() {
+      _pin += digit;
+      _errorMsg = '';
+    });
     if (_pin.length == 6) _login();
   }
 
   void _onPinDelete() {
-    if (_pin.isNotEmpty) setState(() => _pin = _pin.substring(0, _pin.length - 1));
+    if (_pin.isNotEmpty)
+      setState(() => _pin = _pin.substring(0, _pin.length - 1));
   }
 
   Future<void> _login() async {
-    setState(() { _loading = true; _errorMsg = ''; });
-    final name  = _sanitize(_nameCtrl.text);
+    setState(() {
+      _loading = true;
+      _errorMsg = '';
+    });
+    final name = _sanitize(_nameCtrl.text);
     final email = _fakeEmail(name);
 
     try {
       await Supabase.instance.client.auth.signInWithPassword(
-        email: email, password: _pin,
+        email: email,
+        password: _pin,
       );
       ref.invalidate(equippedLoadoutProvider);
       ref.invalidate(ownedCosmeticsProvider);
@@ -53,16 +61,16 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
       if (mounted) {
         setState(() {
           _errorMsg = 'Nombre o PIN incorrecto. Inténtalo de nuevo.';
-          _loading  = false;
-          _pin      = '';
+          _loading = false;
+          _pin = '';
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
           _errorMsg = 'Error de conexión. Verifica tu internet.';
-          _loading  = false;
-          _pin      = '';
+          _loading = false;
+          _pin = '';
         });
       }
     }
@@ -96,12 +104,15 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                BlinkCharacterWidget(width: 160, enableBounce: true),
+                                const BlinkCharacterWidget(
+                                    width: 160, enableBounce: true),
                                 const SizedBox(height: 20),
                                 AnimatedSwitcher(
                                   duration: 300.ms,
                                   child: Text(
-                                    _step == 0 ? '¡Hola de nuevo,\naventurero!' : '¡Introduce\ntu PIN!',
+                                    _step == 0
+                                        ? '¡Hola de nuevo,\naventurero!'
+                                        : '¡Introduce\ntu PIN!',
                                     key: ValueKey(_step),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
@@ -116,16 +127,21 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
                                 if (_errorMsg.isNotEmpty) ...[
                                   const SizedBox(height: 16),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 10),
                                     decoration: BoxDecoration(
                                       color: Colors.red.withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.red.withOpacity(0.4)),
+                                      border: Border.all(
+                                          color: Colors.red.withOpacity(0.4)),
                                     ),
                                     child: Text(
                                       _errorMsg,
                                       textAlign: TextAlign.center,
-                                      style: const TextStyle(color: Colors.redAccent, fontFamily: 'Nunito', fontSize: 13),
+                                      style: const TextStyle(
+                                          color: Colors.redAccent,
+                                          fontFamily: 'Nunito',
+                                          fontSize: 13),
                                     ),
                                   ),
                                 ],
@@ -143,7 +159,8 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
                           fit: BoxFit.scaleDown,
                           child: SizedBox(
                             width: 260,
-                            child: _step == 0 ? _buildNameStep() : _buildPinStep(),
+                            child:
+                                _step == 0 ? _buildNameStep() : _buildPinStep(),
                           ),
                         ),
                       ),
@@ -162,15 +179,22 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
                       onPressed: () => context.pushReplacement('/child-signup'),
                       child: const Text(
                         'Registrarte',
-                        style: TextStyle(color: Colors.white54, fontFamily: 'Nunito', fontSize: 12),
+                        style: TextStyle(
+                            color: Colors.white54,
+                            fontFamily: 'Nunito',
+                            fontSize: 12),
                       ),
                     ),
-                    const Text('•', style: TextStyle(color: Colors.white24, fontSize: 12)),
+                    const Text('•',
+                        style: TextStyle(color: Colors.white24, fontSize: 12)),
                     TextButton(
                       onPressed: () => context.pushReplacement('/parent-auth'),
                       child: const Text(
                         'Iniciar sesión padre',
-                        style: TextStyle(color: Colors.white54, fontFamily: 'Nunito', fontSize: 12),
+                        style: TextStyle(
+                            color: Colors.white54,
+                            fontFamily: 'Nunito',
+                            fontSize: 12),
                       ),
                     ),
                   ],
@@ -190,8 +214,10 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
         const Text(
           'Tu nombre de aventurero',
           style: TextStyle(
-            fontFamily: 'Nunito', fontWeight: FontWeight.w700,
-            fontSize: 16, color: Colors.white60,
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+            color: Colors.white60,
           ),
         ),
         const SizedBox(height: 12),
@@ -204,14 +230,18 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
             controller: _nameCtrl,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF1A1A2E), fontFamily: 'Nunito',
-              fontWeight: FontWeight.w700, fontSize: 22,
+              color: Color(0xFF1A1A2E),
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w700,
+              fontSize: 22,
             ),
             decoration: const InputDecoration(
               hintText: 'Nombre de héroe',
-              hintStyle: TextStyle(color: Color(0xFF9EA3B8), fontSize: 18, fontFamily: 'Nunito'),
+              hintStyle: TextStyle(
+                  color: Color(0xFF9EA3B8), fontSize: 18, fontFamily: 'Nunito'),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             onSubmitted: (_) => _goToPin(),
           ),
@@ -223,21 +253,26 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF81C784), Color(0xFF388E3C)]),
+              gradient: const LinearGradient(
+                  colors: [Color(0xFF81C784), Color(0xFF388E3C)]),
               borderRadius: BorderRadius.circular(30),
             ),
             child: const Text(
               'Siguiente →',
               textAlign: TextAlign.center,
-              style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w900,
-                  fontSize: 18, color: Colors.white),
+              style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  color: Colors.white),
             ),
           ),
         ),
         const SizedBox(height: 16),
         TextButton(
           onPressed: () => context.pop(),
-          child: const Text('← Volver', style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
+          child: const Text('← Volver',
+              style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
         ),
       ],
     ).animate().fadeIn(duration: 300.ms);
@@ -249,7 +284,10 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
       setState(() => _errorMsg = 'Escribe tu nombre de aventurero.');
       return;
     }
-    setState(() { _step = 1; _errorMsg = ''; });
+    setState(() {
+      _step = 1;
+      _errorMsg = '';
+    });
   }
 
   Widget _buildPinStep() {
@@ -264,7 +302,8 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
             return AnimatedContainer(
               duration: 150.ms,
               margin: const EdgeInsets.symmetric(horizontal: 8),
-              width: 18, height: 18,
+              width: 18,
+              height: 18,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: filled ? const Color(0xFF81C784) : Colors.transparent,
@@ -282,8 +321,13 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
             : PinPadWidget(onDigit: _onPinDigit, onDelete: _onPinDelete),
         const SizedBox(height: 16),
         TextButton(
-          onPressed: () => setState(() { _step = 0; _pin = ''; _errorMsg = ''; }),
-          child: const Text('← Cambiar nombre', style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
+          onPressed: () => setState(() {
+            _step = 0;
+            _pin = '';
+            _errorMsg = '';
+          }),
+          child: const Text('← Cambiar nombre',
+              style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
         ),
       ],
     ).animate().fadeIn(duration: 300.ms);

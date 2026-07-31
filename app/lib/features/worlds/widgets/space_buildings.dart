@@ -60,7 +60,8 @@ Paint _glow(Color c, double blur) => Paint()
   ..style = PaintingStyle.fill
   ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
 
-Paint _gradientFill(Rect r, List<Color> colors, [AlignmentGeometry? begin, AlignmentGeometry? end]) {
+Paint _gradientFill(Rect r, List<Color> colors,
+    [AlignmentGeometry? begin, AlignmentGeometry? end]) {
   final gradient = LinearGradient(
     begin: begin as Alignment? ?? Alignment.topCenter,
     end: end as Alignment? ?? Alignment.bottomCenter,
@@ -85,10 +86,10 @@ class _VaultPainter extends CustomPainter {
     final h = s.height;
 
     // -- Plataforma flotante --
-    final platRect = RRect.fromLTRBR(w * .1, h * .82, w * .9, h * .92,
-        const Radius.circular(6));
-    canvas.drawRRect(platRect,
-        _gradientFill(platRect.outerRect, [_steel, _dark]));
+    final platRect = RRect.fromLTRBR(
+        w * .1, h * .82, w * .9, h * .92, const Radius.circular(6));
+    canvas.drawRRect(
+        platRect, _gradientFill(platRect.outerRect, [_steel, _dark]));
     canvas.drawRRect(platRect, _stroke(_cyan, 1));
     // Brillo plataforma
     canvas.drawRRect(platRect, _glow(_cyan, 8));
@@ -137,7 +138,8 @@ class _VaultPainter extends CustomPainter {
 
     // -- Ventanas laterales --
     for (final dx in [w * .32, w * .63]) {
-      final wr = Rect.fromCenter(center: Offset(dx, h * .44), width: 10, height: 7);
+      final wr =
+          Rect.fromCenter(center: Offset(dx, h * .44), width: 10, height: 7);
       canvas.drawRRect(RRect.fromRectAndRadius(wr, const Radius.circular(2)),
           _fill(const Color(0xFF00BCD4).withAlpha(180)));
       canvas.drawRRect(RRect.fromRectAndRadius(wr, const Radius.circular(2)),
@@ -145,8 +147,8 @@ class _VaultPainter extends CustomPainter {
     }
 
     // -- Antena superior --
-    canvas.drawLine(Offset(w * .5, h * .15), Offset(w * .5, h * .05),
-        _stroke(_cyan, 1.5));
+    canvas.drawLine(
+        Offset(w * .5, h * .15), Offset(w * .5, h * .05), _stroke(_cyan, 1.5));
     canvas.drawCircle(Offset(w * .5, h * .05), 3, _fill(_cyan));
     canvas.drawCircle(Offset(w * .5, h * .05), 5, _glow(_cyan, 6));
   }
@@ -168,36 +170,34 @@ class _CommandPainter extends CustomPainter {
     final h = s.height;
 
     // -- Plataforma --
-    final plat = RRect.fromLTRBR(w * .12, h * .82, w * .88, h * .92,
-        const Radius.circular(5));
-    canvas.drawRRect(plat,
-        _gradientFill(plat.outerRect, [const Color(0xFF3E2000), _dark]));
+    final plat = RRect.fromLTRBR(
+        w * .12, h * .82, w * .88, h * .92, const Radius.circular(5));
+    canvas.drawRRect(
+        plat, _gradientFill(plat.outerRect, [const Color(0xFF3E2000), _dark]));
     canvas.drawRRect(plat, _stroke(_orange, 1));
     canvas.drawRRect(plat, _glow(_orange, 6));
 
     // -- Torre base --
     final baseRect = Rect.fromLTWH(w * .35, h * .55, w * .30, h * .28);
-    canvas.drawRect(baseRect,
-        _gradientFill(baseRect, [const Color(0xFF3B1800), _dark]));
+    canvas.drawRect(
+        baseRect, _gradientFill(baseRect, [const Color(0xFF3B1800), _dark]));
     canvas.drawRect(baseRect, _stroke(_orange, 1.2));
 
     // -- Módulo central --
     final midRect = Rect.fromLTWH(w * .28, h * .38, w * .44, h * .22);
     canvas.drawRRect(RRect.fromRectAndRadius(midRect, const Radius.circular(4)),
         _gradientFill(midRect, [const Color(0xFF4A2000), _dark]));
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(midRect, const Radius.circular(4)), _stroke(_orange, 1.5));
+    canvas.drawRRect(RRect.fromRectAndRadius(midRect, const Radius.circular(4)),
+        _stroke(_orange, 1.5));
 
     // -- Cúpula superior --
-    final domeRect =
-        Rect.fromLTWH(w * .32, h * .20, w * .36, h * .22);
-    canvas.drawArc(domeRect, math.pi, math.pi, false,
-        _fill(const Color(0xFF3A1500)));
+    final domeRect = Rect.fromLTWH(w * .32, h * .20, w * .36, h * .22);
+    canvas.drawArc(
+        domeRect, math.pi, math.pi, false, _fill(const Color(0xFF3A1500)));
     canvas.drawArc(domeRect, math.pi, math.pi, false, _stroke(_orange, 1.5));
     // Ventana cúpula
-    canvas.drawArc(Rect.fromLTWH(w * .40, h * .22, w * .20, h * .13),
-        math.pi, math.pi, false,
-        _fill(const Color(0xFFFF6E40).withAlpha(60)));
+    canvas.drawArc(Rect.fromLTWH(w * .40, h * .22, w * .20, h * .13), math.pi,
+        math.pi, false, _fill(const Color(0xFFFF6E40).withAlpha(60)));
 
     // -- Antena radar --
     canvas.drawLine(
@@ -217,8 +217,8 @@ class _CommandPainter extends CustomPainter {
           center: Offset(w * (.36 + i * .14), h * .47), width: 8, height: 6);
       canvas.drawRRect(RRect.fromRectAndRadius(wr, const Radius.circular(2)),
           _fill(_orange.withAlpha(160)));
-      canvas.drawRRect(
-          RRect.fromRectAndRadius(wr, const Radius.circular(2)), _stroke(_orange, .8));
+      canvas.drawRRect(RRect.fromRectAndRadius(wr, const Radius.circular(2)),
+          _stroke(_orange, .8));
     }
 
     // -- Luces parpadeantes (estáticas) --
@@ -245,18 +245,17 @@ class _WorkshopPainter extends CustomPainter {
     final h = s.height;
 
     // Plataforma
-    final plat = RRect.fromLTRBR(w * .08, h * .82, w * .92, h * .92,
-        const Radius.circular(5));
-    canvas.drawRRect(plat,
-        _gradientFill(plat.outerRect, [const Color(0xFF3A2800), _dark]));
+    final plat = RRect.fromLTRBR(
+        w * .08, h * .82, w * .92, h * .92, const Radius.circular(5));
+    canvas.drawRRect(
+        plat, _gradientFill(plat.outerRect, [const Color(0xFF3A2800), _dark]));
     canvas.drawRRect(plat, _stroke(_yellow, 1));
     canvas.drawRRect(plat, _glow(_yellow, 6));
 
     // Cuerpo fábrica
-    final factory =
-        Rect.fromLTWH(w * .15, h * .45, w * .55, h * .38);
-    canvas.drawRect(factory,
-        _gradientFill(factory, [const Color(0xFF3D2A00), _dark]));
+    final factory = Rect.fromLTWH(w * .15, h * .45, w * .55, h * .38);
+    canvas.drawRect(
+        factory, _gradientFill(factory, [const Color(0xFF3D2A00), _dark]));
     canvas.drawRect(factory, _stroke(_yellow, 1.2));
 
     // Techo escalonado
@@ -271,19 +270,22 @@ class _WorkshopPainter extends CustomPainter {
     // Chimenea
     canvas.drawRect(Rect.fromLTWH(w * .22, h * .24, w * .10, h * .22),
         _fill(const Color(0xFF3D2A00)));
-    canvas.drawRect(Rect.fromLTWH(w * .22, h * .24, w * .10, h * .22),
-        _stroke(_yellow, 1));
+    canvas.drawRect(
+        Rect.fromLTWH(w * .22, h * .24, w * .10, h * .22), _stroke(_yellow, 1));
     // Humo
     for (int i = 0; i < 3; i++) {
-      canvas.drawCircle(Offset(w * .27, h * (.22 - i * .06)),
-          5.0 - i, _fill(Colors.grey.withAlpha(60 - i * 15)));
+      canvas.drawCircle(Offset(w * .27, h * (.22 - i * .06)), 5.0 - i,
+          _fill(Colors.grey.withAlpha(60 - i * 15)));
     }
 
     // Brazo mecánico
     final armPaint = _stroke(_yellow, 3);
-    canvas.drawLine(Offset(w * .72, h * .60), Offset(w * .88, h * .50), armPaint);
-    canvas.drawLine(Offset(w * .88, h * .50), Offset(w * .88, h * .70), armPaint);
-    canvas.drawCircle(Offset(w * .88, h * .70), 6, _fill(const Color(0xFF4A3200)));
+    canvas.drawLine(
+        Offset(w * .72, h * .60), Offset(w * .88, h * .50), armPaint);
+    canvas.drawLine(
+        Offset(w * .88, h * .50), Offset(w * .88, h * .70), armPaint);
+    canvas.drawCircle(
+        Offset(w * .88, h * .70), 6, _fill(const Color(0xFF4A3200)));
     canvas.drawCircle(Offset(w * .88, h * .70), 6, _stroke(_yellow, 1.5));
     canvas.drawCircle(Offset(w * .72, h * .60), 5, _fill(_yellow));
     canvas.drawCircle(Offset(w * .72, h * .60), 7, _glow(_yellow, 6));
@@ -294,8 +296,8 @@ class _WorkshopPainter extends CustomPainter {
           center: Offset(w * (.24 + i * .15), h * .62), width: 10, height: 8);
       canvas.drawRRect(RRect.fromRectAndRadius(wr, const Radius.circular(2)),
           _fill(_yellow.withAlpha(140)));
-      canvas.drawRRect(
-          RRect.fromRectAndRadius(wr, const Radius.circular(2)), _stroke(_yellow, .8));
+      canvas.drawRRect(RRect.fromRectAndRadius(wr, const Radius.circular(2)),
+          _stroke(_yellow, .8));
     }
 
     // Engranaje lateral
@@ -308,8 +310,8 @@ class _WorkshopPainter extends CustomPainter {
     for (int i = 0; i < 8; i++) {
       final a = i * math.pi / 4;
       canvas.drawLine(
-        Offset(center.dx + math.cos(a) * r * .6,
-            center.dy + math.sin(a) * r * .6),
+        Offset(
+            center.dx + math.cos(a) * r * .6, center.dy + math.sin(a) * r * .6),
         Offset(center.dx + math.cos(a) * r, center.dy + math.sin(a) * r),
         _stroke(c, 3),
       );
@@ -344,10 +346,12 @@ class _LabPainter extends CustomPainter {
 
     // Base cúpula
     final baseRect = Rect.fromLTWH(w * .20, h * .68, w * .60, h * .16);
-    canvas.drawRRect(RRect.fromRectAndRadius(baseRect, const Radius.circular(4)),
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(baseRect, const Radius.circular(4)),
         _fill(_midPurple));
     canvas.drawRRect(
-        RRect.fromRectAndRadius(baseRect, const Radius.circular(4)), _stroke(_purple, 1.2));
+        RRect.fromRectAndRadius(baseRect, const Radius.circular(4)),
+        _stroke(_purple, 1.2));
 
     // Cúpula principal
     final domeRect = Rect.fromLTWH(w * .12, h * .28, w * .76, h * .46);
@@ -356,15 +360,12 @@ class _LabPainter extends CustomPainter {
     canvas.drawArc(domeRect, math.pi, math.pi, false, _glow(_purple, 8));
 
     // Interior cúpula (cielo estrellado)
-    final clip = Path()
-      ..addArc(domeRect, math.pi, math.pi);
+    final clip = Path()..addArc(domeRect, math.pi, math.pi);
     canvas.save();
     canvas.clipPath(clip);
     for (int i = 0; i < 10; i++) {
-      canvas.drawCircle(
-          Offset(w * (.2 + i * .07), h * (.35 + (i % 3) * .07)),
-          1.5,
-          _fill(Colors.white.withAlpha(150)));
+      canvas.drawCircle(Offset(w * (.2 + i * .07), h * (.35 + (i % 3) * .07)),
+          1.5, _fill(Colors.white.withAlpha(150)));
     }
     canvas.restore();
 
@@ -385,14 +386,14 @@ class _LabPainter extends CustomPainter {
     canvas.rotate(-math.pi / 5);
     canvas.drawRect(Rect.fromLTWH(-5, -h * .16, 10, h * .16),
         _fill(const Color(0xFF4A0070)));
-    canvas.drawRect(Rect.fromLTWH(-5, -h * .16, 10, h * .16),
-        _stroke(_purple, 1));
-    canvas.drawOval(Rect.fromLTWH(-7, -h * .18, 14, 10), _fill(_purple.withAlpha(180)));
+    canvas.drawRect(
+        Rect.fromLTWH(-5, -h * .16, 10, h * .16), _stroke(_purple, 1));
+    canvas.drawOval(
+        Rect.fromLTWH(-7, -h * .18, 14, 10), _fill(_purple.withAlpha(180)));
     canvas.restore();
 
     // Símbolo "?"
-    _drawText(canvas, '?',
-        Offset(w * .46, h * .52), 22,
+    _drawText(canvas, '?', Offset(w * .46, h * .52), 22,
         color: _purple, bold: true);
   }
 
@@ -408,7 +409,6 @@ class _MarketPainter extends CustomPainter {
   static const _dark = Color(0xFF001A0A);
   static const _mid = Color(0xFF002810);
 
-
   @override
   void paint(Canvas canvas, Size s) {
     final w = s.width;
@@ -417,8 +417,8 @@ class _MarketPainter extends CustomPainter {
     // Plataforma
     final plat = RRect.fromLTRBR(
         w * .08, h * .82, w * .92, h * .92, const Radius.circular(5));
-    canvas.drawRRect(plat,
-        _gradientFill(plat.outerRect, [const Color(0xFF002A10), _dark]));
+    canvas.drawRRect(
+        plat, _gradientFill(plat.outerRect, [const Color(0xFF002A10), _dark]));
     canvas.drawRRect(plat, _stroke(_green, 1));
     canvas.drawRRect(plat, _glow(_green, 6));
 
@@ -426,12 +426,12 @@ class _MarketPainter extends CustomPainter {
     final main = Rect.fromLTWH(w * .10, h * .50, w * .80, h * .33);
     canvas.drawRRect(RRect.fromRectAndRadius(main, const Radius.circular(6)),
         _gradientFill(main, [const Color(0xFF003A18), _dark]));
-    canvas.drawRRect(
-        RRect.fromRectAndRadius(main, const Radius.circular(6)), _stroke(_green, 1.2));
+    canvas.drawRRect(RRect.fromRectAndRadius(main, const Radius.circular(6)),
+        _stroke(_green, 1.2));
 
     // Toldo ondulado
     final aw = w * .82;
-    final aw2 = 10.0;
+    const aw2 = 10.0;
     final awPath = Path()..moveTo(w * .09, h * .52);
     for (int i = 0; i < 6; i++) {
       awPath.relativeQuadraticBezierTo(aw2, -aw2, aw2 * 2, 0);
@@ -451,12 +451,12 @@ class _MarketPainter extends CustomPainter {
 
     // Techo plano
     canvas.drawRRect(
-        RRect.fromLTRBR(w * .09, h * .38, w * .91, h * .52,
-            const Radius.circular(4)),
+        RRect.fromLTRBR(
+            w * .09, h * .38, w * .91, h * .52, const Radius.circular(4)),
         _fill(_mid));
     canvas.drawRRect(
-        RRect.fromLTRBR(w * .09, h * .38, w * .91, h * .52,
-            const Radius.circular(4)),
+        RRect.fromLTRBR(
+            w * .09, h * .38, w * .91, h * .52, const Radius.circular(4)),
         _stroke(_green, 1.2));
 
     // Productos en estantes
@@ -469,8 +469,8 @@ class _MarketPainter extends CustomPainter {
     }
 
     // Señal de mercado
-    canvas.drawLine(Offset(w * .50, h * .22), Offset(w * .50, h * .38),
-        _stroke(_green, 2));
+    canvas.drawLine(
+        Offset(w * .50, h * .22), Offset(w * .50, h * .38), _stroke(_green, 2));
     final sign = RRect.fromLTRBR(
         w * .35, h * .14, w * .65, h * .24, const Radius.circular(4));
     canvas.drawRRect(sign, _fill(_mid));
@@ -498,8 +498,8 @@ class _StorePainter extends CustomPainter {
     // Plataforma
     final plat = RRect.fromLTRBR(
         w * .10, h * .82, w * .90, h * .92, const Radius.circular(5));
-    canvas.drawRRect(plat,
-        _gradientFill(plat.outerRect, [const Color(0xFF3A0028), _dark]));
+    canvas.drawRRect(
+        plat, _gradientFill(plat.outerRect, [const Color(0xFF3A0028), _dark]));
     canvas.drawRRect(plat, _stroke(_pink, 1));
     canvas.drawRRect(plat, _glow(_pink, 6));
 
@@ -521,18 +521,19 @@ class _StorePainter extends CustomPainter {
     _drawCrystal(canvas, Offset(w * .5, h * .55), h * .16, _pink);
 
     // Cristales pequeños
-    _drawCrystal(canvas, Offset(w * .28, h * .58), h * .08, Colors.purpleAccent);
+    _drawCrystal(
+        canvas, Offset(w * .28, h * .58), h * .08, Colors.purpleAccent);
     _drawCrystal(canvas, Offset(w * .72, h * .58), h * .08, Colors.pinkAccent);
-    _drawCrystal(canvas, Offset(w * .38, h * .72), h * .06, _pink.withAlpha(180));
-    _drawCrystal(canvas, Offset(w * .62, h * .72), h * .06, _pink.withAlpha(180));
+    _drawCrystal(
+        canvas, Offset(w * .38, h * .72), h * .06, _pink.withAlpha(180));
+    _drawCrystal(
+        canvas, Offset(w * .62, h * .72), h * .06, _pink.withAlpha(180));
 
     // Arco de entrada
-    canvas.drawArc(
-        Rect.fromLTWH(w * .38, h * .64, w * .24, h * .18), math.pi, math.pi,
-        false, _fill(_dark));
-    canvas.drawArc(
-        Rect.fromLTWH(w * .38, h * .64, w * .24, h * .18), math.pi, math.pi,
-        false, _stroke(_pink, 1.5));
+    canvas.drawArc(Rect.fromLTWH(w * .38, h * .64, w * .24, h * .18), math.pi,
+        math.pi, false, _fill(_dark));
+    canvas.drawArc(Rect.fromLTWH(w * .38, h * .64, w * .24, h * .18), math.pi,
+        math.pi, false, _stroke(_pink, 1.5));
 
     // Spire superior
     final spire = Path()

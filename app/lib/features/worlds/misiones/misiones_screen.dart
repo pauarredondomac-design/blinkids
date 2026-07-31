@@ -4,22 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/mission.dart';
-import '../../../data/models/parent_mission.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
 import '../../../shared/providers/demo_progress_provider.dart';
 import '../../../shared/providers/fuel_provider.dart';
 import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/mission_provider.dart';
-import '../../../shared/providers/parent_mission_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/character_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/rocket_launch_overlay.dart';
+import '../../../shared/widgets/badges_row.dart';
 import '../../../core/constants/app_sizes.dart';
-import '../preguntas/preguntas_screen.dart';
+import 'desafios_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MisionesScreen
@@ -61,12 +60,12 @@ class MisionesScreen extends ConsumerStatefulWidget {
   ConsumerState<MisionesScreen> createState() => _MisionesScreenState();
 }
 
-enum _MissionCategory { historia, diarias, papas }
+enum _MissionCategory { historia, diarias }
 
 class _MisionesScreenState extends ConsumerState<MisionesScreen> {
   Map<MissionObjectiveType, int> _progress = {};
-  Set<String> _claimed  = {};
-  Set<String> _claiming = {};
+  Set<String> _claimed = {};
+  final Set<String> _claiming = {};
   bool _loadingProgress = true;
   _MissionCategory _category = _MissionCategory.historia;
 
@@ -77,20 +76,20 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
   }
 
   Future<void> _loadProgress() async {
-    final tracker  = MissionTracker();
+    final tracker = MissionTracker();
     final progress = await tracker.allProgress();
 
     final missionsAsync = ref.read(activeMissionsProvider);
     final missions = missionsAsync.valueOrNull ?? [];
-    final claimed  = <String>{};
+    final claimed = <String>{};
     for (final m in missions) {
       if (await tracker.isClaimed(m.id)) claimed.add(m.id);
     }
 
     if (mounted) {
       setState(() {
-        _progress        = progress;
-        _claimed         = claimed;
+        _progress = progress;
+        _claimed = claimed;
         _loadingProgress = false;
       });
     }
@@ -108,6 +107,7 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
     if (_claiming.contains(mission.id)) return;
     setState(() => _claiming.add(mission.id));
     var reachedFullFuel = false;
+    List<String> newBadges = [];
 
     try {
       await MissionTracker().markClaimed(mission.id);
@@ -117,22 +117,24 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
       } else {
         final userId = Supabase.instance.client.auth.currentUser?.id;
         if (userId != null) {
-          await WalletRepository().awardStarterCoins(userId, mission.coinReward);
+          await WalletRepository()
+              .awardStarterCoins(userId, mission.coinReward);
           ref.invalidate(currentWalletProvider);
         }
       }
 
-      await awardXp(ref, mission.xpReward);
+      newBadges = await awardXp(ref, mission.xpReward);
       ref.invalidate(currentCharacterProvider);
 
       if (mission.itemReward != null) {
         await ref.read(itemRepositoryProvider).addToInventory(
-          mission.itemReward!.itemId,
-          mission.itemReward!.qty,
-        );
+              mission.itemReward!.itemId,
+              mission.itemReward!.qty,
+            );
         ref.invalidate(inventoryProvider);
         if (mission.itemReward!.itemId == 'fuel_capsule') {
-          reachedFullFuel = await ref.read(fuelNotifierProvider.notifier)
+          reachedFullFuel = await ref
+              .read(fuelNotifierProvider.notifier)
               .addFuel('space', mission.itemReward!.qty * 10);
         }
       }
@@ -143,7 +145,9 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
           _claimed.add(mission.id);
         });
         await _showClaimDialog(mission);
-        if (reachedFullFuel && mounted) showRocketLaunchOverlay(context);
+        if (mounted) showBadgeUnlockToasts(context, ref, newBadges);
+        if (reachedFullFuel && mounted)
+          await handleFuelReachedFull(context, ref);
       }
     } catch (e) {
       if (mounted) {
@@ -152,7 +156,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
           content: Text('Error: $e'),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     }
@@ -167,7 +172,7 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final worldId       = ref.watch(currentWorldProvider);
+    final worldId = ref.watch(currentWorldProvider);
     final missionsAsync = ref.watch(activeMissionsProvider);
 
     return Scaffold(
@@ -187,7 +192,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
           ),
           TutorialStep(
             title: '¡Reclamar la recompensa! 🎁',
-            body: 'Cuando la barra llegue al 100% aparece el botón "¡Reclamar!". '
+            body:
+                'Cuando la barra llegue al 100% aparece el botón "¡Reclamar!". '
                 '¡Tócalo para recibir tus monedas y objetos!',
           ),
         ],
@@ -196,21 +202,19 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
             _MisionesSidebar(
               category: _category,
               onSelectCategory: (c) => setState(() => _category = c),
-              onOpenPreguntas: () => showPreguntasDialog(context),
+              onOpenDesafios: () => showDesafiosDialog(context),
               onBack: () => context.pop(),
             ),
             Expanded(
-              child: _category == _MissionCategory.papas
-                  ? const _ParentMissionsPanel()
-                  : _loadingProgress
+              child: _loadingProgress
                   ? const Center(
-                      child: CircularProgressIndicator(
-                          color: Color(0xFF4FC3F7)),
+                      child:
+                          CircularProgressIndicator(color: Color(0xFF4FC3F7)),
                     )
                   : missionsAsync.when(
                       loading: () => const Center(
-                        child: CircularProgressIndicator(
-                            color: Color(0xFF4FC3F7)),
+                        child:
+                            CircularProgressIndicator(color: Color(0xFF4FC3F7)),
                       ),
                       error: (_, __) => _ErrorView(
                         onRetry: () {
@@ -230,15 +234,13 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Text('🌌',
-                                    style:
-                                        TextStyle(fontSize: 64)),
+                                    style: TextStyle(fontSize: 64)),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No hay misiones activas\npor ahora. ¡Vuelve pronto!',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color:
-                                        Colors.white.withOpacity(0.65),
+                                    color: Colors.white.withOpacity(0.65),
                                     fontSize: 16,
                                   ),
                                 ),
@@ -247,23 +249,22 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                           );
                         }
                         return ListView.builder(
-                          padding:
-                              const EdgeInsets.all(AppSizes.md),
+                          padding: const EdgeInsets.all(AppSizes.md),
                           itemCount: missions.length,
                           itemBuilder: (ctx, i) {
-                            final m        = missions[i];
+                            final m = missions[i];
                             final progress = _progressFor(m.objectiveType);
                             final complete = _isComplete(m);
-                            final claimed  = _claimed.contains(m.id);
+                            final claimed = _claimed.contains(m.id);
                             final claiming = _claiming.contains(m.id);
 
                             return _MissionCard(
-                              mission:  m,
+                              mission: m,
                               progress: progress,
                               complete: complete,
-                              claimed:  claimed,
+                              claimed: claimed,
                               claiming: claiming,
-                              onClaim:  () => _handleClaim(m),
+                              onClaim: () => _handleClaim(m),
                             )
                                 .animate(delay: (80 * i).ms)
                                 .fadeIn(duration: 350.ms)
@@ -291,13 +292,13 @@ class _MisionesSidebar extends StatelessWidget {
   const _MisionesSidebar({
     required this.category,
     required this.onSelectCategory,
-    required this.onOpenPreguntas,
+    required this.onOpenDesafios,
     required this.onBack,
   });
-  final _MissionCategory                 category;
-  final ValueChanged<_MissionCategory>   onSelectCategory;
-  final VoidCallback                     onOpenPreguntas;
-  final VoidCallback                     onBack;
+  final _MissionCategory category;
+  final ValueChanged<_MissionCategory> onSelectCategory;
+  final VoidCallback onOpenDesafios;
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -389,31 +390,24 @@ class _MisionesSidebar extends StatelessWidget {
               const SizedBox(height: 12),
 
               _CategoryItem(
-                emoji:    '📖',
-                label:    'MISIONES HISTORIA',
-                active:   category == _MissionCategory.historia,
-                onTap:    () => onSelectCategory(_MissionCategory.historia),
+                emoji: '📖',
+                label: 'MISIONES HISTORIA',
+                active: category == _MissionCategory.historia,
+                onTap: () => onSelectCategory(_MissionCategory.historia),
               ),
               const SizedBox(height: 6),
               _CategoryItem(
-                emoji:    '🔁',
-                label:    'MISIONES DIARIAS',
-                active:   category == _MissionCategory.diarias,
-                onTap:    () => onSelectCategory(_MissionCategory.diarias),
+                emoji: '🔁',
+                label: 'MISIONES DIARIAS',
+                active: category == _MissionCategory.diarias,
+                onTap: () => onSelectCategory(_MissionCategory.diarias),
               ),
               const SizedBox(height: 6),
               _CategoryItem(
-                emoji:    '👨‍👩‍👧',
-                label:    'MISIONES DE PAPÁS',
-                active:   category == _MissionCategory.papas,
-                onTap:    () => onSelectCategory(_MissionCategory.papas),
-              ),
-              const SizedBox(height: 6),
-              _CategoryItem(
-                emoji:    '❓',
-                label:    'PREGUNTAS',
-                active:   false,
-                onTap:    onOpenPreguntas,
+                emoji: '🎮',
+                label: 'DESAFÍOS',
+                active: false,
+                onTap: onOpenDesafios,
                 trailing: true,
               ),
             ],
@@ -435,11 +429,11 @@ class _CategoryItem extends StatelessWidget {
     required this.onTap,
     this.trailing = false,
   });
-  final String       emoji;
-  final String       label;
-  final bool         active;
+  final String emoji;
+  final String label;
+  final bool active;
   final VoidCallback onTap;
-  final bool         trailing;
+  final bool trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -449,10 +443,14 @@ class _CategoryItem extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: active ? const Color(0xFF3D1E8F).withOpacity(0.35) : Colors.transparent,
+          color: active
+              ? const Color(0xFF3D1E8F).withOpacity(0.35)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: active ? const Color(0xFF7C4DFF).withOpacity(0.55) : Colors.transparent,
+            color: active
+                ? const Color(0xFF7C4DFF).withOpacity(0.55)
+                : Colors.transparent,
             width: 1,
           ),
         ),
@@ -472,7 +470,8 @@ class _CategoryItem extends StatelessWidget {
               ),
             ),
             if (trailing)
-              Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.45), size: 16),
+              Icon(Icons.chevron_right_rounded,
+                  color: Colors.white.withOpacity(0.45), size: 16),
           ],
         ),
       ),
@@ -483,237 +482,6 @@ class _CategoryItem extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Estado vacío: aún no hay misiones de papás
 // ─────────────────────────────────────────────────────────────────────────────
-class _ParentMissionsPanel extends ConsumerStatefulWidget {
-  const _ParentMissionsPanel();
-
-  @override
-  ConsumerState<_ParentMissionsPanel> createState() => _ParentMissionsPanelState();
-}
-
-class _ParentMissionsPanelState extends ConsumerState<_ParentMissionsPanel> {
-  final Set<String> _completing = {};
-
-  Future<void> _handleComplete(ParentMission mission) async {
-    if (_completing.contains(mission.id)) return;
-    setState(() => _completing.add(mission.id));
-    try {
-      await ref.read(parentMissionRepositoryProvider).completeMission(mission.id);
-      ref.invalidate(childParentMissionsProvider);
-      ref.invalidate(currentWalletProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('¡Ganaste ${mission.coinReward} monedas! 🎉'),
-          backgroundColor: const Color(0xFF2E7D32),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$e'.replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
-      }
-    } finally {
-      if (mounted) setState(() => _completing.remove(mission.id));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final missionsAsync = ref.watch(childParentMissionsProvider);
-
-    return missionsAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Color(0xFF4FC3F7)),
-      ),
-      error: (_, __) => _ErrorView(
-        onRetry: () => ref.invalidate(childParentMissionsProvider),
-      ),
-      data: (missions) {
-        if (missions.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('👨‍👩‍👧', style: TextStyle(fontSize: 64)),
-                const SizedBox(height: 16),
-                Text(
-                  'Aún no tienes misiones de papás',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 16),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Cuando tu papá o mamá te asigne una,\naparecerá aquí.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 13),
-                ),
-              ],
-            ),
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.all(AppSizes.md),
-          itemCount: missions.length,
-          itemBuilder: (ctx, i) {
-            final m = missions[i];
-            return _ParentMissionCard(
-              mission: m,
-              completing: _completing.contains(m.id),
-              onComplete: () => _handleComplete(m),
-            )
-                .animate(delay: (80 * i).ms)
-                .fadeIn(duration: 350.ms)
-                .slideY(begin: 0.12, end: 0, curve: Curves.easeOut);
-          },
-        );
-      },
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tarjeta de misión de papá
-// ─────────────────────────────────────────────────────────────────────────────
-class _ParentMissionCard extends StatelessWidget {
-  const _ParentMissionCard({
-    required this.mission,
-    required this.completing,
-    required this.onComplete,
-  });
-  final ParentMission mission;
-  final bool          completing;
-  final VoidCallback  onComplete;
-
-  @override
-  Widget build(BuildContext context) {
-    final done = mission.isCompleted;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF12122A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: done
-              ? Colors.greenAccent.withOpacity(0.35)
-              : const Color(0xFF7C4DFF).withOpacity(0.35),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF7C4DFF).withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Center(child: Text('👨‍👩‍👧', style: TextStyle(fontSize: 18))),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mission.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  ),
-                ),
-                if (mission.description != null && mission.description!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    mission.description!,
-                    style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 12),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const AnimatedCoin(size: 14),
-                        const SizedBox(width: 4),
-                        Text(
-                          '+${mission.coinReward}',
-                          style: const TextStyle(
-                            color: Color(0xFFFFD600),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    if (done)
-                      const _StatusChip(label: '✓ Completada', color: Colors.greenAccent)
-                    else
-                      GestureDetector(
-                        onTap: completing ? null : onComplete,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: completing
-                              ? const SizedBox(
-                                  width: 14, height: 14,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'Completar',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.label, required this.color});
-  final String label;
-  final Color  color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12),
-      ),
-    );
-  }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Tarjeta de misión — layout 2 columnas para landscape
 // ─────────────────────────────────────────────────────────────────────────────
@@ -727,34 +495,40 @@ class _MissionCard extends StatelessWidget {
     required this.onClaim,
   });
 
-  final Mission      mission;
-  final int          progress;
-  final bool         complete;
-  final bool         claimed;
-  final bool         claiming;
+  final Mission mission;
+  final int progress;
+  final bool complete;
+  final bool claimed;
+  final bool claiming;
   final VoidCallback onClaim;
 
   String get _objectiveLabel {
     if (mission.objectiveType == null) return '';
     switch (mission.objectiveType!) {
-      case MissionObjectiveType.completeQuizzes: return '❓ Preguntas respondidas';
-      case MissionObjectiveType.completeJobs:    return '🔨 Trabajos completados';
-      case MissionObjectiveType.buyFromShop:     return '🛒 Compras en la Tienda';
+      case MissionObjectiveType.completeQuizzes:
+        return '❓ Preguntas respondidas';
+      case MissionObjectiveType.completeJobs:
+        return '🔨 Trabajos completados';
+      case MissionObjectiveType.buyFromShop:
+        return '🛒 Compras en la Tienda';
     }
   }
 
   String get _objectiveIcon {
     if (mission.objectiveType == null) return '⚔️';
     switch (mission.objectiveType!) {
-      case MissionObjectiveType.completeQuizzes: return '🧠';
-      case MissionObjectiveType.completeJobs:    return '🔨';
-      case MissionObjectiveType.buyFromShop:     return '🛒';
+      case MissionObjectiveType.completeQuizzes:
+        return '🧠';
+      case MissionObjectiveType.completeJobs:
+        return '🔨';
+      case MissionObjectiveType.buyFromShop:
+        return '🛒';
     }
   }
 
   // Color del borde según estado
   Color get _borderColor {
-    if (claimed)  return Colors.greenAccent.withOpacity(0.35);
+    if (claimed) return Colors.greenAccent.withOpacity(0.35);
     if (complete) return Colors.greenAccent.withOpacity(0.55);
     return const Color(0xFF4FC3F7).withOpacity(0.25);
   }
@@ -861,8 +635,8 @@ class _MissionCard extends StatelessWidget {
                       spacing: 5,
                       runSpacing: 4,
                       children: [
-                        _Pill('+${mission.coinReward}',
-                            const Color(0xFFFFD600), showCoin: true),
+                        _Pill('+${mission.coinReward}', const Color(0xFFFFD600),
+                            showCoin: true),
                         _Pill('⭐ +${mission.xpReward}', Colors.white54),
                         if (mission.itemReward != null)
                           _Pill(
@@ -876,9 +650,7 @@ class _MissionCard extends StatelessWidget {
               ),
 
               const SizedBox(width: 12),
-              Container(
-                  width: 1,
-                  color: Colors.white.withOpacity(0.10)),
+              Container(width: 1, color: Colors.white.withOpacity(0.10)),
               const SizedBox(width: 12),
 
               // ── DERECHA: progreso + botón ─────────────────────────────────
@@ -917,8 +689,8 @@ class _MissionCard extends StatelessWidget {
                             child: LinearProgressIndicator(
                               value: ratio,
                               backgroundColor: Colors.white.withOpacity(0.10),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  _progressColor),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(_progressColor),
                               minHeight: 8,
                             ),
                           ),
@@ -933,8 +705,7 @@ class _MissionCard extends StatelessWidget {
                                 color: Colors.greenAccent.withOpacity(0.08),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color:
-                                      Colors.greenAccent.withOpacity(0.30),
+                                  color: Colors.greenAccent.withOpacity(0.30),
                                 ),
                               ),
                               child: const Row(
@@ -959,8 +730,8 @@ class _MissionCard extends StatelessWidget {
                               onTap: claiming ? null : onClaim,
                               child: Container(
                                 width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 10),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
                                 decoration: BoxDecoration(
                                   gradient: claiming
                                       ? null
@@ -973,8 +744,7 @@ class _MissionCard extends StatelessWidget {
                                   color: claiming
                                       ? Colors.white.withOpacity(0.08)
                                       : null,
-                                  borderRadius:
-                                      BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(12),
                                   boxShadow: claiming
                                       ? null
                                       : [
@@ -1055,8 +825,8 @@ class _MissionCard extends StatelessWidget {
 class _Pill extends StatelessWidget {
   const _Pill(this.label, this.color, {this.showCoin = false});
   final String label;
-  final Color  color;
-  final bool   showCoin;
+  final Color color;
+  final bool showCoin;
 
   @override
   Widget build(BuildContext context) {
@@ -1113,7 +883,8 @@ class _ClaimDialog extends StatelessWidget {
           const Text('🎉', style: TextStyle(fontSize: 56))
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .scaleXY(
-                begin: 1.0, end: 1.18,
+                begin: 1.0,
+                end: 1.18,
                 duration: 600.ms,
                 curve: Curves.easeInOut,
               ),
@@ -1152,10 +923,9 @@ class _ClaimDialog extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               _ClaimBadge(
-                  '+${mission.coinReward} monedas',
-                  const Color(0xFFFFD600), showCoin: true),
-              _ClaimBadge(
-                  '⭐ +${mission.xpReward} XP', Colors.white70),
+                  '+${mission.coinReward} monedas', const Color(0xFFFFD600),
+                  showCoin: true),
+              _ClaimBadge('⭐ +${mission.xpReward} XP', Colors.white70),
               if (mission.itemReward != null)
                 _ClaimBadge(
                   '${mission.itemReward!.item?.emoji ?? '🎁'} '
@@ -1172,8 +942,7 @@ class _ClaimDialog extends StatelessWidget {
         GestureDetector(
           onTap: () => Navigator.of(context).pop(),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF2E7D32), Color(0xFF43A047)],
@@ -1205,8 +974,8 @@ class _ClaimDialog extends StatelessWidget {
 class _ClaimBadge extends StatelessWidget {
   const _ClaimBadge(this.label, this.color, {this.showCoin = false});
   final String label;
-  final Color  color;
-  final bool   showCoin;
+  final Color color;
+  final bool showCoin;
 
   @override
   Widget build(BuildContext context) {
@@ -1261,8 +1030,7 @@ class _ErrorView extends StatelessWidget {
           GestureDetector(
             onTap: onRetry,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF4FC3F7), Color(0xFF1976D2)],
@@ -1272,8 +1040,7 @@ class _ErrorView extends StatelessWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.refresh_rounded,
-                      color: Colors.white, size: 16),
+                  Icon(Icons.refresh_rounded, color: Colors.white, size: 16),
                   SizedBox(width: 6),
                   Text(
                     'Reintentar',

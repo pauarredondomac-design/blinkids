@@ -34,11 +34,12 @@ class DemoStore extends ChangeNotifier {
   // Tutoriales ya vistos en esta sesión demo
   final Set<String> seenTutorials = {};
 
-  // Balances de las categorías de la bolsa (Guardar / Banco Estelar / Gastar)
+  // Balances de las 4 misiones del dinero (Guardar / Invertir / Donar / Disfrutar)
   final Map<WalletCategoryType, int> walletCategoryBalances = {
-    WalletCategoryType.guardar:       0,
-    WalletCategoryType.banco_estelar: 0,
-    WalletCategoryType.gastar:        0,
+    WalletCategoryType.guardar:  0,
+    WalletCategoryType.invertir: 0,
+    WalletCategoryType.donar:    0,
+    WalletCategoryType.gastar:   0,
   };
 
   bool isUnlocked(String buildingId) {
@@ -140,7 +141,7 @@ class DemoStore extends ChangeNotifier {
   bool isTutorialSeen(String key) => seenTutorials.contains(key);
 
   /// Distribuye monedas entre el pool libre y una categoría de la bolsa.
-  /// [categoryId] — 'demo_guardar' | 'demo_banco_estelar' | 'demo_gastar'
+  /// [categoryId] — 'demo_guardar' | 'demo_invertir' | 'demo_donar' | 'demo_gastar'
   void distributeCoins(String categoryId, int newCategoryBalance, int newWalletTotal) {
     final type = _categoryTypeFromId(categoryId);
     if (type != null) walletCategoryBalances[type] = newCategoryBalance;
@@ -155,9 +156,10 @@ class DemoStore extends ChangeNotifier {
   }
 
   static WalletCategoryType? _categoryTypeFromId(String id) {
-    if (id.contains('guardar'))       return WalletCategoryType.guardar;
-    if (id.contains('banco_estelar')) return WalletCategoryType.banco_estelar;
-    if (id.contains('gastar'))        return WalletCategoryType.gastar;
+    if (id.contains('guardar'))  return WalletCategoryType.guardar;
+    if (id.contains('invertir')) return WalletCategoryType.invertir;
+    if (id.contains('donar'))    return WalletCategoryType.donar;
+    if (id.contains('gastar'))   return WalletCategoryType.gastar;
     return null;
   }
 
