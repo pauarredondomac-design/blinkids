@@ -22,10 +22,12 @@ typedef PushService = PushNotificationService;
 
 // Tipos de notificación disponibles (coinciden con la tabla en DB)
 abstract class PushType {
-  static const inactivityReminder = 'inactivity_reminder'; // niño 4-5 días sin entrar
-  static const sundayAllowance    = 'sunday_allowance';    // recordar al papá cada domingo
-  static const newMission         = 'new_mission';          // nueva misión creada
-  static const bolsaEarnings      = 'bolsa_earnings';       // ganancias en la bolsa
+  static const inactivityReminder =
+      'inactivity_reminder'; // niño 4-5 días sin entrar
+  static const sundayAllowance =
+      'sunday_allowance'; // recordar al papá cada domingo
+  static const newMission = 'new_mission'; // nueva misión creada
+  static const bolsaEarnings = 'bolsa_earnings'; // ganancias en la bolsa
 }
 
 class PushNotificationService {
@@ -58,7 +60,8 @@ class PushNotificationService {
       _openedFromNotification = true;
       // Registrar el open como no-voluntario
       AnalyticsService.instance.appOpen(voluntaryOpen: false);
-      debugPrint('[Push] App abierta desde notificación: ${event.notification.title}');
+      debugPrint(
+          '[Push] App abierta desde notificación: ${event.notification.title}');
     });
 
     // Solicitar permiso de notificaciones al usuario
@@ -115,12 +118,10 @@ class PushNotificationService {
       send(PushType.inactivityReminder);
 
   /// Recordar al papá dar el domingo (llamar cada domingo desde un cron o trigger)
-  static Future<void> sendSundayAllowance() =>
-      send(PushType.sundayAllowance);
+  static Future<void> sendSundayAllowance() => send(PushType.sundayAllowance);
 
   /// Se creó una nueva misión
-  static Future<void> sendNewMission() =>
-      send(PushType.newMission);
+  static Future<void> sendNewMission() => send(PushType.newMission);
 
   /// El niño generó ganancias en la bolsa
   static Future<void> sendBolsaEarnings({int? amount}) =>

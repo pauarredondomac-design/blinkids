@@ -19,7 +19,8 @@ class DemoStore extends ChangeNotifier {
   /// true cuando no hay usuario real con sesión (modo demo).
   static bool get isActive => Supabase.instance.client.auth.currentUser == null;
 
-  int stage = 0; // 0=solo banco, 1=trabajos, 2=misiones, 3=mercado, 4=tienda, 5=completo
+  int stage =
+      0; // 0=solo banco, 1=trabajos, 2=misiones, 3=mercado, 4=tienda, 5=completo
   int coins = 500;
   int xp = 0;
   int fuel = 0;
@@ -36,31 +37,43 @@ class DemoStore extends ChangeNotifier {
 
   // Balances de las 4 misiones del dinero (Guardar / Invertir / Donar / Disfrutar)
   final Map<WalletCategoryType, int> walletCategoryBalances = {
-    WalletCategoryType.guardar:  0,
+    WalletCategoryType.guardar: 0,
     WalletCategoryType.invertir: 0,
-    WalletCategoryType.donar:    0,
-    WalletCategoryType.gastar:   0,
+    WalletCategoryType.donar: 0,
+    WalletCategoryType.gastar: 0,
   };
 
   bool isUnlocked(String buildingId) {
     switch (buildingId) {
-      case 'banco':    return true;
-      case 'alcancia': return stage >= 3;
-      case 'trabajos': return stage >= 1;
-      case 'misiones': return stage >= 2;
-      case 'mercado':  return stage >= 5; // mercado oculto, reservado para futuro
-      case 'tienda':   return stage >= 4;
-      default:         return false;
+      case 'banco':
+        return true;
+      case 'alcancia':
+        return stage >= 3;
+      case 'trabajos':
+        return stage >= 1;
+      case 'misiones':
+        return stage >= 2;
+      case 'mercado':
+        return stage >= 5; // mercado oculto, reservado para futuro
+      case 'tienda':
+        return stage >= 4;
+      default:
+        return false;
     }
   }
 
   String? get nextUnlock {
     switch (stage) {
-      case 0: return 'Trabajos';
-      case 1: return 'Misiones';
-      case 2: return 'Mi Bolsa';
-      case 3: return 'Tienda';
-      default: return null;
+      case 0:
+        return 'Trabajos';
+      case 1:
+        return 'Misiones';
+      case 2:
+        return 'Mi Bolsa';
+      case 3:
+        return 'Tienda';
+      default:
+        return null;
     }
   }
 
@@ -126,7 +139,8 @@ class DemoStore extends ChangeNotifier {
 
   int progressFor(String type) => missionProgress[type] ?? 0;
 
-  bool isMissionClaimed(String missionId) => claimedMissions.contains(missionId);
+  bool isMissionClaimed(String missionId) =>
+      claimedMissions.contains(missionId);
 
   void markMissionClaimed(String missionId) {
     claimedMissions.add(missionId);
@@ -142,7 +156,8 @@ class DemoStore extends ChangeNotifier {
 
   /// Distribuye monedas entre el pool libre y una categoría de la bolsa.
   /// [categoryId] — 'demo_guardar' | 'demo_invertir' | 'demo_donar' | 'demo_gastar'
-  void distributeCoins(String categoryId, int newCategoryBalance, int newWalletTotal) {
+  void distributeCoins(
+      String categoryId, int newCategoryBalance, int newWalletTotal) {
     final type = _categoryTypeFromId(categoryId);
     if (type != null) walletCategoryBalances[type] = newCategoryBalance;
     coins = newWalletTotal;
@@ -156,10 +171,10 @@ class DemoStore extends ChangeNotifier {
   }
 
   static WalletCategoryType? _categoryTypeFromId(String id) {
-    if (id.contains('guardar'))  return WalletCategoryType.guardar;
+    if (id.contains('guardar')) return WalletCategoryType.guardar;
     if (id.contains('invertir')) return WalletCategoryType.invertir;
-    if (id.contains('donar'))    return WalletCategoryType.donar;
-    if (id.contains('gastar'))   return WalletCategoryType.gastar;
+    if (id.contains('donar')) return WalletCategoryType.donar;
+    if (id.contains('gastar')) return WalletCategoryType.gastar;
     return null;
   }
 

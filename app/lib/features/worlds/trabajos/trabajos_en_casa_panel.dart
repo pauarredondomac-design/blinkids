@@ -3,8 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/parent_mission.dart';
 import '../../../shared/providers/parent_mission_provider.dart';
-import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/game_popup.dart';
 import '../../../core/constants/app_sizes.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,35 +16,35 @@ class TrabajosEnCasaPanel extends ConsumerStatefulWidget {
   const TrabajosEnCasaPanel({super.key});
 
   @override
-  ConsumerState<TrabajosEnCasaPanel> createState() => _TrabajosEnCasaPanelState();
+  ConsumerState<TrabajosEnCasaPanel> createState() =>
+      _TrabajosEnCasaPanelState();
 }
 
 class _TrabajosEnCasaPanelState extends ConsumerState<TrabajosEnCasaPanel> {
   final Set<String> _completing = {};
 
-  Future<void> _handleComplete(ParentMission mission) async {
+  Future<void> _handleMarkDone(ParentMission mission) async {
     if (_completing.contains(mission.id)) return;
     setState(() => _completing.add(mission.id));
     try {
-      await ref.read(parentMissionRepositoryProvider).completeMission(mission.id);
+      await ref
+          .read(parentMissionRepositoryProvider)
+          .markMissionDone(mission.id);
       ref.invalidate(childParentMissionsProvider);
-      ref.invalidate(currentWalletProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('¡Ganaste ${mission.coinReward} monedas! 🎉'),
-          backgroundColor: const Color(0xFF2E7D32),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        showGamePopup(
+          context,
+          '¡Avisado! Espera a que tu papá o mamá lo confirme. ✅',
+          accentColor: const Color(0xFF2E7D32),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$e'.replaceFirst('Exception: ', '')),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        showGamePopup(
+          context,
+          '$e'.replaceFirst('Exception: ', ''),
+          accentColor: Colors.red.shade700,
+        );
       }
     } finally {
       if (mounted) setState(() => _completing.remove(mission.id));
@@ -73,13 +73,15 @@ class _TrabajosEnCasaPanelState extends ConsumerState<TrabajosEnCasaPanel> {
                 Text(
                   'Aún no tienes tareas de casa',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 16),
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.65), fontSize: 16),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   'Cuando tu papá o mamá te asigne una,\naparecerá aquí.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 13),
+                  style: TextStyle(
+                      color: Colors.white.withOpacity(0.35), fontSize: 13),
                 ),
               ],
             ),
@@ -93,7 +95,7 @@ class _TrabajosEnCasaPanelState extends ConsumerState<TrabajosEnCasaPanel> {
             return _ParentMissionCard(
               mission: m,
               completing: _completing.contains(m.id),
-              onComplete: () => _handleComplete(m),
+              onMarkDone: () => _handleMarkDone(m),
             )
                 .animate(delay: (80 * i).ms)
                 .fadeIn(duration: 350.ms)
@@ -112,15 +114,16 @@ class _ParentMissionCard extends StatelessWidget {
   const _ParentMissionCard({
     required this.mission,
     required this.completing,
-    required this.onComplete,
+    required this.onMarkDone,
   });
   final ParentMission mission;
-  final bool          completing;
-  final VoidCallback  onComplete;
+  final bool completing;
+  final VoidCallback onMarkDone;
 
   @override
   Widget build(BuildContext context) {
     final done = mission.isCompleted;
+    final waiting = mission.isAwaitingApproval;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -130,19 +133,23 @@ class _ParentMissionCard extends StatelessWidget {
         border: Border.all(
           color: done
               ? Colors.greenAccent.withOpacity(0.35)
-              : const Color(0xFF7C4DFF).withOpacity(0.35),
+              : waiting
+                  ? const Color(0xFFFFB300).withOpacity(0.35)
+                  : const Color(0xFF7C4DFF).withOpacity(0.35),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 40, height: 40,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: const Color(0xFF7C4DFF).withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: const Center(child: Text('👨‍👩‍👧', style: TextStyle(fontSize: 18))),
+            child: const Center(
+                child: Text('👨‍👩‍👧', style: TextStyle(fontSize: 18))),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -157,11 +164,13 @@ class _ParentMissionCard extends StatelessWidget {
                     fontSize: 15,
                   ),
                 ),
-                if (mission.description != null && mission.description!.isNotEmpty) ...[
+                if (mission.description != null &&
+                    mission.description!.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     mission.description!,
-                    style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 12),
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.55), fontSize: 12),
                   ),
                 ],
                 const SizedBox(height: 10),
@@ -184,25 +193,33 @@ class _ParentMissionCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     if (done)
-                      const _StatusChip(label: '✓ Completada', color: Colors.greenAccent)
+                      const _StatusChip(
+                          label: '✓ Completada', color: Colors.greenAccent)
+                    else if (waiting)
+                      const _StatusChip(
+                          label: '⏳ Esperando confirmación',
+                          color: Color(0xFFFFB300))
                     else
                       GestureDetector(
-                        onTap: completing ? null : onComplete,
+                        onTap: completing ? null : onMarkDone,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             color: const Color(0xFF4CAF50),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: completing
                               ? const SizedBox(
-                                  width: 14, height: 14,
+                                  width: 14,
+                                  height: 14,
                                   child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white,
+                                    strokeWidth: 2,
+                                    color: Colors.white,
                                   ),
                                 )
                               : const Text(
-                                  'Completar',
+                                  'Marcar como hecho',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
@@ -225,7 +242,7 @@ class _ParentMissionCard extends StatelessWidget {
 class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.label, required this.color});
   final String label;
-  final Color  color;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +254,8 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12),
+        style:
+            TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12),
       ),
     );
   }
@@ -272,7 +290,8 @@ class _SimpleErrorView extends StatelessWidget {
               ),
               child: const Text(
                 'Reintentar',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
               ),
             ),
           ),

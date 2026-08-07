@@ -38,11 +38,14 @@ class ItemRepository {
 
   Future<List<InventoryStack>> getInventory() async {
     if (DemoStore.isActive) {
-      return DemoStore.instance.inventory.entries.map((e) {
-        final item = itemById(e.key);
-        if (item == null) return null;
-        return InventoryStack(item: item, qty: e.value);
-      }).whereType<InventoryStack>().toList();
+      return DemoStore.instance.inventory.entries
+          .map((e) {
+            final item = itemById(e.key);
+            if (item == null) return null;
+            return InventoryStack(item: item, qty: e.value);
+          })
+          .whereType<InventoryStack>()
+          .toList();
     }
     try {
       final userId = _client.auth.currentUser?.id;
@@ -54,11 +57,14 @@ class ItemRepository {
           .eq('user_id', userId)
           .gt('qty', 0);
 
-      return (rows as List).map((r) {
-        final item = itemById(r['item_id'] as String);
-        if (item == null) return null;
-        return InventoryStack(item: item, qty: r['qty'] as int);
-      }).whereType<InventoryStack>().toList();
+      return (rows as List)
+          .map((r) {
+            final item = itemById(r['item_id'] as String);
+            if (item == null) return null;
+            return InventoryStack(item: item, qty: r['qty'] as int);
+          })
+          .whereType<InventoryStack>()
+          .toList();
     } catch (_) {
       return [];
     }
@@ -111,13 +117,15 @@ class ItemRepository {
 
   Future<List<PlayerListing>> getMyListings() async {
     if (DemoStore.isActive) {
-      return DemoStore.instance.listings.map((l) => PlayerListing(
-        id:           l['id']           as String,
-        itemId:       l['itemId']       as String,
-        qty:          l['qty']          as int,
-        pricePerUnit: l['pricePerUnit'] as int,
-        sellerName:   l['sellerName']   as String,
-      )).toList();
+      return DemoStore.instance.listings
+          .map((l) => PlayerListing(
+                id: l['id'] as String,
+                itemId: l['itemId'] as String,
+                qty: l['qty'] as int,
+                pricePerUnit: l['pricePerUnit'] as int,
+                sellerName: l['sellerName'] as String,
+              ))
+          .toList();
     }
     try {
       final userId = _client.auth.currentUser?.id;
@@ -129,13 +137,15 @@ class ItemRepository {
           .eq('seller_id', userId)
           .order('created_at', ascending: false);
 
-      return (rows as List).map((r) => PlayerListing(
-        id:           r['id']           as String,
-        itemId:       r['item_id']       as String,
-        qty:          r['qty']           as int,
-        pricePerUnit: r['price_per_unit'] as int,
-        sellerName:   r['seller_name']   as String,
-      )).toList();
+      return (rows as List)
+          .map((r) => PlayerListing(
+                id: r['id'] as String,
+                itemId: r['item_id'] as String,
+                qty: r['qty'] as int,
+                pricePerUnit: r['price_per_unit'] as int,
+                sellerName: r['seller_name'] as String,
+              ))
+          .toList();
     } catch (_) {
       return [];
     }
@@ -143,8 +153,8 @@ class ItemRepository {
 
   Future<bool> addListing({
     required String itemId,
-    required int    qty,
-    required int    pricePerUnit,
+    required int qty,
+    required int pricePerUnit,
     required String sellerName,
   }) async {
     if (DemoStore.isActive) {
@@ -153,7 +163,10 @@ class ItemRepository {
       final ok = DemoStore.instance.removeItem(itemId, qty);
       if (!ok) throw Exception('No hay suficientes materiales');
       DemoStore.instance.addListing(
-        itemId: itemId, qty: qty, pricePerUnit: pricePerUnit, sellerName: sellerName,
+        itemId: itemId,
+        qty: qty,
+        pricePerUnit: pricePerUnit,
+        sellerName: sellerName,
       );
       return true;
     }
@@ -167,10 +180,10 @@ class ItemRepository {
     await removeFromInventory(itemId, qty);
 
     await _client.from('player_market_listings').insert({
-      'seller_id':      userId,
-      'seller_name':    sellerName,
-      'item_id':        itemId,
-      'qty':            qty,
+      'seller_id': userId,
+      'seller_name': sellerName,
+      'item_id': itemId,
+      'qty': qty,
       'price_per_unit': pricePerUnit,
     });
 
@@ -181,7 +194,8 @@ class ItemRepository {
     if (DemoStore.isActive) {
       final removed = DemoStore.instance.removeListing(listingId);
       if (removed != null) {
-        DemoStore.instance.addItem(removed['itemId'] as String, removed['qty'] as int);
+        DemoStore.instance
+            .addItem(removed['itemId'] as String, removed['qty'] as int);
       }
       return;
     }
@@ -227,16 +241,16 @@ class ItemRepository {
         base = base.neq('seller_id', userId);
       }
 
-      final rows = await base
-          .order('created_at', ascending: false)
-          .limit(20);
-      return (rows as List).map((r) => PlayerListing(
-        id:           r['id']           as String,
-        itemId:       r['item_id']       as String,
-        qty:          r['qty']           as int,
-        pricePerUnit: r['price_per_unit'] as int,
-        sellerName:   r['seller_name']   as String,
-      )).toList();
+      final rows = await base.order('created_at', ascending: false).limit(20);
+      return (rows as List)
+          .map((r) => PlayerListing(
+                id: r['id'] as String,
+                itemId: r['item_id'] as String,
+                qty: r['qty'] as int,
+                pricePerUnit: r['price_per_unit'] as int,
+                sellerName: r['seller_name'] as String,
+              ))
+          .toList();
     } catch (_) {
       // Si la tabla está vacía o hay error de red, mostrar listings de muestra
       return _sampleListings(worldId);
@@ -249,19 +263,25 @@ class ItemRepository {
     if (worldItems.isEmpty) return [];
 
     final sellers = [
-      'Zorro Astuto', 'Ardilla Pro', 'Oso Trader', 'Búho Rico',
-      'Conejo Veloz', 'Lobo Mercante', 'Ciervo Sabio', 'Mapache Listo',
+      'Zorro Astuto',
+      'Ardilla Pro',
+      'Oso Trader',
+      'Búho Rico',
+      'Conejo Veloz',
+      'Lobo Mercante',
+      'Ciervo Sabio',
+      'Mapache Listo',
     ];
     final result = <PlayerListing>[];
     for (var i = 0; i < worldItems.length && i < sellers.length; i++) {
       final item = worldItems[i % worldItems.length];
       final mult = 0.9 + (i % 4) * 0.15;
       result.add(PlayerListing(
-        id:           'sample_$i',
-        itemId:       item.id,
-        qty:          (i % 3) + 1,
+        id: 'sample_$i',
+        itemId: item.id,
+        qty: (i % 3) + 1,
         pricePerUnit: (item.shopPrice * mult).round(),
-        sellerName:   sellers[i],
+        sellerName: sellers[i],
       ));
     }
     return result;

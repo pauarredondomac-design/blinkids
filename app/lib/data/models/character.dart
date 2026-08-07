@@ -34,10 +34,10 @@ class Character {
 
   factory Character.fromJson(Map<String, dynamic> json) {
     return Character(
-      id:              json['id']              as String,
-      userId:          json['user_id']         as String,
-      xp:              json['xp']              as int? ?? 0,
-      level:           json['level']           as int? ?? 1,
+      id: json['id'] as String,
+      userId: json['user_id'] as String,
+      xp: json['xp'] as int? ?? 0,
+      level: json['level'] as int? ?? 1,
       equippedAvatarId: json['equipped_avatar_id'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -45,25 +45,25 @@ class Character {
   }
 
   Map<String, dynamic> toJson() => {
-        'id':       id,
-        'user_id':  userId,
-        'xp':       xp,
-        'level':    level,
+        'id': id,
+        'user_id': userId,
+        'xp': xp,
+        'level': level,
         if (equippedAvatarId != null) 'equipped_avatar_id': equippedAvatarId,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
 
   Character copyWith({
-    int?    xp,
-    int?    level,
+    int? xp,
+    int? level,
     String? equippedAvatarId,
   }) {
     return Character(
-      id:              id,
-      userId:          userId,
-      xp:              xp              ?? this.xp,
-      level:           level           ?? this.level,
+      id: id,
+      userId: userId,
+      xp: xp ?? this.xp,
+      level: level ?? this.level,
       equippedAvatarId: equippedAvatarId ?? this.equippedAvatarId,
       createdAt: createdAt,
       updatedAt: DateTime.now(),

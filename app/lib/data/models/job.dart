@@ -10,24 +10,24 @@ class JobLevel {
   });
 
   factory JobLevel.fromJson(Map<String, dynamic> json) => JobLevel(
-        price:  json['price']  as int,
-        paid:   json['paid']   as int,
+        price: json['price'] as int,
+        paid: json['paid'] as int,
         change: json['change'] as int,
       );
 }
 
 class Job {
-  final String  id;
-  final String  name;
+  final String id;
+  final String name;
   final String? description;
-  final int     coinReward;
-  final int     xpReward;
-  final int     durationSeconds;
-  final int     cooldownMinutes;
-  final String? mechanics;         // 'drag_coins' | 'income_expense_entry'
+  final int coinReward;
+  final int xpReward;
+  final int durationSeconds;
+  final int cooldownMinutes;
+  final String? mechanics; // 'drag_coins' | 'income_expense_entry'
   final String? intro;
   final List<JobLevel> levels;
-  final bool    isActive;
+  final bool isActive;
 
   const Job({
     required this.id,
@@ -47,15 +47,15 @@ class Job {
     final instr = json['instructions'] as Map<String, dynamic>? ?? {};
     final rawLevels = instr['levels'] as List<dynamic>? ?? [];
     return Job(
-      id:              json['id']               as String,
-      name:            json['name']             as String,
-      description:     json['description']      as String?,
-      coinReward:      json['coin_reward']      as int? ?? 0,
-      xpReward:        json['xp_reward']        as int? ?? 0,
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      coinReward: json['coin_reward'] as int? ?? 0,
+      xpReward: json['xp_reward'] as int? ?? 0,
       durationSeconds: json['duration_seconds'] as int? ?? 60,
       cooldownMinutes: json['cooldown_minutes'] as int? ?? 60,
-      mechanics:       instr['mechanics']       as String?,
-      intro:           instr['intro']           as String?,
+      mechanics: instr['mechanics'] as String?,
+      intro: instr['intro'] as String?,
       levels: rawLevels
           .map((l) => JobLevel.fromJson(l as Map<String, dynamic>))
           .toList(),

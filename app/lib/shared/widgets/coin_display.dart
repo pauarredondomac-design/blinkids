@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../core/utils/extensions.dart';
+import '../theme/game_tokens.dart';
 
 const _kCoinFrames = 9;
 const _kCoinPath = 'assets/ui/coin/frame_';
@@ -110,5 +111,64 @@ class CoinDisplay extends StatelessWidget {
     }
 
     return content;
+  }
+}
+
+enum CoinChipSize { sm, md, lg }
+
+/// Pill unificado para mostrar el balance de monedas — mismo fondo/forma/
+/// borde/tipografía en todas las pantallas de juego (Tienda, Trabajos, Mapa).
+/// Envuelve el `AnimatedCoin` existente, no duplica el ícono.
+class CoinChip extends StatelessWidget {
+  const CoinChip({super.key, required this.coins, this.size = CoinChipSize.md});
+
+  final int coins;
+  final CoinChipSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = switch (size) {
+      CoinChipSize.sm => 14.0,
+      CoinChipSize.md => 18.0,
+      CoinChipSize.lg => 26.0,
+    };
+    final fontSize = switch (size) {
+      CoinChipSize.sm => 12.0,
+      CoinChipSize.md => 14.0,
+      CoinChipSize.lg => 19.0,
+    };
+    final padH = switch (size) {
+      CoinChipSize.sm => 10.0,
+      CoinChipSize.md => 14.0,
+      CoinChipSize.lg => 18.0,
+    };
+    final padV = switch (size) {
+      CoinChipSize.sm => 5.0,
+      CoinChipSize.md => 8.0,
+      CoinChipSize.lg => 10.0,
+    };
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: padH, vertical: padV),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.40),
+        borderRadius: BorderRadius.circular(GameTokens.chipRadius),
+        border: Border.all(color: GameTokens.gold.withOpacity(0.50)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedCoin(size: iconSize),
+          const SizedBox(width: 8),
+          Text(
+            '$coins',
+            style: GameText.label(
+                color: GameTokens.gold,
+                size: fontSize,
+                weight: FontWeight.w800),
+          ),
+        ],
+      ),
+    );
   }
 }

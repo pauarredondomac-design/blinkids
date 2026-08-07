@@ -23,8 +23,10 @@ class Mission {
   // ── Campos de objetivo (nuevos) ──────────────────────────────────────────
   /// Tipo de objetivo a completar. Null = misión sin auto-tracking (legado).
   final MissionObjectiveType? objectiveType;
+
   /// Cantidad objetivo (e.g. 5 quizzes, 3 trabajos).
   final int objectiveTarget;
+
   /// Ítem de recompensa opcional (además de monedas).
   final ItemReward? itemReward;
 
@@ -57,7 +59,7 @@ class Mission {
 
     ItemReward? reward;
     final rewardItemId = json['item_reward_id'] as String?;
-    final rewardQty    = json['item_reward_qty'] as int? ?? 1;
+    final rewardQty = json['item_reward_qty'] as int? ?? 1;
     if (rewardItemId != null) {
       reward = ItemReward(itemId: rewardItemId, qty: rewardQty);
     }
@@ -79,17 +81,16 @@ class Mission {
           ? DateTime.parse(json['ends_at'] as String)
           : null,
       createdAt: DateTime.parse(json['created_at'] as String),
-      objectiveType:   objType,
+      objectiveType: objType,
       objectiveTarget: json['objective_target'] as int? ?? 1,
-      itemReward:      reward,
+      itemReward: reward,
     );
   }
 
   /// Progreso basado en participantes (sistema legado de Supabase).
-  double get progressRatio =>
-      totalParticipantsNeeded == 0
-          ? 1.0
-          : (currentParticipants / totalParticipantsNeeded).clamp(0.0, 1.0);
+  double get progressRatio => totalParticipantsNeeded == 0
+      ? 1.0
+      : (currentParticipants / totalParticipantsNeeded).clamp(0.0, 1.0);
 
   bool get isCompleted => status == MissionStatus.completed;
 

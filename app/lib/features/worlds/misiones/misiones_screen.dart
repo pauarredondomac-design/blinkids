@@ -17,7 +17,11 @@ import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/rocket_launch_overlay.dart';
 import '../../../shared/widgets/badges_row.dart';
+import '../../../shared/widgets/game_popup.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../shared/theme/game_tokens.dart';
+import '../../../shared/widgets/screen_background.dart';
+import '../../../shared/widgets/game_card.dart';
 import 'desafios_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -152,13 +156,7 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _claiming.remove(mission.id));
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ));
+        showGamePopup(context, 'Error: $e', accentColor: Colors.red.shade700);
       }
     }
   }
@@ -176,7 +174,7 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
     final missionsAsync = ref.watch(activeMissionsProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A18),
+      backgroundColor: Colors.transparent,
       body: ScreenTutorial(
         tutorialKey: 'misiones_v2',
         steps: const [
@@ -197,7 +195,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                 '¡Tócalo para recibir tus monedas y objetos!',
           ),
         ],
-        child: Row(
+        child: ScreenBackground(
+            child: Row(
           children: [
             _MisionesSidebar(
               category: _category,
@@ -240,7 +239,7 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                                   'No hay misiones activas\npor ahora. ¡Vuelve pronto!',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.65),
+                                    color: GameTokens.textSecondary,
                                     fontSize: 16,
                                   ),
                                 ),
@@ -279,7 +278,7 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                     ),
             ),
           ],
-        ),
+        )),
       ),
     );
   }
@@ -315,103 +314,96 @@ class _MisionesSidebar extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Botón volver
-              GestureDetector(
-                onTap: onBack,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.20),
-                      width: 1,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header agrupado — mismo patrón que Tienda/Vestidor/Mi Bolsa/Banco Estelar
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E))),
               ),
-
-              const SizedBox(height: 20),
-
-              // Título
-              const Text(
-                'MISIONES',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.5,
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              // Divider con label
-              Row(
+              child: Row(
                 children: [
-                  Expanded(
+                  GestureDetector(
+                    onTap: onBack,
                     child: Container(
-                      height: 1,
-                      color: const Color(0xFF2A1A5E),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 6),
-                    child: Text(
-                      'CATEGORÍAS',
-                      style: TextStyle(
-                        color: Color(0xFF6B5B9E),
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.07),
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.18)),
                       ),
+                      child: const Icon(Icons.arrow_back_rounded,
+                          color: Colors.white, size: 15),
                     ),
                   ),
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFF2A1A5E),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Misiones'.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      fontFamily: 'Nunito',
                     ),
                   ),
                 ],
               ),
+            ),
 
-              const SizedBox(height: 12),
+            const SizedBox(height: GameTokens.spaceLg),
 
-              _CategoryItem(
-                emoji: '📖',
-                label: 'MISIONES HISTORIA',
-                active: category == _MissionCategory.historia,
-                onTap: () => onSelectCategory(_MissionCategory.historia),
+            // Label de sección — mismo tratamiento plano que Tienda, sin líneas divisoras
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: GameTokens.spaceMd),
+              child: Text(
+                'Categorías'.toUpperCase(),
+                style: TextStyle(
+                  color: GameTokens.textMuted,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5,
+                ),
               ),
-              const SizedBox(height: 6),
-              _CategoryItem(
-                emoji: '🔁',
-                label: 'MISIONES DIARIAS',
-                active: category == _MissionCategory.diarias,
-                onTap: () => onSelectCategory(_MissionCategory.diarias),
+            ),
+
+            const SizedBox(height: GameTokens.spaceSm),
+
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: GameTokens.spaceSm),
+              child: Column(
+                children: [
+                  _CategoryItem(
+                    emoji: '📖',
+                    label: 'Misiones historia',
+                    active: category == _MissionCategory.historia,
+                    onTap: () => onSelectCategory(_MissionCategory.historia),
+                  ),
+                  const SizedBox(height: GameTokens.spaceSm),
+                  _CategoryItem(
+                    emoji: '🔁',
+                    label: 'Misiones diarias',
+                    active: category == _MissionCategory.diarias,
+                    onTap: () => onSelectCategory(_MissionCategory.diarias),
+                  ),
+                  const SizedBox(height: GameTokens.spaceSm),
+                  _CategoryItem(
+                    emoji: '🎮',
+                    label: 'Desafíos',
+                    active: false,
+                    onTap: onOpenDesafios,
+                    trailing: true,
+                  ),
+                ],
               ),
-              const SizedBox(height: 6),
-              _CategoryItem(
-                emoji: '🎮',
-                label: 'DESAFÍOS',
-                active: false,
-                onTap: onOpenDesafios,
-                trailing: true,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -441,7 +433,8 @@ class _CategoryItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: GameTokens.spaceSm, vertical: GameTokens.spaceSm),
         decoration: BoxDecoration(
           color: active
               ? const Color(0xFF3D1E8F).withOpacity(0.35)
@@ -460,9 +453,9 @@ class _CategoryItem extends StatelessWidget {
             const SizedBox(width: 7),
             Expanded(
               child: Text(
-                label,
+                label.toUpperCase(),
                 style: TextStyle(
-                  color: active ? Colors.white : Colors.white.withOpacity(0.55),
+                  color: active ? Colors.white : GameTokens.textSecondary,
                   fontSize: 11,
                   fontWeight: active ? FontWeight.w800 : FontWeight.w700,
                   letterSpacing: 0.8,
@@ -526,13 +519,9 @@ class _MissionCard extends StatelessWidget {
     }
   }
 
-  // Color del borde según estado
-  Color get _borderColor {
-    if (claimed) return Colors.greenAccent.withOpacity(0.35);
-    if (complete) return Colors.greenAccent.withOpacity(0.55);
-    return const Color(0xFF4FC3F7).withOpacity(0.25);
-  }
-
+  // Acento de color según estado — celeste mientras está en curso, verde
+  // una vez completada/reclamada. Se usa tanto para el borde/glow de
+  // GameCard como para la barra y el contador de progreso.
   Color get _progressColor {
     if (claimed || complete) return Colors.greenAccent;
     return const Color(0xFF4FC3F7);
@@ -549,22 +538,11 @@ class _MissionCard extends StatelessWidget {
 
     return Opacity(
       opacity: claimed ? 0.65 : 1.0,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0D1B3E).withOpacity(0.85),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _borderColor, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: complete && !claimed
-                  ? Colors.greenAccent.withOpacity(0.10)
-                  : Colors.transparent,
-              blurRadius: 14,
-            ),
-          ],
-        ),
-        child: Padding(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: GameCard(
+          accentColor: _progressColor,
+          highlighted: complete && !claimed,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -620,7 +598,7 @@ class _MissionCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.52),
+                          color: GameTokens.textSecondary,
                           fontSize: 11,
                           fontStyle: FontStyle.italic,
                           height: 1.35,
@@ -801,7 +779,7 @@ class _MissionCard extends StatelessWidget {
                               child: Text(
                                 'En progreso…',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.60),
+                                  color: GameTokens.textSecondary,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                 ),
@@ -910,7 +888,7 @@ class _ClaimDialog extends StatelessWidget {
             mission.name,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.65),
+              color: GameTokens.textSecondary,
               fontSize: 14,
             ),
           ),
@@ -1024,7 +1002,7 @@ class _ErrorView extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'No se pudieron cargar las misiones',
-            style: TextStyle(color: Colors.white.withOpacity(0.65)),
+            style: TextStyle(color: GameTokens.textSecondary),
           ),
           const SizedBox(height: 16),
           GestureDetector(

@@ -8,7 +8,12 @@ import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/blink_ambient_provider.dart';
 import '../../../shared/providers/badge_provider.dart';
 import '../../../data/models/badge.dart';
-import '../../../shared/widgets/blink_character.dart';
+import '../../../shared/widgets/blink_avatar.dart';
+import '../../../shared/widgets/blink_reaction.dart';
+import '../../../shared/widgets/screen_background.dart';
+import '../../../shared/widgets/game_card.dart';
+import '../../../shared/widgets/game_popup.dart';
+import '../../../shared/theme/game_tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 void showVestidorDialog(BuildContext context) {
@@ -57,11 +62,18 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
   late Map<String, CosmeticDefinition?> _previewSlots;
   bool _initialized = false;
   bool _saving = false;
+  final _blinkReaction = BlinkReactionController();
+
+  @override
+  void dispose() {
+    _blinkReaction.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final loadoutAsync = ref.watch(equippedLoadoutProvider);
-    final ownedAsync   = ref.watch(ownedCosmeticsProvider);
+    final ownedAsync = ref.watch(ownedCosmeticsProvider);
 
     // Inicializar preview una vez con el loadout real
     if (!_initialized && loadoutAsync.valueOrNull != null) {
@@ -70,26 +82,22 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
     }
 
     final previewLoadout = EquippedLoadout(_initialized ? _previewSlots : {});
-    final ownedAll  = ownedAsync.valueOrNull ?? [];
+    final ownedAll = ownedAsync.valueOrNull ?? [];
     final slotItems = ownedAll.where((c) => c.slot == _slot).toList();
 
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0D0A2A), Color(0xFF08061A)],
-        ),
-      ),
+    return ScreenBackground(
       child: Row(
         children: [
           // ── Sidebar ──────────────────────────────────────────────────────
           _VestidorSidebar(
             selected: _slot,
-            special:  _special,
-            onSelect: (s) => setState(() { _slot = s; _special = null; }),
+            special: _special,
+            onSelect: (s) => setState(() {
+              _slot = s;
+              _special = null;
+            }),
             onSelectSpecial: (s) => setState(() => _special = s),
-            onBack:   () => Navigator.of(context).pop(),
+            onBack: () => Navigator.of(context).pop(),
           ),
 
           // ── Zona central: preview de Blink ───────────────────────────────
@@ -97,6 +105,7 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
             loadout: previewLoadout,
             saving: _saving,
             onSave: _saveLoadout,
+            reaction: _blinkReaction,
           ),
 
           // ── Panel derecho ─────────────────────────────────────────────────
@@ -106,11 +115,11 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
                 : _special == 'badges'
                     ? const _BadgesPanel()
                     : _CosmeticsGrid(
-                        slot:         _slot,
-                        items:        slotItems,
+                        slot: _slot,
+                        items: slotItems,
                         previewLoadout: previewLoadout,
-                        onEquip:      _equip,
-                        onUnequip:    _unequip,
+                        onEquip: _equip,
+                        onUnequip: _unequip,
                       ),
           ),
         ],
@@ -132,11 +141,12 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
     try {
       final notifier = ref.read(cosmeticShopProvider.notifier);
       // Equipar los slots que cambiaron
-      final liveLoadout = ref.read(equippedLoadoutProvider).valueOrNull ?? EquippedLoadout.empty;
+      final liveLoadout = ref.read(equippedLoadoutProvider).valueOrNull ??
+          EquippedLoadout.empty;
       var changed = false;
       for (final slot in CosmeticSlot.values) {
         final preview = _previewSlots[slot.id];
-        final live    = liveLoadout[slot];
+        final live = liveLoadout[slot];
         if (preview?.id != live?.id) {
           changed = true;
           if (preview != null) {
@@ -148,7 +158,10 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
       }
       ref.invalidate(equippedLoadoutProvider);
       if (changed) ref.read(justChangedOutfitProvider.notifier).state = true;
-      if (mounted) _snack('¡Cambios guardados! ✨', const Color(0xFF2E7D32));
+      if (mounted) {
+        _snack('¡Cambios guardados! ✨', const Color(0xFF2E7D32));
+        _blinkReaction.react(BlinkMood.contento);
+      }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
     } finally {
@@ -156,14 +169,8 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
     }
   }
 
-  void _snack(String msg, Color bg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: bg,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ));
-  }
+  void _snack(String msg, Color bg) =>
+      showGamePopup(context, msg, accentColor: bg);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -177,11 +184,11 @@ class _VestidorSidebar extends StatelessWidget {
     required this.onSelectSpecial,
     required this.onBack,
   });
-  final CosmeticSlot               selected;
-  final String?                    special;
+  final CosmeticSlot selected;
+  final String? special;
   final ValueChanged<CosmeticSlot> onSelect;
-  final ValueChanged<String>       onSelectSpecial;
-  final VoidCallback               onBack;
+  final ValueChanged<String> onSelectSpecial;
+  final VoidCallback onBack;
 
   // Slots que se muestran en el vestidor
   static const _slots = [
@@ -211,18 +218,29 @@ class _VestidorSidebar extends StatelessWidget {
           Container(
             padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E), width: 1)),
+              border: Border(
+                  bottom: BorderSide(color: Color(0xFF2A1A5E), width: 1)),
             ),
             child: Row(
               children: [
                 GestureDetector(
                   onTap: onBack,
-                  child: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF9575CD), size: 18),
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.07),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.18)),
+                    ),
+                    child: const Icon(Icons.arrow_back_rounded,
+                        color: Colors.white, size: 15),
+                  ),
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  'VESTIDOR',
-                  style: TextStyle(
+                const SizedBox(width: 10),
+                Text(
+                  'Vestidor'.toUpperCase(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
@@ -239,25 +257,25 @@ class _VestidorSidebar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               children: [
                 ..._slots.map((s) => _SidebarItem(
-                  slot:     s,
-                  selected: special == null && selected == s,
-                  onTap:    () => onSelect(s),
-                )),
+                      slot: s,
+                      selected: special == null && selected == s,
+                      onTap: () => onSelect(s),
+                    )),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Divider(color: Color(0xFF2A1A5E), height: 1),
                 ),
                 _SidebarSpecialItem(
-                  emoji:    '🎒',
-                  label:    'Inventario',
+                  emoji: '🎒',
+                  label: 'Inventario',
                   selected: special == 'inventory',
-                  onTap:    () => onSelectSpecial('inventory'),
+                  onTap: () => onSelectSpecial('inventory'),
                 ),
                 _SidebarSpecialItem(
-                  emoji:    '🏅',
-                  label:    'Badges',
+                  emoji: '🏅',
+                  label: 'Badges',
                   selected: special == 'badges',
-                  onTap:    () => onSelectSpecial('badges'),
+                  onTap: () => onSelectSpecial('badges'),
                 ),
               ],
             ),
@@ -275,9 +293,9 @@ class _SidebarSpecialItem extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-  final String       emoji;
-  final String       label;
-  final bool         selected;
+  final String emoji;
+  final String label;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
@@ -306,9 +324,9 @@ class _SidebarSpecialItem extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                label,
+                label.toUpperCase(),
                 style: TextStyle(
-                  color: selected ? Colors.white : Colors.white54,
+                  color: selected ? Colors.white : GameTokens.textSecondary,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                   fontSize: 13,
                 ),
@@ -322,9 +340,10 @@ class _SidebarSpecialItem extends StatelessWidget {
 }
 
 class _SidebarItem extends StatelessWidget {
-  const _SidebarItem({required this.slot, required this.selected, required this.onTap});
+  const _SidebarItem(
+      {required this.slot, required this.selected, required this.onTap});
   final CosmeticSlot slot;
-  final bool         selected;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
@@ -353,9 +372,9 @@ class _SidebarItem extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                slot.displayName,
+                slot.displayName.toUpperCase(),
                 style: TextStyle(
-                  color: selected ? Colors.white : Colors.white54,
+                  color: selected ? Colors.white : GameTokens.textSecondary,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                   fontSize: 13,
                 ),
@@ -376,10 +395,12 @@ class _BlinkPreviewPanel extends StatelessWidget {
     required this.loadout,
     required this.saving,
     required this.onSave,
+    required this.reaction,
   });
   final EquippedLoadout loadout;
-  final bool            saving;
-  final VoidCallback    onSave;
+  final bool saving;
+  final VoidCallback onSave;
+  final BlinkReactionController reaction;
 
   @override
   Widget build(BuildContext context) {
@@ -394,9 +415,9 @@ class _BlinkPreviewPanel extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
             child: Text(
-              'PREVIEW',
+              'Preview'.toUpperCase(),
               style: TextStyle(
-                color: const Color(0xFF9575CD).withOpacity(0.80),
+                color: GameTokens.textMuted,
                 fontWeight: FontWeight.w900,
                 fontSize: 11,
                 letterSpacing: 2,
@@ -409,10 +430,11 @@ class _BlinkPreviewPanel extends StatelessWidget {
               child: Center(
                 child: FittedBox(
                   fit: BoxFit.contain,
-                  child: BlinkCharacterWidget(
-                    width: 160,
+                  child: BlinkAvatar(
+                    size: 160,
                     loadout: loadout,
-                    enableBounce: true,
+                    bounce: true,
+                    reaction: reaction,
                   ),
                 ),
               ),
@@ -480,22 +502,23 @@ class _InventoryPanel extends ConsumerWidget {
     final stacks = inventoryAsync.valueOrNull ?? [];
 
     return Container(
-      color: const Color(0xFF0A0818),
+      color: Colors.transparent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E), width: 1)),
+              border: Border(
+                  bottom: BorderSide(color: Color(0xFF2A1A5E), width: 1)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Text('🎒', style: TextStyle(fontSize: 20)),
-                SizedBox(width: 8),
+                const Text('🎒', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
                 Text(
-                  'MI INVENTARIO',
-                  style: TextStyle(
+                  'Mi inventario'.toUpperCase(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
@@ -507,7 +530,8 @@ class _InventoryPanel extends ConsumerWidget {
           ),
           Expanded(
             child: inventoryAsync.isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF9575CD)))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF9575CD)))
                 : stacks.isEmpty
                     ? Center(
                         child: Column(
@@ -517,19 +541,22 @@ class _InventoryPanel extends ConsumerWidget {
                             const SizedBox(height: 12),
                             Text(
                               'Tu inventario está vacío',
-                              style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+                              style: TextStyle(
+                                  color: GameTokens.textMuted, fontSize: 13),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Compra o gana objetos en la tienda y misiones',
-                              style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 11),
+                              style: TextStyle(
+                                  color: GameTokens.textMuted, fontSize: 11),
                             ),
                           ],
                         ),
                       )
                     : GridView.builder(
                         padding: const EdgeInsets.all(12),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
@@ -569,24 +596,30 @@ class _InventoryCard extends StatelessWidget {
                   ? Image.asset(
                       'assets/items/${item.imagePath}',
                       fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) =>
-                          Text(item.emoji, style: const TextStyle(fontSize: 40)),
+                      errorBuilder: (_, __, ___) => Text(item.emoji,
+                          style: const TextStyle(fontSize: 40)),
                     )
                   : Text(item.emoji, style: const TextStyle(fontSize: 40)),
             ),
           ),
           Positioned(
-            left: 0, right: 0, bottom: 6,
+            left: 0,
+            right: 0,
+            bottom: 6,
             child: Text(
               item.name,
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                  color: GameTokens.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700),
             ),
           ),
           Positioned(
-            top: 6, right: 6,
+            top: 6,
+            right: 6,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -595,7 +628,10 @@ class _InventoryCard extends StatelessWidget {
               ),
               child: Text(
                 '×${stack.qty}',
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800),
               ),
             ),
           ),
@@ -613,26 +649,27 @@ class _BadgesPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final defsAsync   = ref.watch(badgeDefinitionsProvider);
+    final defsAsync = ref.watch(badgeDefinitionsProvider);
     final earnedAsync = ref.watch(playerBadgesProvider);
 
     return Container(
-      color: const Color(0xFF0A0818),
+      color: Colors.transparent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E), width: 1)),
+              border: Border(
+                  bottom: BorderSide(color: Color(0xFF2A1A5E), width: 1)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Text('🏅', style: TextStyle(fontSize: 20)),
-                SizedBox(width: 8),
+                const Text('🏅', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
                 Text(
-                  'BADGES',
-                  style: TextStyle(
+                  'Badges'.toUpperCase(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
                     fontSize: 13,
@@ -650,7 +687,7 @@ class _BadgesPanel extends ConsumerWidget {
               error: (_, __) => Center(
                 child: Text(
                   'No se pudieron cargar las medallas',
-                  style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+                  style: TextStyle(color: GameTokens.textMuted, fontSize: 13),
                 ),
               ),
               data: (defs) {
@@ -663,16 +700,16 @@ class _BadgesPanel extends ConsumerWidget {
                         const SizedBox(height: 12),
                         Text(
                           'Próximamente',
-                          style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+                          style: TextStyle(
+                              color: GameTokens.textMuted, fontSize: 13),
                         ),
                       ],
                     ),
                   );
                 }
-                final earnedIds = earnedAsync.asData?.value
-                        .map((b) => b.badgeId)
-                        .toSet() ??
-                    <String>{};
+                final earnedIds =
+                    earnedAsync.asData?.value.map((b) => b.badgeId).toSet() ??
+                        <String>{};
                 return GridView.builder(
                   padding: const EdgeInsets.all(12),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -683,8 +720,8 @@ class _BadgesPanel extends ConsumerWidget {
                   ),
                   itemCount: defs.length,
                   itemBuilder: (_, i) {
-                    final def     = defs[i];
-                    final earned  = earnedIds.contains(def.id);
+                    final def = defs[i];
+                    final earned = earnedIds.contains(def.id);
                     return _BadgeCard(def: def, earned: earned);
                   },
                 );
@@ -700,7 +737,7 @@ class _BadgesPanel extends ConsumerWidget {
 class _BadgeCard extends StatelessWidget {
   const _BadgeCard({required this.def, required this.earned});
   final BadgeDefinition def;
-  final bool             earned;
+  final bool earned;
 
   @override
   Widget build(BuildContext context) {
@@ -709,7 +746,8 @@ class _BadgeCard extends StatelessWidget {
         context: context,
         builder: (_) => AlertDialog(
           backgroundColor: const Color(0xFF1A1140),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Row(
             children: [
               Opacity(
@@ -720,14 +758,15 @@ class _BadgeCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   def.name,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w800),
                 ),
               ),
             ],
           ),
           content: Text(
             def.description,
-            style: TextStyle(color: Colors.white.withOpacity(0.75)),
+            style: TextStyle(color: GameTokens.textSecondary),
           ),
           actions: [
             TextButton(
@@ -742,11 +781,17 @@ class _BadgeCard extends StatelessWidget {
           color: earned ? const Color(0xFF241858) : const Color(0xFF150E33),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: earned ? const Color(0xFFFFC107).withOpacity(0.55) : const Color(0xFF2A1A5E),
+            color: earned
+                ? const Color(0xFFFFC107).withOpacity(0.55)
+                : const Color(0xFF2A1A5E),
             width: earned ? 1.4 : 1,
           ),
           boxShadow: earned
-              ? [BoxShadow(color: const Color(0xFFFFC107).withOpacity(0.25), blurRadius: 10)]
+              ? [
+                  BoxShadow(
+                      color: const Color(0xFFFFC107).withOpacity(0.25),
+                      blurRadius: 10)
+                ]
               : null,
         ),
         padding: const EdgeInsets.all(8),
@@ -764,7 +809,7 @@ class _BadgeCard extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: earned ? Colors.white : Colors.white.withOpacity(0.35),
+                color: earned ? Colors.white : GameTokens.textMuted,
                 fontWeight: FontWeight.w700,
                 fontSize: 10.5,
               ),
@@ -791,17 +836,17 @@ class _CosmeticsGrid extends StatelessWidget {
     required this.onEquip,
     required this.onUnequip,
   });
-  final CosmeticSlot                        slot;
-  final List<CosmeticDefinition>            items;
-  final EquippedLoadout                     previewLoadout;
-  final ValueChanged<CosmeticDefinition>    onEquip;
-  final ValueChanged<CosmeticSlot>          onUnequip;
+  final CosmeticSlot slot;
+  final List<CosmeticDefinition> items;
+  final EquippedLoadout previewLoadout;
+  final ValueChanged<CosmeticDefinition> onEquip;
+  final ValueChanged<CosmeticSlot> onUnequip;
 
   @override
   Widget build(BuildContext context) {
     final equipped = previewLoadout[slot];
     return Container(
-      color: const Color(0xFF0A0818),
+      color: Colors.transparent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -809,7 +854,8 @@ class _CosmeticsGrid extends StatelessWidget {
           Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E), width: 1)),
+              border: Border(
+                  bottom: BorderSide(color: Color(0xFF2A1A5E), width: 1)),
             ),
             child: Row(
               children: [
@@ -829,14 +875,19 @@ class _CosmeticsGrid extends StatelessWidget {
                   GestureDetector(
                     onTap: () => onUnequip(slot),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.redAccent.withOpacity(0.60)),
+                        border: Border.all(
+                            color: Colors.redAccent.withOpacity(0.60)),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
                         'Quitar',
-                        style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -849,7 +900,8 @@ class _CosmeticsGrid extends StatelessWidget {
                 ? _EmptySlot(slot: slot)
                 : GridView.builder(
                     padding: const EdgeInsets.all(12),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
                       mainAxisSpacing: 10,
                       crossAxisSpacing: 10,
@@ -857,12 +909,13 @@ class _CosmeticsGrid extends StatelessWidget {
                     ),
                     itemCount: items.length,
                     itemBuilder: (_, i) {
-                      final c         = items[i];
+                      final c = items[i];
                       final isEquipped = equipped?.id == c.id;
                       return _CosmeticCard(
-                        cosmetic:   c,
+                        cosmetic: c,
                         isEquipped: isEquipped,
-                        onTap:      () => isEquipped ? onUnequip(c.slot) : onEquip(c),
+                        onTap: () =>
+                            isEquipped ? onUnequip(c.slot) : onEquip(c),
                       );
                     },
                   ),
@@ -883,36 +936,19 @@ class _CosmeticCard extends StatelessWidget {
     required this.onTap,
   });
   final CosmeticDefinition cosmetic;
-  final bool               isEquipped;
-  final VoidCallback        onTap;
+  final bool isEquipped;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          gradient: isEquipped
-              ? const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFF4A1A8A), Color(0xFF2D0D5A)],
-                )
-              : const LinearGradient(
-                  colors: [Color(0xFF1A1040), Color(0xFF110C30)],
-                ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isEquipped
-                ? const Color(0xFFCE93D8)
-                : const Color(0xFF2A1A5E),
-            width: isEquipped ? 2 : 1,
-          ),
-          boxShadow: isEquipped
-              ? [BoxShadow(color: const Color(0xFF7B2FBE).withOpacity(0.40), blurRadius: 12)]
-              : [],
-        ),
+      child: GameCard(
+        accentColor: GameTokens.purpleLight,
+        backgroundColor:
+            isEquipped ? const Color(0xFF4A1A8A) : const Color(0xFF1A1040),
+        highlighted: isEquipped,
+        borderRadius: 14,
         child: Stack(
           children: [
             // Imagen
@@ -924,14 +960,16 @@ class _CosmeticCard extends StatelessWidget {
             ),
             // Nombre
             Positioned(
-              left: 0, right: 0, bottom: 6,
+              left: 0,
+              right: 0,
+              bottom: 6,
               child: Text(
                 cosmetic.name,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: isEquipped ? Colors.white : Colors.white70,
+                  color: isEquipped ? Colors.white : GameTokens.textSecondary,
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                 ),
@@ -940,14 +978,17 @@ class _CosmeticCard extends StatelessWidget {
             // Badge equipado
             if (isEquipped)
               Positioned(
-                top: 6, right: 6,
+                top: 6,
+                right: 6,
                 child: Container(
-                  width: 16, height: 16,
+                  width: 16,
+                  height: 16,
                   decoration: const BoxDecoration(
                     color: Color(0xFF7B2FBE),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check_rounded, color: Colors.white, size: 11),
+                  child: const Icon(Icons.check_rounded,
+                      color: Colors.white, size: 11),
                 ),
               ),
           ],
@@ -992,16 +1033,19 @@ class _EmptySlot extends StatelessWidget {
         children: [
           Text(slot.defaultEmoji, style: const TextStyle(fontSize: 48))
               .animate(onPlay: (c) => c.repeat(reverse: true))
-              .scale(begin: const Offset(1, 1), end: const Offset(1.08, 1.08), duration: 1800.ms),
+              .scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.08, 1.08),
+                  duration: 1800.ms),
           const SizedBox(height: 12),
           Text(
             'No tienes ${slot.displayName.toLowerCase()} aún',
-            style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+            style: TextStyle(color: GameTokens.textMuted, fontSize: 13),
           ),
           const SizedBox(height: 4),
           Text(
             'Visita la tienda o completa misiones',
-            style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 11),
+            style: TextStyle(color: GameTokens.textMuted, fontSize: 11),
           ),
         ],
       ),

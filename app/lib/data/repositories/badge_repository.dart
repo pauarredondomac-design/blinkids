@@ -19,17 +19,18 @@ class BadgeRepository {
     try {
       final rows = await _db
           .from('player_badges')
-          .select('badge_id, earned_at, badge_definitions(name, description, emoji)')
+          .select(
+              'badge_id, earned_at, badge_definitions(name, description, emoji)')
           .order('earned_at', ascending: false);
 
       return (rows as List).map((r) {
         final def = r['badge_definitions'] as Map<String, dynamic>?;
         return PlayerBadge(
-          badgeId:     r['badge_id']   as String,
-          earnedAt:    DateTime.parse(r['earned_at'] as String),
-          name:        def?['name']        as String?,
+          badgeId: r['badge_id'] as String,
+          earnedAt: DateTime.parse(r['earned_at'] as String),
+          name: def?['name'] as String?,
           description: def?['description'] as String?,
-          emoji:       def?['emoji']       as String?,
+          emoji: def?['emoji'] as String?,
         );
       }).toList();
     } catch (_) {
@@ -42,18 +43,19 @@ class BadgeRepository {
     try {
       final rows = await _db
           .from('player_badges')
-          .select('badge_id, earned_at, badge_definitions(name, description, emoji)')
+          .select(
+              'badge_id, earned_at, badge_definitions(name, description, emoji)')
           .eq('user_id', childId)
           .order('earned_at', ascending: false);
 
       return (rows as List).map((r) {
         final def = r['badge_definitions'] as Map<String, dynamic>?;
         return PlayerBadge(
-          badgeId:     r['badge_id']   as String,
-          earnedAt:    DateTime.parse(r['earned_at'] as String),
-          name:        def?['name']        as String?,
+          badgeId: r['badge_id'] as String,
+          earnedAt: DateTime.parse(r['earned_at'] as String),
+          name: def?['name'] as String?,
           description: def?['description'] as String?,
-          emoji:       def?['emoji']       as String?,
+          emoji: def?['emoji'] as String?,
         );
       }).toList();
     } catch (_) {
@@ -76,11 +78,11 @@ class BadgeRepository {
   /// Devuelve el catálogo completo de medallas disponibles, ordenado.
   Future<List<BadgeDefinition>> getAllDefinitions() async {
     try {
-      final rows = await _db
-          .from('badge_definitions')
-          .select()
-          .order('sort_order');
-      return (rows as List).map((r) => BadgeDefinition.fromJson(r as Map<String, dynamic>)).toList();
+      final rows =
+          await _db.from('badge_definitions').select().order('sort_order');
+      return (rows as List)
+          .map((r) => BadgeDefinition.fromJson(r as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return [];
     }

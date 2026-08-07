@@ -36,17 +36,25 @@ class ParentMissionRepository {
     required int coinReward,
   }) async {
     await supabase.rpc('create_parent_mission', params: {
-      'p_child_id':    childId,
-      'p_title':       title,
+      'p_child_id': childId,
+      'p_title': title,
       'p_description': description,
       'p_coin_reward': coinReward,
     });
   }
 
-  /// El hijo marca la misión como completada. Paga la recompensa desde la
-  /// billetera del padre de forma atómica. Lanza excepción si el padre ya
-  /// no tiene saldo suficiente.
-  Future<void> completeMission(String missionId) async {
+  /// El hijo marca la misión como hecha — queda "awaiting_approval" hasta
+  /// que el padre la confirme. No paga recompensa todavía.
+  Future<void> markMissionDone(String missionId) async {
+    await supabase.rpc('mark_parent_mission_done', params: {
+      'p_mission_id': missionId,
+    });
+  }
+
+  /// El padre confirma que la misión se hizo de verdad. Recién aquí se paga
+  /// la recompensa desde su billetera de forma atómica. Lanza excepción si
+  /// ya no tiene saldo suficiente.
+  Future<void> approveMission(String missionId) async {
     await supabase.rpc('complete_parent_mission', params: {
       'p_mission_id': missionId,
     });

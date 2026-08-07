@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/widgets/blink_character.dart';
+import '../../../shared/widgets/game_popup.dart';
 
 class WaitingForParentScreen extends StatefulWidget {
   const WaitingForParentScreen({super.key});
@@ -32,18 +33,10 @@ class _WaitingForParentScreenState extends State<WaitingForParentScreen> {
         if (mounted) context.go(hasPin ? '/enter-pin' : '/setup-pin');
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                '¡Tu papá aún no ha activado tu cuenta! Pídele que lo haga.',
-                style: TextStyle(
-                    fontFamily: 'Nunito', fontWeight: FontWeight.w600),
-              ),
-              backgroundColor: const Color(0xFF1A237E),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
+          showGamePopup(
+            context,
+            '¡Tu papá aún no ha activado tu cuenta! Pídele que lo haga.',
+            accentColor: const Color(0xFF1A237E),
           );
         }
       }

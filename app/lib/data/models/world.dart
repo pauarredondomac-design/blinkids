@@ -19,13 +19,14 @@ class World {
 
   final String id;
   final String name;
+
   /// Nombre corto para mostrar bajo la imagen en el selector.
   final String shortName;
   final String emoji;
   final String route;
-  final int    unlockCost;
+  final int unlockCost;
   final String description;
-  final Color  accentColor;
+  final Color accentColor;
 
   /// Imagen que se muestra en la tarjeta cuando el mundo está desbloqueado.
   final String? unlockedImagePath;
@@ -47,40 +48,40 @@ class World {
 // ─────────────────────────────────────────────────────────────
 const allWorlds = [
   World(
-    id:                'space',
-    name:              'La Galaxia',
-    shortName:         'Galaxia',
-    emoji:             '🚀',
-    route:             '/world',
-    unlockCost:        0,
-    description:       'Tu mundo de inicio.\nExplora las finanzas galácticas.',
-    accentColor:       Color(0xFF00BCD4),
+    id: 'space',
+    name: 'La Galaxia',
+    shortName: 'Galaxia',
+    emoji: '🚀',
+    route: '/world',
+    unlockCost: 0,
+    description: 'Tu mundo de inicio.\nExplora las finanzas galácticas.',
+    accentColor: Color(0xFF00BCD4),
     unlockedImagePath: 'assets/worlds/space/unlocked.png',
     backgroundImagePath: 'assets/worlds/space/space_background.png',
   ),
   World(
-    id:               'forest',
-    name:             'Bosque Encantado',
-    shortName:        'Bosque',
-    emoji:            '🌲',
-    route:            '/world/forest',
-    unlockCost:       500,
-    description:      'Un bosque lleno de misterios\ny riquezas naturales.',
-    accentColor:      Color(0xFF4CAF50),
-    lockedImagePath:  'assets/worlds/forest/locked.png',
+    id: 'forest',
+    name: 'Bosque Encantado',
+    shortName: 'Bosque',
+    emoji: '🌲',
+    route: '/world/forest',
+    unlockCost: 500,
+    description: 'Un bosque lleno de misterios\ny riquezas naturales.',
+    accentColor: Color(0xFF4CAF50),
+    lockedImagePath: 'assets/worlds/forest/locked.png',
     unlockedImagePath: 'assets/worlds/forest/unlocked.png',
     backgroundImagePath: 'assets/worlds/forest/forest_background.png',
   ),
   World(
-    id:               'sea',
-    name:             'Fondo del Mar',
-    shortName:        'Mar',
-    emoji:            '🌊',
-    route:            '/world/sea',
-    unlockCost:       1000,
-    description:      'Las profundidades guardan\nlos tesoros más valiosos.',
-    accentColor:      Color(0xFF1565C0),
-    lockedImagePath:  'assets/worlds/sea/locked.png',
+    id: 'sea',
+    name: 'Fondo del Mar',
+    shortName: 'Mar',
+    emoji: '🌊',
+    route: '/world/sea',
+    unlockCost: 1000,
+    description: 'Las profundidades guardan\nlos tesoros más valiosos.',
+    accentColor: Color(0xFF1565C0),
+    lockedImagePath: 'assets/worlds/sea/locked.png',
     backgroundImagePath: 'assets/worlds/sea/ocean_background.png',
   ),
 ];

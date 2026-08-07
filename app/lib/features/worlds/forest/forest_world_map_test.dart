@@ -57,7 +57,8 @@ class _StubScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(title,
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.go('/'),

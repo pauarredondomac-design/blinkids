@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
+import '../../shared/widgets/game_popup.dart';
 
 extension StringX on String {
   bool get isValidEmail {
@@ -41,23 +42,9 @@ extension ContextX on BuildContext {
   bool get isLandscape =>
       MediaQuery.of(this).orientation == Orientation.landscape;
 
-  void showError(String message) {
-    ScaffoldMessenger.of(this).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  void showError(String message) =>
+      showGamePopup(this, message, accentColor: AppColors.error);
 
-  void showSuccess(String message) {
-    ScaffoldMessenger.of(this).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  void showSuccess(String message) =>
+      showGamePopup(this, message, accentColor: AppColors.success);
 }

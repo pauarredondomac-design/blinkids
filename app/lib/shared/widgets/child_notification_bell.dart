@@ -6,6 +6,7 @@ import '../../data/models/app_notification.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/parent_provider.dart';
 import '../../shared/providers/profile_provider.dart';
+import 'game_popup.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ChildNotificationBell
@@ -247,23 +248,15 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
       setState(() => _handled = true);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text(
-            '¡Solicitud aceptada! Tu tutor puede verte ahora. 🎉',
-            style: TextStyle(fontFamily: 'Nunito'),
-          ),
-          backgroundColor: Color(0xFF10B981),
-          behavior: SnackBarBehavior.floating,
-        ));
+        showGamePopup(
+          context,
+          '¡Solicitud aceptada! Tu tutor puede verte ahora. 🎉',
+          accentColor: const Color(0xFF10B981),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text('Error: $e', style: const TextStyle(fontFamily: 'Nunito')),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ));
+        showGamePopup(context, 'Error: $e', accentColor: Colors.red);
       }
     } finally {
       if (mounted) setState(() => _acting = false);
@@ -293,14 +286,8 @@ class _NotifTileState extends ConsumerState<_NotifTile> {
       setState(() => _handled = true);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text(
-            'Solicitud rechazada.',
-            style: TextStyle(fontFamily: 'Nunito'),
-          ),
-          backgroundColor: Colors.grey,
-          behavior: SnackBarBehavior.floating,
-        ));
+        showGamePopup(context, 'Solicitud rechazada.',
+            accentColor: Colors.grey);
       }
     } finally {
       if (mounted) setState(() => _acting = false);

@@ -21,8 +21,8 @@ class CrashReportingService {
     if (kIsWeb) return 'web';
     try {
       if (Platform.isAndroid) return 'android';
-      if (Platform.isIOS)     return 'ios';
-      if (Platform.isMacOS)   return 'macos';
+      if (Platform.isIOS) return 'ios';
+      if (Platform.isMacOS) return 'macos';
       if (Platform.isWindows) return 'windows';
     } catch (_) {}
     return 'unknown';
@@ -34,18 +34,18 @@ class CrashReportingService {
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details); // log normal en consola
       _instance._report(
-        error:      details.exceptionAsString(),
+        error: details.exceptionAsString(),
         stackTrace: details.stack?.toString(),
-        context:    'flutter_error',
+        context: 'flutter_error',
       );
     };
 
     // 2. Errores de Dart async fuera del árbol de widgets
     PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
       _instance._report(
-        error:      error.toString(),
+        error: error.toString(),
         stackTrace: stack.toString(),
-        context:    'platform_error',
+        context: 'platform_error',
       );
       return true; // true = error manejado (no re-lanzar)
     };
@@ -58,27 +58,27 @@ class CrashReportingService {
     String context = 'dart_error',
   }) async {
     await _instance._report(
-      error:      error.toString(),
+      error: error.toString(),
       stackTrace: stackTrace?.toString(),
-      context:    context,
+      context: context,
     );
   }
 
   // ── Envía el reporte a Supabase (silencioso si falla) ─────────────────────
   Future<void> _report({
     required String error,
-    String?         stackTrace,
-    String?         context,
+    String? stackTrace,
+    String? context,
   }) async {
     try {
       final uid = Supabase.instance.client.auth.currentUser?.id;
       await Supabase.instance.client.from('crash_reports').insert({
-        'user_id':     uid,
-        'error':       error,
+        'user_id': uid,
+        'error': error,
         'stack_trace': stackTrace,
-        'context':     context,
+        'context': context,
         'app_version': AnalyticsService.appVersion,
-        'platform':    _platform,
+        'platform': _platform,
       });
     } catch (_) {
       // Si Supabase falla o no está listo, ignorar silenciosamente.

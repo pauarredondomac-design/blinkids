@@ -11,6 +11,9 @@ import '../providers/fuel_provider.dart';
 import 'coin_display.dart';
 import 'badges_row.dart';
 import 'rocket_launch_overlay.dart';
+import 'game_card.dart';
+import 'blink_dialogue_box.dart';
+import '../theme/game_tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ActivityPlayer — motor genérico de actividades narrativas.
@@ -31,33 +34,34 @@ class ActivityPlayer extends ConsumerStatefulWidget {
   });
 
   final List<Question> activities;
-  final Color           accentColor;
-  final String          worldIdForFuel;
-  final VoidCallback?   onAllComplete;
+  final Color accentColor;
+  final String worldIdForFuel;
+  final VoidCallback? onAllComplete;
 
   @override
   ConsumerState<ActivityPlayer> createState() => _ActivityPlayerState();
 }
 
 class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
-  int          _index       = 0;
+  int _index = 0;
   _AnswerState _answerState = _AnswerState.unanswered;
-  int          _coinsEarned = 0;
-  int          _correctCount = 0;
-  bool         _showSummary = false;
+  int _coinsEarned = 0;
+  int _correctCount = 0;
+  bool _showSummary = false;
 
   Question get _current => widget.activities[_index];
 
   Future<void> _handleSubmit(bool isCorrect) async {
     if (_answerState != _AnswerState.unanswered) return;
-    setState(() => _answerState = isCorrect ? _AnswerState.correct : _AnswerState.wrong);
+    setState(() =>
+        _answerState = isCorrect ? _AnswerState.correct : _AnswerState.wrong);
 
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId != null) {
       QuestionRepository().recordAnswer(
-        userId:     userId,
+        userId: userId,
         questionId: _current.id,
-        isCorrect:  isCorrect,
+        isCorrect: isCorrect,
       );
     }
 
@@ -70,7 +74,9 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
     final futures = <Future>[];
     if (userId != null) {
       futures.add(
-        WalletRepository().awardStarterCoins(userId, _current.coinReward).catchError((_) => null),
+        WalletRepository()
+            .awardStarterCoins(userId, _current.coinReward)
+            .catchError((_) => null),
       );
     }
     await Future.wait(futures);
@@ -114,9 +120,9 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
     if (_showSummary) {
       return _ActivitySummary(
         correctCount: _correctCount,
-        total:        widget.activities.length,
-        coinsEarned:  _coinsEarned,
-        accentColor:  widget.accentColor,
+        total: widget.activities.length,
+        coinsEarned: _coinsEarned,
+        accentColor: widget.accentColor,
         onRestart: () => setState(() {
           _index = 0;
           _answerState = _AnswerState.unanswered;
@@ -140,7 +146,8 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
           ),
           const SizedBox(height: 12),
           if (_current.gancho != null) ...[
-            _GanchoBanner(text: _current.gancho!, accentColor: widget.accentColor),
+            BlinkDialogueBox(
+                text: _current.gancho!, accentColor: widget.accentColor),
             const SizedBox(height: 10),
           ],
           _ActivityCard(question: _current, accentColor: widget.accentColor),
@@ -158,7 +165,8 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
               isCorrect: _answerState == _AnswerState.correct,
               text: _answerState == _AnswerState.correct
                   ? (_current.explanation ?? '¡Muy bien!')
-                  : (_current.retroWrong ?? '¡Estuvo cerca! Pensemos juntos qué nos acerca más a Marte.'),
+                  : (_current.retroWrong ??
+                      '¡Estuvo cerca! Pensemos juntos qué nos acerca más a Marte.'),
               accentColor: widget.accentColor,
             ),
             const SizedBox(height: 14),
@@ -169,11 +177,17 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
                 style: FilledButton.styleFrom(
                   backgroundColor: widget.accentColor,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
                 ),
                 child: Text(
-                  _index < widget.activities.length - 1 ? 'Siguiente' : 'Terminar',
-                  style: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 15),
+                  _index < widget.activities.length - 1
+                      ? 'Siguiente'
+                      : 'Terminar',
+                  style: const TextStyle(
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15),
                 ),
               ),
             ),
@@ -194,14 +208,16 @@ class _EmptyActivities extends StatelessWidget {
           child: Text(
             'Aún no hay actividades cargadas aquí.\n¡Vuelve pronto! 🦊',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontFamily: 'Nunito', fontSize: 14),
+            style: TextStyle(
+                color: Colors.white70, fontFamily: 'Nunito', fontSize: 14),
           ),
         ),
       );
 }
 
 class _ActivityProgress extends StatelessWidget {
-  const _ActivityProgress({required this.current, required this.total, required this.accentColor});
+  const _ActivityProgress(
+      {required this.current, required this.total, required this.accentColor});
   final int current;
   final int total;
   final Color accentColor;
@@ -211,7 +227,11 @@ class _ActivityProgress extends StatelessWidget {
     return Row(
       children: [
         Text('$current / $total',
-            style: TextStyle(color: Colors.white.withOpacity(0.7), fontFamily: 'Nunito', fontSize: 12, fontWeight: FontWeight.w700)),
+            style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontFamily: 'Nunito',
+                fontSize: 12,
+                fontWeight: FontWeight.w700)),
         const SizedBox(width: 8),
         Expanded(
           child: ClipRRect(
@@ -229,34 +249,6 @@ class _ActivityProgress extends StatelessWidget {
   }
 }
 
-class _GanchoBanner extends StatelessWidget {
-  const _GanchoBanner({required this.text, required this.accentColor});
-  final String text;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: accentColor.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withOpacity(0.4)),
-      ),
-      child: Row(
-        children: [
-          const Text('🦊', style: TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(text,
-                style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 12.5, fontStyle: FontStyle.italic)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ActivityCard extends StatelessWidget {
   const _ActivityCard({required this.question, required this.accentColor});
   final Question question;
@@ -264,23 +256,20 @@ class _ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GameCard(
+      accentColor: accentColor,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.07),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accentColor.withOpacity(0.35)),
-      ),
       child: Text(
         question.questionText,
-        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 16, height: 1.3),
+        style: GameText.body(weight: FontWeight.w800, size: 16),
       ),
     );
   }
 }
 
 class _RetroBanner extends StatelessWidget {
-  const _RetroBanner({required this.isCorrect, required this.text, required this.accentColor});
+  const _RetroBanner(
+      {required this.isCorrect, required this.text, required this.accentColor});
   final bool isCorrect;
   final String text;
   final Color accentColor;
@@ -301,7 +290,12 @@ class _RetroBanner extends StatelessWidget {
           Text(isCorrect ? '✅' : '💭', style: const TextStyle(fontSize: 18)),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(text, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 13, height: 1.35)),
+            child: Text(text,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Nunito',
+                    fontSize: 13,
+                    height: 1.35)),
           ),
         ],
       ),
@@ -334,15 +328,25 @@ class _ActivitySummary extends StatelessWidget {
             const Text('🎉', style: TextStyle(fontSize: 56)),
             const SizedBox(height: 12),
             const Text('¡Actividades completadas!',
-                style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontWeight: FontWeight.w900, fontSize: 20)),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20)),
             const SizedBox(height: 8),
             Text('$correctCount / $total correctas',
-                style: const TextStyle(color: Colors.white70, fontFamily: 'Nunito', fontSize: 14)),
+                style: const TextStyle(
+                    color: Colors.white70, fontFamily: 'Nunito', fontSize: 14)),
             const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('+$coinsEarned ', style: const TextStyle(color: Color(0xFFFFD600), fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 16)),
+                Text('+$coinsEarned ',
+                    style: const TextStyle(
+                        color: Color(0xFFFFD600),
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16)),
                 const AnimatedCoin(size: 16),
               ],
             ),
@@ -373,22 +377,42 @@ class _MechanicBody extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (question.type) {
       case QuestionType.orderSteps:
-        return _OrdenarBody(question: question, accentColor: accentColor, answered: answered, onSubmit: onSubmit);
+        return _OrdenarBody(
+            question: question,
+            accentColor: accentColor,
+            answered: answered,
+            onSubmit: onSubmit);
       case QuestionType.classify:
-        return _ClasificarBody(question: question, accentColor: accentColor, answered: answered, onSubmit: onSubmit);
+        return _ClasificarBody(
+            question: question,
+            accentColor: accentColor,
+            answered: answered,
+            onSubmit: onSubmit);
       case QuestionType.dragMatch:
-        return _RelacionarBody(question: question, accentColor: accentColor, answered: answered, onSubmit: onSubmit);
+        return _RelacionarBody(
+            question: question,
+            accentColor: accentColor,
+            answered: answered,
+            onSubmit: onSubmit);
       case QuestionType.multipleChoice:
       case QuestionType.trueFalse:
       case QuestionType.fillBlank:
-        return _ElegirBody(question: question, accentColor: accentColor, answered: answered, onSubmit: onSubmit);
+        return _ElegirBody(
+            question: question,
+            accentColor: accentColor,
+            answered: answered,
+            onSubmit: onSubmit);
     }
   }
 }
 
 // ─── Elegir / Trivia ──────────────────────────────────────────────────────────
 class _ElegirBody extends StatefulWidget {
-  const _ElegirBody({required this.question, required this.accentColor, required this.answered, required this.onSubmit});
+  const _ElegirBody(
+      {required this.question,
+      required this.accentColor,
+      required this.answered,
+      required this.onSubmit});
   final Question question;
   final Color accentColor;
   final bool answered;
@@ -440,8 +464,16 @@ class _ElegirBodyState extends State<_ElegirBody> {
               ),
               child: Row(
                 children: [
-                  if (opt.icon != null) ...[Text(opt.icon!, style: const TextStyle(fontSize: 18)), const SizedBox(width: 8)],
-                  Expanded(child: Text(opt.text, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 14))),
+                  if (opt.icon != null) ...[
+                    Text(opt.icon!, style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8)
+                  ],
+                  Expanded(
+                      child: Text(opt.text,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Nunito',
+                              fontSize: 14))),
                 ],
               ),
             ),
@@ -454,7 +486,11 @@ class _ElegirBodyState extends State<_ElegirBody> {
 
 // ─── Ordenar ──────────────────────────────────────────────────────────────────
 class _OrdenarBody extends StatefulWidget {
-  const _OrdenarBody({required this.question, required this.accentColor, required this.answered, required this.onSubmit});
+  const _OrdenarBody(
+      {required this.question,
+      required this.accentColor,
+      required this.answered,
+      required this.onSubmit});
   final Question question;
   final Color accentColor;
   final bool answered;
@@ -482,9 +518,11 @@ class _OrdenarBodyState extends State<_OrdenarBody> {
     });
     if (_remaining.isEmpty) {
       final order = _picked.map((o) => o.id).toList();
-      final correct = (widget.question.correctAnswer as List?)?.cast<String>() ?? const [];
+      final correct =
+          (widget.question.correctAnswer as List?)?.cast<String>() ?? const [];
       final isCorrect = order.length == correct.length &&
-          List.generate(order.length, (i) => order[i] == correct[i]).every((v) => v);
+          List.generate(order.length, (i) => order[i] == correct[i])
+              .every((v) => v);
       widget.onSubmit(isCorrect);
     }
   }
@@ -494,49 +532,76 @@ class _OrdenarBodyState extends State<_OrdenarBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Toca en el orden correcto:', style: TextStyle(color: Colors.white.withOpacity(0.6), fontFamily: 'Nunito', fontSize: 12)),
+        Text('Toca en el orden correcto:',
+            style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontFamily: 'Nunito',
+                fontSize: 12)),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 8, runSpacing: 8,
+          spacing: 8,
+          runSpacing: 8,
           children: List.generate(widget.question.options.length, (i) {
             final filled = i < _picked.length;
             return Container(
-              width: 40, height: 40,
+              width: 40,
+              height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: filled ? widget.accentColor.withOpacity(0.3) : Colors.white.withOpacity(0.06),
+                color: filled
+                    ? widget.accentColor.withOpacity(0.3)
+                    : Colors.white.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: filled ? widget.accentColor : Colors.white24),
+                border: Border.all(
+                    color: filled ? widget.accentColor : Colors.white24),
               ),
               child: Text(filled ? '${i + 1}' : '${i + 1}',
-                  style: TextStyle(color: filled ? Colors.white : Colors.white38, fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+                  style: TextStyle(
+                      color: filled ? Colors.white : Colors.white38,
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800)),
             );
           }),
         ),
         const SizedBox(height: 8),
         if (_picked.isNotEmpty)
           Wrap(
-            spacing: 6, runSpacing: 6,
-            children: _picked.map((o) => Chip(
-              label: Text(o.text, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 12)),
-              backgroundColor: widget.accentColor.withOpacity(0.35),
-            )).toList(),
+            spacing: 6,
+            runSpacing: 6,
+            children: _picked
+                .map((o) => Chip(
+                      label: Text(o.text,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Nunito',
+                              fontSize: 12)),
+                      backgroundColor: widget.accentColor.withOpacity(0.35),
+                    ))
+                .toList(),
           ),
         const SizedBox(height: 12),
         Wrap(
-          spacing: 8, runSpacing: 8,
-          children: _remaining.map((opt) => GestureDetector(
-            onTap: () => _pick(opt),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: Text(opt.text, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 13)),
-            ),
-          )).toList(),
+          spacing: 8,
+          runSpacing: 8,
+          children: _remaining
+              .map((opt) => GestureDetector(
+                    onTap: () => _pick(opt),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Text(opt.text,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Nunito',
+                              fontSize: 13)),
+                    ),
+                  ))
+              .toList(),
         ),
       ],
     );
@@ -545,7 +610,11 @@ class _OrdenarBodyState extends State<_OrdenarBody> {
 
 // ─── Clasificar ───────────────────────────────────────────────────────────────
 class _ClasificarBody extends StatefulWidget {
-  const _ClasificarBody({required this.question, required this.accentColor, required this.answered, required this.onSubmit});
+  const _ClasificarBody(
+      {required this.question,
+      required this.accentColor,
+      required this.answered,
+      required this.onSubmit});
   final Question question;
   final Color accentColor;
   final bool answered;
@@ -566,7 +635,8 @@ class _ClasificarBodyState extends State<_ClasificarBody> {
   }
 
   Map<String, dynamic> get _labels =>
-      (widget.question.correctAnswer as Map?)?.cast<String, dynamic>() ?? {'a': 'Sí', 'b': 'No'};
+      (widget.question.correctAnswer as Map?)?.cast<String, dynamic>() ??
+      {'a': 'Sí', 'b': 'No'};
 
   void _drop(QuestionOption opt, String bucket) {
     if (widget.answered || _placed.containsKey(opt.id)) return;
@@ -575,7 +645,8 @@ class _ClasificarBodyState extends State<_ClasificarBody> {
       _pending.remove(opt);
     });
     if (_pending.isEmpty) {
-      final allCorrect = widget.question.options.every((o) => _placed[o.id] == o.bucket);
+      final allCorrect =
+          widget.question.options.every((o) => _placed[o.id] == o.bucket);
       widget.onSubmit(allCorrect);
     }
   }
@@ -587,22 +658,46 @@ class _ClasificarBodyState extends State<_ClasificarBody> {
       children: [
         Row(
           children: [
-            Expanded(child: _BucketZone(label: _labels['a']?.toString() ?? 'Sí', bucket: 'a', accentColor: widget.accentColor, onAccept: (opt) => _drop(opt, 'a'))),
+            Expanded(
+                child: _BucketZone(
+                    label: _labels['a']?.toString() ?? 'Sí',
+                    bucket: 'a',
+                    accentColor: widget.accentColor,
+                    onAccept: (opt) => _drop(opt, 'a'))),
             const SizedBox(width: 10),
-            Expanded(child: _BucketZone(label: _labels['b']?.toString() ?? 'No', bucket: 'b', accentColor: widget.accentColor, onAccept: (opt) => _drop(opt, 'b'))),
+            Expanded(
+                child: _BucketZone(
+                    label: _labels['b']?.toString() ?? 'No',
+                    bucket: 'b',
+                    accentColor: widget.accentColor,
+                    onAccept: (opt) => _drop(opt, 'b'))),
           ],
         ),
         const SizedBox(height: 14),
-        Text('Arrastra cada tarjeta a su bolsa:', style: TextStyle(color: Colors.white.withOpacity(0.6), fontFamily: 'Nunito', fontSize: 12)),
+        Text('Arrastra cada tarjeta a su bolsa:',
+            style: TextStyle(
+                color: Colors.white.withOpacity(0.6),
+                fontFamily: 'Nunito',
+                fontSize: 12)),
         const SizedBox(height: 8),
         Wrap(
-          spacing: 8, runSpacing: 8,
-          children: _pending.map((opt) => Draggable<QuestionOption>(
-            data: opt,
-            feedback: Material(color: Colors.transparent, child: _ClasifChip(opt: opt, accentColor: widget.accentColor)),
-            childWhenDragging: Opacity(opacity: 0.3, child: _ClasifChip(opt: opt, accentColor: widget.accentColor)),
-            child: _ClasifChip(opt: opt, accentColor: widget.accentColor),
-          )).toList(),
+          spacing: 8,
+          runSpacing: 8,
+          children: _pending
+              .map((opt) => Draggable<QuestionOption>(
+                    data: opt,
+                    feedback: Material(
+                        color: Colors.transparent,
+                        child: _ClasifChip(
+                            opt: opt, accentColor: widget.accentColor)),
+                    childWhenDragging: Opacity(
+                        opacity: 0.3,
+                        child: _ClasifChip(
+                            opt: opt, accentColor: widget.accentColor)),
+                    child:
+                        _ClasifChip(opt: opt, accentColor: widget.accentColor),
+                  ))
+              .toList(),
         ),
       ],
     );
@@ -626,8 +721,13 @@ class _ClasifChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (opt.icon != null) ...[Text(opt.icon!, style: const TextStyle(fontSize: 15)), const SizedBox(width: 6)],
-          Text(opt.text, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 13)),
+          if (opt.icon != null) ...[
+            Text(opt.icon!, style: const TextStyle(fontSize: 15)),
+            const SizedBox(width: 6)
+          ],
+          Text(opt.text,
+              style: const TextStyle(
+                  color: Colors.white, fontFamily: 'Nunito', fontSize: 13)),
         ],
       ),
     );
@@ -635,7 +735,11 @@ class _ClasifChip extends StatelessWidget {
 }
 
 class _BucketZone extends StatefulWidget {
-  const _BucketZone({required this.label, required this.bucket, required this.accentColor, required this.onAccept});
+  const _BucketZone(
+      {required this.label,
+      required this.bucket,
+      required this.accentColor,
+      required this.onAccept});
   final String label;
   final String bucket;
   final Color accentColor;
@@ -657,12 +761,22 @@ class _BucketZoneState extends State<_BucketZone> {
           alignment: Alignment.center,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: hovering ? widget.accentColor.withOpacity(0.3) : Colors.white.withOpacity(0.05),
+            color: hovering
+                ? widget.accentColor.withOpacity(0.3)
+                : Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: widget.accentColor.withOpacity(hovering ? 0.9 : 0.4), width: hovering ? 2 : 1.2, style: BorderStyle.solid),
+            border: Border.all(
+                color: widget.accentColor.withOpacity(hovering ? 0.9 : 0.4),
+                width: hovering ? 2 : 1.2,
+                style: BorderStyle.solid),
           ),
-          child: Text(widget.label, textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 13)),
+          child: Text(widget.label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13)),
         );
       },
     );
@@ -671,7 +785,11 @@ class _BucketZoneState extends State<_BucketZone> {
 
 // ─── Relacionar ───────────────────────────────────────────────────────────────
 class _RelacionarBody extends StatefulWidget {
-  const _RelacionarBody({required this.question, required this.accentColor, required this.answered, required this.onSubmit});
+  const _RelacionarBody(
+      {required this.question,
+      required this.accentColor,
+      required this.answered,
+      required this.onSubmit});
   final Question question;
   final Color accentColor;
   final bool answered;
@@ -689,7 +807,8 @@ class _RelacionarBodyState extends State<_RelacionarBody> {
   @override
   void initState() {
     super.initState();
-    _rightShuffled = List.of(widget.question.options)..shuffle(Random(widget.question.id.hashCode));
+    _rightShuffled = List.of(widget.question.options)
+      ..shuffle(Random(widget.question.id.hashCode));
   }
 
   void _tapLeft(QuestionOption opt) {
@@ -704,7 +823,8 @@ class _RelacionarBodyState extends State<_RelacionarBody> {
       _selectedLeftId = null;
     });
     if (_matched.length == widget.question.options.length) {
-      final allCorrect = widget.question.options.every((o) => _matched[o.id] == o.id);
+      final allCorrect =
+          widget.question.options.every((o) => _matched[o.id] == o.id);
       widget.onSubmit(allCorrect);
     }
   }
@@ -725,13 +845,27 @@ class _RelacionarBodyState extends State<_RelacionarBody> {
                 child: GestureDetector(
                   onTap: () => _tapLeft(o),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 12),
                     decoration: BoxDecoration(
-                      color: done ? const Color(0xFF4ADE80).withOpacity(0.2) : (selected ? widget.accentColor.withOpacity(0.3) : Colors.white.withOpacity(0.06)),
+                      color: done
+                          ? const Color(0xFF4ADE80).withOpacity(0.2)
+                          : (selected
+                              ? widget.accentColor.withOpacity(0.3)
+                              : Colors.white.withOpacity(0.06)),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: done ? const Color(0xFF4ADE80) : (selected ? widget.accentColor : Colors.white24)),
+                      border: Border.all(
+                          color: done
+                              ? const Color(0xFF4ADE80)
+                              : (selected
+                                  ? widget.accentColor
+                                  : Colors.white24)),
                     ),
-                    child: Text(o.text, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 12.5)),
+                    child: Text(o.text,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Nunito',
+                            fontSize: 12.5)),
                   ),
                 ),
               );
@@ -742,21 +876,31 @@ class _RelacionarBodyState extends State<_RelacionarBody> {
         Expanded(
           child: Column(
             children: _rightShuffled.map((o) {
-              final usedBy = _matched.entries.where((e) => e.value == o.id).map((e) => e.key).toList();
+              final usedBy = _matched.entries
+                  .where((e) => e.value == o.id)
+                  .map((e) => e.key)
+                  .toList();
               final done = usedBy.isNotEmpty;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: GestureDetector(
                   onTap: () => _tapRight(o),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 12),
                     decoration: BoxDecoration(
-                      color: done ? Colors.white.withOpacity(0.03) : Colors.white.withOpacity(0.06),
+                      color: done
+                          ? Colors.white.withOpacity(0.03)
+                          : Colors.white.withOpacity(0.06),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: done ? Colors.white12 : Colors.white24),
+                      border: Border.all(
+                          color: done ? Colors.white12 : Colors.white24),
                     ),
                     child: Text(o.right ?? o.text,
-                        style: TextStyle(color: done ? Colors.white38 : Colors.white, fontFamily: 'Nunito', fontSize: 12.5)),
+                        style: TextStyle(
+                            color: done ? Colors.white38 : Colors.white,
+                            fontFamily: 'Nunito',
+                            fontSize: 12.5)),
                   ),
                 ),
               );

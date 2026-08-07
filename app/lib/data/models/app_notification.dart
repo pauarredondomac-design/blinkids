@@ -22,32 +22,32 @@ class AppNotification {
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
-      id:        json['id']        as String,
-      userId:    json['user_id']   as String,
-      type:      json['type']      as String,
-      title:     json['title']     as String,
-      body:      json['body']      as String,
-      data:      (json['data']     as Map<String, dynamic>?) ?? {},
-      isRead:    json['is_read']   as bool? ?? false,
+      id: json['id'] as String,
+      userId: json['user_id'] as String,
+      type: json['type'] as String,
+      title: json['title'] as String,
+      body: json['body'] as String,
+      data: (json['data'] as Map<String, dynamic>?) ?? {},
+      isRead: json['is_read'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 
   /// Emoji según el tipo de notificación.
   String get typeIcon => switch (type) {
-    'link_request'   => '🔗',
-    'link_accepted'  => '✅',
-    'link_rejected'  => '❌',
-    'coins_received' => '🪙',
-    _                => '📢',
-  };
+        'link_request' => '🔗',
+        'link_accepted' => '✅',
+        'link_rejected' => '❌',
+        'coins_received' => '🪙',
+        _ => '📢',
+      };
 
   /// Cuánto tiempo hace (para mostrar "hace 5 min").
   String get timeAgo {
     final diff = DateTime.now().difference(createdAt);
-    if (diff.inMinutes < 1)   return 'ahora mismo';
-    if (diff.inMinutes < 60)  return 'hace ${diff.inMinutes} min';
-    if (diff.inHours   < 24)  return 'hace ${diff.inHours} h';
+    if (diff.inMinutes < 1) return 'ahora mismo';
+    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'hace ${diff.inHours} h';
     return 'hace ${diff.inDays} días';
   }
 }

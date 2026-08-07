@@ -55,9 +55,9 @@ class Profile {
       avatarUrl: json['avatar_url'] as String?,
       worldName: json['world_name'] as String?,
       accountType: switch (json['account_type'] as String? ?? 'full') {
-        'demo'    => AccountType.demo,
+        'demo' => AccountType.demo,
         'limited' => AccountType.limited,
-        _         => AccountType.full,
+        _ => AccountType.full,
       },
       pinHash: json['pin_hash'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),

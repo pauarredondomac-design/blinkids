@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/blink_dialogues_repository.dart';
@@ -22,18 +22,18 @@ class ScreenTutorial extends StatefulWidget {
     required this.child,
   });
 
-  final String             tutorialKey;
-  final List<TutorialStep> steps;   // fallback hardcodeado
-  final Widget             child;
+  final String tutorialKey;
+  final List<TutorialStep> steps; // fallback hardcodeado
+  final Widget child;
 
   @override
   State<ScreenTutorial> createState() => _ScreenTutorialState();
 }
 
 class _ScreenTutorialState extends State<ScreenTutorial> {
-  int   _step       = 0;
+  int _step = 0;
   bool? _show;
-  bool  _typingDone = false;
+  bool _typingDone = false;
   late List<TutorialStep> _steps;
 
   @override
@@ -45,7 +45,8 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
 
   Future<void> _load() async {
     // Cargar textos desde Supabase (nunca escribe, solo lee)
-    final remoteDialogues = await BlinkDialoguesRepository.getSteps(widget.tutorialKey);
+    final remoteDialogues =
+        await BlinkDialoguesRepository.getSteps(widget.tutorialKey);
     if (remoteDialogues.isNotEmpty && mounted) {
       setState(() {
         _steps = remoteDialogues
@@ -67,7 +68,7 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
           .select('tutorials_seen')
           .eq('id', userId)
           .maybeSingle();
-      final map  = (data?['tutorials_seen'] as Map<String, dynamic>?) ?? {};
+      final map = (data?['tutorials_seen'] as Map<String, dynamic>?) ?? {};
       final seen = map[widget.tutorialKey] == true;
       if (mounted) setState(() => _show = !seen);
     } catch (_) {
@@ -83,7 +84,8 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
       return;
     }
     try {
-      await client.rpc('mark_tutorial_seen', params: {'p_key': widget.tutorialKey});
+      await client
+          .rpc('mark_tutorial_seen', params: {'p_key': widget.tutorialKey});
     } catch (_) {}
   }
 
@@ -93,7 +95,10 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
       return;
     }
     if (_step < _steps.length - 1) {
-      setState(() { _step++; _typingDone = false; });
+      setState(() {
+        _step++;
+        _typingDone = false;
+      });
     } else {
       _dismiss();
     }
@@ -103,7 +108,7 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
   Widget build(BuildContext context) {
     if (_show != true) return widget.child;
 
-    final step   = _steps[_step];
+    final step = _steps[_step];
     final isLast = _step == _steps.length - 1;
 
     return Stack(
@@ -182,10 +187,10 @@ class _Bubble extends StatefulWidget {
     required this.onAdvance,
   });
   final TutorialStep step;
-  final int          stepIndex;
-  final int          totalSteps;
-  final bool         isLast;
-  final bool         typingDone;
+  final int stepIndex;
+  final int totalSteps;
+  final bool isLast;
+  final bool typingDone;
   final VoidCallback onTypingDone;
   final VoidCallback onAdvance;
 
@@ -195,7 +200,7 @@ class _Bubble extends StatefulWidget {
 
 class _BubbleState extends State<_Bubble> {
   String _displayed = '';
-  int    _charIndex = 0;
+  int _charIndex = 0;
   late String _fullText;
 
   @override
@@ -233,7 +238,7 @@ class _BubbleState extends State<_Bubble> {
   Widget build(BuildContext context) {
     final lines = _displayed.split('\n\n');
     final title = lines.isNotEmpty ? lines[0] : '';
-    final body  = lines.length > 1 ? lines.sublist(1).join('\n\n') : '';
+    final body = lines.length > 1 ? lines.sublist(1).join('\n\n') : '';
 
     return Stack(
       clipBehavior: Clip.none,
@@ -246,7 +251,6 @@ class _BubbleState extends State<_Bubble> {
             painter: _TailPainter(),
           ),
         ),
-
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
@@ -254,7 +258,8 @@ class _BubbleState extends State<_Bubble> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             boxShadow: const [
-              BoxShadow(color: Colors.black38, blurRadius: 20, offset: Offset(0, 6)),
+              BoxShadow(
+                  color: Colors.black38, blurRadius: 20, offset: Offset(0, 6)),
             ],
           ),
           child: Column(
@@ -267,7 +272,7 @@ class _BubbleState extends State<_Bubble> {
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       margin: const EdgeInsets.only(right: 5),
-                      width:  i == widget.stepIndex ? 22 : 7,
+                      width: i == widget.stepIndex ? 22 : 7,
                       height: 7,
                       decoration: BoxDecoration(
                         color: i == widget.stepIndex
@@ -279,7 +284,6 @@ class _BubbleState extends State<_Bubble> {
                   }),
                 ),
               if (widget.totalSteps > 1) const SizedBox(height: 10),
-
               if (title.isNotEmpty)
                 Text(
                   title,
@@ -291,7 +295,6 @@ class _BubbleState extends State<_Bubble> {
                     height: 1.3,
                   ),
                 ),
-
               if (body.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 Text(
@@ -323,7 +326,7 @@ class _TailPainter extends CustomPainter {
       ..color = Colors.black26
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
     final paint = Paint()..color = Colors.white;
-    final path  = Path()
+    final path = Path()
       ..moveTo(size.width, 0)
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height / 2)

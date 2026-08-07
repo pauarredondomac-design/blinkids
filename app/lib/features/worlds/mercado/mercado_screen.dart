@@ -13,6 +13,7 @@ import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/game_popup.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 void showMercadoDialog(BuildContext context) {
@@ -545,14 +546,8 @@ class _MyShopTabState extends ConsumerState<_MyShopTab> {
     }
   }
 
-  void _snack(String msg, Color bg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: bg,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ));
-  }
+  void _snack(String msg, Color bg) =>
+      showGamePopup(context, msg, accentColor: bg);
 
   @override
   Widget build(BuildContext context) {
@@ -836,14 +831,8 @@ class _ExploreTabState extends ConsumerState<_ExploreTab> {
     }
   }
 
-  void _snack(String msg, Color bg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: bg,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ));
-  }
+  void _snack(String msg, Color bg) =>
+      showGamePopup(context, msg, accentColor: bg);
 
   @override
   Widget build(BuildContext context) {

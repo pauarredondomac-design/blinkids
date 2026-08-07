@@ -66,8 +66,8 @@ class _PinKey extends StatelessWidget {
     required this.onTap,
   });
   final String label;
-  final bool   isDelete;
-  final bool   isPressed;
+  final bool isDelete;
+  final bool isPressed;
   final VoidCallback onTap;
 
   @override
@@ -89,12 +89,17 @@ class _PinKey extends StatelessWidget {
             width: isPressed ? 2 : 1,
           ),
           boxShadow: isPressed
-              ? [BoxShadow(color: const Color(0xFF4FC3F7).withOpacity(0.3), blurRadius: 12)]
+              ? [
+                  BoxShadow(
+                      color: const Color(0xFF4FC3F7).withOpacity(0.3),
+                      blurRadius: 12)
+                ]
               : null,
         ),
         child: Center(
           child: isDelete
-              ? const Icon(Icons.backspace_outlined, color: Colors.white70, size: 22)
+              ? const Icon(Icons.backspace_outlined,
+                  color: Colors.white70, size: 22)
               : Text(
                   label,
                   style: const TextStyle(

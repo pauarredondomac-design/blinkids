@@ -28,7 +28,7 @@ class HangarScreen extends ConsumerStatefulWidget {
 class _HangarScreenState extends ConsumerState<HangarScreen> {
   bool _rewardClaimed = false;
   bool _loading = true;
-  int  _coinsEarned = 50;
+  int _coinsEarned = 50;
 
   static const _rewardCoins = 50;
 
@@ -58,9 +58,9 @@ class _HangarScreenState extends ConsumerState<HangarScreen> {
       await ref.read(fuelNotifierProvider.notifier).resetFuel('space');
 
       setState(() {
-        _rewardClaimed  = true;
-        _coinsEarned    = _rewardCoins;
-        _loading        = false;
+        _rewardClaimed = true;
+        _coinsEarned = _rewardCoins;
+        _loading = false;
       });
 
       // Refrescar monedas en el HUD
@@ -133,10 +133,7 @@ class _HangarScreenState extends ConsumerState<HangarScreen> {
                   shadows: [Shadow(blurRadius: 20, color: Colors.orangeAccent)],
                 ),
                 textAlign: TextAlign.center,
-              )
-                  .animate()
-                  .fadeIn(duration: 600.ms)
-                  .scale(
+              ).animate().fadeIn(duration: 600.ms).scale(
                     begin: const Offset(0.7, 0.7),
                     end: const Offset(1.0, 1.0),
                   ),
@@ -233,7 +230,7 @@ class _HangarScreenState extends ConsumerState<HangarScreen> {
       for (int i = 0; i < positions.length; i++)
         Positioned(
           left: positions[i].dx * 800,
-          top:  positions[i].dy * 400,
+          top: positions[i].dy * 400,
           child: Text(
             '✨',
             style: TextStyle(fontSize: 14 + (i % 3) * 4.0),
@@ -261,7 +258,7 @@ class _RewardChip extends StatelessWidget {
 
   final String emoji;
   final String label;
-  final Color  color;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {

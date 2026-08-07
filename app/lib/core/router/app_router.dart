@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'go_router_refresh_stream.dart';
 
 import '../../features/auth/screens/splash_screen.dart';
-import '../../features/auth/screens/login_selector_screen.dart';
 import '../../features/auth/screens/child_signup_screen.dart';
 import '../../features/auth/screens/child_login_screen.dart';
 import '../../features/auth/screens/parent_auth_screen.dart';
@@ -38,7 +37,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Rutas de auth y demo — siempre accesibles
       const openRoutes = [
-        '/login-selector',
         '/child-signup',
         '/child-login',
         '/parent-auth',
@@ -50,13 +48,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Panel de padres → requiere sesión
       if (loc.startsWith('/parent')) {
-        if (user == null) return '/login-selector';
+        if (user == null) return '/child-login';
         return null;
       }
 
       // Canjear código → requiere sesión de niño
       if (loc == '/redeem-code') {
-        if (user == null) return '/login-selector';
+        if (user == null) return '/child-login';
         return null;
       }
 
@@ -71,11 +69,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Auth ─────────────────────────────────────────────────────────────────
-      GoRoute(
-        path: '/login-selector',
-        name: 'login-selector',
-        builder: (_, __) => const LoginSelectorScreen(),
-      ),
       GoRoute(
         path: '/child-signup',
         name: 'child-signup',

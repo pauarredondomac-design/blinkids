@@ -7,7 +7,7 @@ class BadgeDefinition {
   final String name;
   final String description;
   final String emoji;
-  final int    sortOrder;
+  final int sortOrder;
 
   const BadgeDefinition({
     required this.id,
@@ -18,16 +18,16 @@ class BadgeDefinition {
   });
 
   factory BadgeDefinition.fromJson(Map<String, dynamic> j) => BadgeDefinition(
-    id:          j['id']          as String,
-    name:        j['name']        as String,
-    description: j['description'] as String,
-    emoji:       j['emoji']       as String? ?? '🏆',
-    sortOrder:   j['sort_order']  as int?    ?? 0,
-  );
+        id: j['id'] as String,
+        name: j['name'] as String,
+        description: j['description'] as String,
+        emoji: j['emoji'] as String? ?? '🏆',
+        sortOrder: j['sort_order'] as int? ?? 0,
+      );
 }
 
 class PlayerBadge {
-  final String   badgeId;
+  final String badgeId;
   final DateTime earnedAt;
 
   // Denormalized from badge_definitions (populated after join)
@@ -44,13 +44,13 @@ class PlayerBadge {
   });
 
   factory PlayerBadge.fromJson(Map<String, dynamic> j) => PlayerBadge(
-    badgeId:     j['badge_id']   as String,
-    earnedAt:    DateTime.parse(j['earned_at'] as String),
-    name:        j['name']        as String?,
-    description: j['description'] as String?,
-    emoji:       j['emoji']       as String?,
-  );
+        badgeId: j['badge_id'] as String,
+        earnedAt: DateTime.parse(j['earned_at'] as String),
+        name: j['name'] as String?,
+        description: j['description'] as String?,
+        emoji: j['emoji'] as String?,
+      );
 
   String get displayEmoji => emoji ?? '🏆';
-  String get displayName  => name  ?? badgeId;
+  String get displayName => name ?? badgeId;
 }

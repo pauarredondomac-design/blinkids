@@ -77,17 +77,16 @@ class WalletRepository {
     required int newWalletTotal,
   }) async {
     if (DemoStore.isActive) {
-      DemoStore.instance.distributeCoins(categoryId, newCategoryBalance, newWalletTotal);
+      DemoStore.instance
+          .distributeCoins(categoryId, newCategoryBalance, newWalletTotal);
       return;
     }
     await supabase
         .from('wallet_categories')
-        .update({'balance': newCategoryBalance})
-        .eq('id', categoryId);
+        .update({'balance': newCategoryBalance}).eq('id', categoryId);
     await supabase
         .from('wallets')
-        .update({'total_coins': newWalletTotal})
-        .eq('id', walletId);
+        .update({'total_coins': newWalletTotal}).eq('id', walletId);
   }
 
   /// Suma monedas al wallet del usuario actual de forma atómica (recompensa).
@@ -122,7 +121,7 @@ class WalletRepository {
       'transfer_coins_to_child',
       params: {
         'p_child_id': childId,
-        'p_amount':   amount,
+        'p_amount': amount,
       },
     );
   }

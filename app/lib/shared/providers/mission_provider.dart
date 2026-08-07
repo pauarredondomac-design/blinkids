@@ -11,5 +11,7 @@ final missionRepositoryProvider = Provider<MissionRepository>(
 /// Se invalida automáticamente si el mundo cambia.
 final activeMissionsProvider = FutureProvider<List<Mission>>((ref) async {
   final worldId = ref.watch(currentWorldProvider);
-  return ref.read(missionRepositoryProvider).getActiveMissions(worldSlug: worldId);
+  return ref
+      .read(missionRepositoryProvider)
+      .getActiveMissions(worldSlug: worldId);
 });

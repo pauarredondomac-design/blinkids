@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../data/models/parent_mission.dart';
 import '../../../data/models/profile.dart';
 import '../../../data/repositories/parent_repository.dart';
+import '../../../data/repositories/salary_repository.dart';
 import '../../../data/repositories/wallet_repository.dart';
+import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/providers/parent_mission_provider.dart';
 import '../../../shared/providers/parent_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/widgets/badges_row.dart';
+import '../../../shared/widgets/blink_avatar.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/game_popup.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ChildDetailScreen — Registro de actividad del hijo
@@ -105,15 +110,8 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
     }
   }
 
-  void _snack(String msg, Color bg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg, style: const TextStyle(fontFamily: 'Nunito')),
-        backgroundColor: bg,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
+  void _snack(String msg, Color bg) =>
+      showGamePopup(context, msg, accentColor: bg);
 
   @override
   Widget build(BuildContext context) {
@@ -127,22 +125,10 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
         backgroundColor: const Color(0xFF0D1230),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Row(children: [
-          const Text('🦊', style: TextStyle(fontSize: 22)),
-          const SizedBox(width: 8),
-          Text(
-            widget.child.displayName,
-            style: const TextStyle(
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w800,
-              fontSize: 18,
-            ),
-          ),
-        ]),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: OutlinedButton.icon(
+            child: FilledButton.icon(
               onPressed: _creatingMission
                   ? null
                   : () => _handleCreateMission(parentCoins),
@@ -152,9 +138,9 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
                 style: TextStyle(
                     fontFamily: 'Nunito', fontWeight: FontWeight.w700),
               ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF7C3AED),
-                side: const BorderSide(color: Color(0xFF7C3AED)),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
               ),
             ),
           ),
@@ -221,12 +207,13 @@ class _ChildDetailBody extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Panel izquierdo: card de personaje + stats
 // ─────────────────────────────────────────────────────────────────────────────
-class _LeftCharPanel extends StatelessWidget {
+class _LeftCharPanel extends ConsumerWidget {
   const _LeftCharPanel({required this.stats});
   final ChildStats stats;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loadout = ref.watch(childLoadoutProvider(stats.childId)).valueOrNull;
     return Container(
       color: const Color(0xFF0D1230),
       padding: const EdgeInsets.all(20),
@@ -234,10 +221,12 @@ class _LeftCharPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Avatar del personaje
-          const Text('🦊', style: TextStyle(fontSize: 72)).animate().scale(
-              begin: const Offset(0.7, 0.7),
-              duration: 400.ms,
-              curve: Curves.elasticOut),
+          BlinkAvatar(size: 100, bounce: true, loadout: loadout)
+              .animate()
+              .scale(
+                  begin: const Offset(0.7, 0.7),
+                  duration: 400.ms,
+                  curve: Curves.elasticOut),
           const SizedBox(height: 8),
           // Nivel
           Container(
@@ -390,16 +379,17 @@ class _StatRow extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Panel derecho: actividad reciente del hijo
 // ─────────────────────────────────────────────────────────────────────────────
-class _RightActivityPanel extends StatefulWidget {
+class _RightActivityPanel extends ConsumerStatefulWidget {
   const _RightActivityPanel({required this.child, required this.stats});
   final Profile child;
   final ChildStats stats;
 
   @override
-  State<_RightActivityPanel> createState() => _RightActivityPanelState();
+  ConsumerState<_RightActivityPanel> createState() =>
+      _RightActivityPanelState();
 }
 
-class _RightActivityPanelState extends State<_RightActivityPanel> {
+class _RightActivityPanelState extends ConsumerState<_RightActivityPanel> {
   List<Map<String, dynamic>> _missions = [];
   bool _loading = true;
 
@@ -407,6 +397,78 @@ class _RightActivityPanelState extends State<_RightActivityPanel> {
   void initState() {
     super.initState();
     _loadActivity();
+  }
+
+  final Set<String> _approving = {};
+
+  Future<void> _handleApprove(ParentMission mission) async {
+    if (_approving.contains(mission.id)) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF0D1230),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFFFB300), width: 1),
+        ),
+        title: const Text('¿Confirmar tarea?',
+            style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w800)),
+        content: Text(
+          '${widget.child.displayName} dice que ya hizo "${mission.title}". '
+          'Al confirmar se te descontarán ${mission.coinReward} monedas y '
+          'se le acreditarán a ${widget.child.displayName}.',
+          style: const TextStyle(color: Colors.white70, fontFamily: 'Nunito'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Todavía no',
+                style: TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFFB300),
+              foregroundColor: Colors.black87,
+            ),
+            child: const Text('Sí, confirmar',
+                style: TextStyle(
+                    fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    setState(() => _approving.add(mission.id));
+    try {
+      await ref
+          .read(parentMissionRepositoryProvider)
+          .approveMission(mission.id);
+      ref.invalidate(missionsCreatedForChildProvider(widget.child.id));
+      ref.invalidate(currentWalletProvider);
+      if (mounted) {
+        showGamePopup(
+          context,
+          '¡Confirmado! ${mission.coinReward} monedas para ${widget.child.displayName} 🎉',
+          accentColor: const Color(0xFF2E7D32),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showGamePopup(
+          context,
+          '$e'.replaceFirst('Exception: ', ''),
+          accentColor: Colors.red.shade700,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _approving.remove(mission.id));
+    }
   }
 
   Future<void> _loadActivity() async {
@@ -431,12 +493,58 @@ class _RightActivityPanelState extends State<_RightActivityPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final createdMissions =
+        ref.watch(missionsCreatedForChildProvider(widget.child.id));
+
     return Container(
       color: const Color(0xFF06091A),
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Misiones que el padre le asignó ─────────────────────────────
+          const Text(
+            '🎯 Misiones que le asignaste',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 76,
+            child: createdMissions.when(
+              loading: () => const Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Color(0xFF7C3AED)),
+                ),
+              ),
+              error: (_, __) => const _AssignedMissionsEmpty(),
+              data: (missions) => missions.isEmpty
+                  ? const _AssignedMissionsEmpty()
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: missions.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (ctx, i) => _AssignedMissionChip(
+                        mission: missions[i],
+                        approving: _approving.contains(missions[i].id),
+                        onApprove: missions[i].isAwaitingApproval
+                            ? () => _handleApprove(missions[i])
+                            : null,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(color: Colors.white10, height: 1),
+          const SizedBox(height: 16),
+
           // Header
           Row(children: [
             const Text('📋', style: TextStyle(fontSize: 20)),
@@ -451,6 +559,17 @@ class _RightActivityPanelState extends State<_RightActivityPanel> {
               ),
             ),
             const Spacer(),
+            IconButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => SalaryDialog(
+                  childId: widget.child.id,
+                  childName: widget.child.displayName,
+                ),
+              ),
+              icon: const Text('💰', style: TextStyle(fontSize: 18)),
+              tooltip: 'Salario',
+            ),
             IconButton(
               onPressed: _loadActivity,
               icon: const Icon(Icons.refresh_rounded,
@@ -506,6 +625,119 @@ class _RightActivityPanelState extends State<_RightActivityPanel> {
         ],
       ),
     );
+  }
+}
+
+class _AssignedMissionsEmpty extends StatelessWidget {
+  const _AssignedMissionsEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'Aún no le asignaste ninguna misión.',
+        style: TextStyle(
+            color: Colors.white38, fontFamily: 'Nunito', fontSize: 12),
+      ),
+    );
+  }
+}
+
+class _AssignedMissionChip extends StatelessWidget {
+  const _AssignedMissionChip({
+    required this.mission,
+    this.approving = false,
+    this.onApprove,
+  });
+  final ParentMission mission;
+  final bool approving;
+  final VoidCallback? onApprove;
+
+  @override
+  Widget build(BuildContext context) {
+    final done = mission.isCompleted;
+    final waiting = mission.isAwaitingApproval;
+    final accent = done
+        ? const Color(0xFF10B981)
+        : waiting
+            ? const Color(0xFFFFB300)
+            : const Color(0xFF7C3AED);
+
+    final content = Container(
+      width: 150,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF12103A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withAlpha(waiting ? 200 : 100)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            mission.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+          if (waiting)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, bottom: 2),
+              child: Text(
+                approving ? 'Confirmando…' : 'Toca para confirmar',
+                style: const TextStyle(
+                  color: Color(0xFFFFB300),
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 9,
+                ),
+              ),
+            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: accent.withAlpha(40),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  done
+                      ? 'Completada'
+                      : waiting
+                          ? '⏳ Esperando'
+                          : 'Pendiente',
+                  style: TextStyle(
+                    color: accent,
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Text('${mission.coinReward}',
+                  style: const TextStyle(
+                      color: Color(0xFFFFD600),
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11)),
+              const SizedBox(width: 2),
+              const AnimatedCoin(size: 11),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (onApprove == null) return content;
+    return GestureDetector(onTap: approving ? null : onApprove, child: content);
   }
 }
 
@@ -667,173 +899,216 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
     super.dispose();
   }
 
+  static const _fieldFill = Color(0x14FFFFFF); // blanco 8% — fondo del campo
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    required String hint,
+  }) {
+    return InputDecoration(
+      filled: true,
+      fillColor: _fieldFill,
+      labelText: label,
+      hintText: hint,
+      labelStyle: const TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
+      hintStyle: const TextStyle(color: Colors.white30, fontFamily: 'Nunito'),
+      counterStyle: const TextStyle(color: Colors.white30),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white24),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.white24),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF7C3AED), width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final titleOk = _titleCtrl.text.trim().isNotEmpty;
     final canAfford = _reward <= widget.parentBalance;
 
-    return AlertDialog(
-      backgroundColor: const Color(0xFF0D1230),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
-      ),
-      title: Row(children: [
-        const Text('👨‍👩‍👧', style: TextStyle(fontSize: 26)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            'Misión para\n${widget.child.displayName}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-            ),
-          ),
+    // Dialog propio (en vez de AlertDialog): tamaño y posición fijos, sin
+    // reaccionar al teclado — el niño... digo, el padre, sigue viendo el
+    // popup completo en vez de que se achique o se corra al escribir.
+    return MediaQuery.removeViewInsets(
+      context: context,
+      removeBottom: true,
+      child: Dialog(
+        backgroundColor: const Color(0xFF0D1230),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
         ),
-      ]),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _titleCtrl,
-              maxLength: 60,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
-              decoration: const InputDecoration(
-                labelText: 'Título de la misión',
-                labelStyle:
-                    TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
-                counterStyle: TextStyle(color: Colors.white30),
-                enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white24)),
-                focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF7C3AED))),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _descCtrl,
-              maxLines: 2,
-              maxLength: 140,
-              style: const TextStyle(
-                  color: Colors.white, fontFamily: 'Nunito', fontSize: 13),
-              decoration: const InputDecoration(
-                labelText: 'Descripción (opcional)',
-                labelStyle:
-                    TextStyle(color: Colors.white54, fontFamily: 'Nunito'),
-                counterStyle: TextStyle(color: Colors.white30),
-                enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white24)),
-                focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF7C3AED))),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 340),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Tu saldo: ${widget.parentBalance}',
-                  style: const TextStyle(
-                      color: Colors.white54,
-                      fontFamily: 'Nunito',
-                      fontSize: 13),
-                ),
-                const SizedBox(width: 4),
-                const AnimatedCoin(size: 13),
-              ],
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Recompensa',
-              style: TextStyle(
-                  color: Colors.white38, fontFamily: 'Nunito', fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _steps.map((s) {
-                final selected = s == _reward;
-                final affordable = s <= widget.parentBalance;
-                return GestureDetector(
-                  onTap: affordable ? () => setState(() => _reward = s) : null,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xFFFFD600)
-                          : affordable
-                              ? Colors.white10
-                              : Colors.white.withAlpha(10),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color:
-                            selected ? const Color(0xFFFFD600) : Colors.white24,
+                Row(children: [
+                  const Text('👨‍👩‍👧', style: TextStyle(fontSize: 26)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Misión para\n${widget.child.displayName}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$s',
-                          style: TextStyle(
+                  ),
+                ]),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _titleCtrl,
+                  maxLength: 60,
+                  style: const TextStyle(
+                      color: Colors.white, fontFamily: 'Nunito'),
+                  decoration: _fieldDecoration(
+                    label: 'Título de la misión',
+                    hint: 'Ej: Tender la cama',
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: _descCtrl,
+                  maxLines: 2,
+                  maxLength: 140,
+                  style: const TextStyle(
+                      color: Colors.white, fontFamily: 'Nunito', fontSize: 13),
+                  decoration: _fieldDecoration(
+                    label: 'Instrucciones para tu hijo (opcional)',
+                    hint: 'Ej: Todos los días antes de las 9am',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Tu saldo: ${widget.parentBalance}',
+                      style: const TextStyle(
+                          color: Colors.white54,
+                          fontFamily: 'Nunito',
+                          fontSize: 13),
+                    ),
+                    const SizedBox(width: 4),
+                    const AnimatedCoin(size: 13),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Recompensa',
+                  style: TextStyle(
+                      color: Colors.white38,
+                      fontFamily: 'Nunito',
+                      fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _steps.map((s) {
+                    final selected = s == _reward;
+                    final affordable = s <= widget.parentBalance;
+                    return GestureDetector(
+                      onTap:
+                          affordable ? () => setState(() => _reward = s) : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? const Color(0xFFFFD600)
+                              : affordable
+                                  ? Colors.white10
+                                  : Colors.white.withAlpha(10),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
                             color: selected
-                                ? Colors.black87
-                                : affordable
-                                    ? Colors.white
-                                    : Colors.white24,
-                            fontFamily: 'Nunito',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                                ? const Color(0xFFFFD600)
+                                : Colors.white24,
                           ),
                         ),
-                        const SizedBox(width: 3),
-                        const AnimatedCoin(size: 13),
-                      ],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '$s',
+                              style: TextStyle(
+                                color: selected
+                                    ? Colors.black87
+                                    : affordable
+                                        ? Colors.white
+                                        : Colors.white24,
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            const AnimatedCoin(size: 13),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar',
+                          style: TextStyle(
+                              color: Colors.white54, fontFamily: 'Nunito')),
                     ),
-                  ),
-                );
-              }).toList(),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: (titleOk && canAfford)
+                          ? () => Navigator.pop(
+                                context,
+                                _NewMissionData(
+                                  title: _titleCtrl.text.trim(),
+                                  description: _descCtrl.text.trim().isEmpty
+                                      ? null
+                                      : _descCtrl.text.trim(),
+                                  coinReward: _reward,
+                                ),
+                              )
+                          : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF7C3AED),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Crear misión',
+                          style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w800)),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar',
-              style: TextStyle(color: Colors.white54, fontFamily: 'Nunito')),
-        ),
-        FilledButton(
-          onPressed: (titleOk && canAfford)
-              ? () => Navigator.pop(
-                    context,
-                    _NewMissionData(
-                      title: _titleCtrl.text.trim(),
-                      description: _descCtrl.text.trim().isEmpty
-                          ? null
-                          : _descCtrl.text.trim(),
-                      coinReward: _reward,
-                    ),
-                  )
-              : null,
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF7C3AED),
-            foregroundColor: Colors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: const Text('Crear misión',
-              style:
-                  TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
-        ),
-      ],
     );
   }
 }
@@ -1027,6 +1302,227 @@ class _SendCoinsDialogState extends State<_SendCoinsDialog> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SalaryDialog — asigna/edita el salario semanal de un hijo
+// ─────────────────────────────────────────────────────────────────────────────
+class SalaryDialog extends StatefulWidget {
+  const SalaryDialog(
+      {super.key, required this.childId, required this.childName});
+  final String childId;
+  final String childName;
+
+  @override
+  State<SalaryDialog> createState() => _SalaryDialogState();
+}
+
+class _SalaryDialogState extends State<SalaryDialog> {
+  int _amount = 25;
+  bool _loading = false;
+  bool _saved = false;
+  String? _error;
+
+  static const _min = 20;
+  static const _max = 35;
+
+  Future<void> _save() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await SalaryRepository().upsertSalary(
+        childId: widget.childId,
+        amount: _amount,
+      );
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _saved = true;
+        });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Error al guardar. Verifica tu conexión.';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFF0D1230),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: Color(0xFFFFD600), width: 1),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Row(children: [
+                const Text('💰', style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Salario de ${widget.childName}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded, color: Colors.white38),
+                ),
+              ]),
+              const SizedBox(height: 4),
+
+              const Text(
+                'Elige cuántas monedas Blink quieres\nasignar por semana (20 – 35).',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontFamily: 'Nunito',
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Valor actual grande
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AnimatedCoin(size: 32),
+                  const SizedBox(width: 6),
+                  Text(
+                    '$_amount',
+                    style: const TextStyle(
+                      color: Color(0xFFFFD600),
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w900,
+                      fontSize: 40,
+                    ),
+                  ),
+                ],
+              ),
+              const Text(
+                'monedas / semana',
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontFamily: 'Nunito',
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Slider
+              Slider(
+                value: _amount.toDouble(),
+                min: _min.toDouble(),
+                max: _max.toDouble(),
+                divisions: _max - _min,
+                activeColor: const Color(0xFFFFD600),
+                inactiveColor: Colors.white24,
+                onChanged:
+                    _saved ? null : (v) => setState(() => _amount = v.toInt()),
+              ),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('$_min',
+                      style: TextStyle(color: Colors.white38, fontSize: 11)),
+                  Text('$_max',
+                      style: TextStyle(color: Colors.white38, fontSize: 11)),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    '⚠️ $_error',
+                    style: const TextStyle(
+                      color: Color(0xFFFBBF24),
+                      fontFamily: 'Nunito',
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+              if (_saved)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border:
+                        Border.all(color: Colors.greenAccent.withOpacity(0.5)),
+                  ),
+                  child: const Text(
+                    '✅ ¡Salario guardado!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.greenAccent,
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _loading ? null : _save,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFD600),
+                      foregroundColor: Colors.black87,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: _loading
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black54,
+                            ),
+                          )
+                        : const Text(
+                            'Asignar salario',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                            ),
+                          ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

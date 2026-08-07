@@ -13,18 +13,19 @@ class SavingsGoalOption {
   final String key;
   final String name;
   final String emoji;
-  final int    cost;
+  final int cost;
 }
 
 const savingsGoalCatalog = <SavingsGoalOption>[
-  SavingsGoalOption(key: 'bici',      name: 'Bicicleta', emoji: '🚲', cost: 500),
-  SavingsGoalOption(key: 'consola',   name: 'Consola',   emoji: '🎮', cost: 900),
-  SavingsGoalOption(key: 'balon',     name: 'Balón',     emoji: '⚽', cost: 300),
-  SavingsGoalOption(key: 'audifonos', name: 'Audífonos', emoji: '🎧', cost: 400),
-  SavingsGoalOption(key: 'patin',     name: 'Patín',     emoji: '🛴', cost: 350),
-  SavingsGoalOption(key: 'mascota',   name: 'Mascota',   emoji: '🐶', cost: 800),
-  SavingsGoalOption(key: 'libros',    name: 'Libros',    emoji: '📚', cost: 250),
-  SavingsGoalOption(key: 'mochila',   name: 'Mochila',   emoji: '🎒', cost: 300),
+  SavingsGoalOption(key: 'bici', name: 'Bicicleta', emoji: '🚲', cost: 500),
+  SavingsGoalOption(key: 'consola', name: 'Consola', emoji: '🎮', cost: 900),
+  SavingsGoalOption(key: 'balon', name: 'Balón', emoji: '⚽', cost: 300),
+  SavingsGoalOption(
+      key: 'audifonos', name: 'Audífonos', emoji: '🎧', cost: 400),
+  SavingsGoalOption(key: 'patin', name: 'Patín', emoji: '🛴', cost: 350),
+  SavingsGoalOption(key: 'mascota', name: 'Mascota', emoji: '🐶', cost: 800),
+  SavingsGoalOption(key: 'libros', name: 'Libros', emoji: '📚', cost: 250),
+  SavingsGoalOption(key: 'mochila', name: 'Mochila', emoji: '🎒', cost: 300),
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -43,7 +44,7 @@ class ChildGoal {
   final String goalKey;
   final String goalName;
   final String goalEmoji;
-  final int    goalCost;
+  final int goalCost;
   final DateTime chosenAt;
   final DateTime? completedAt;
 
@@ -51,11 +52,11 @@ class ChildGoal {
 
   factory ChildGoal.fromJson(Map<String, dynamic> json) {
     return ChildGoal(
-      goalKey:     json['goal_key']   as String,
-      goalName:    json['goal_name']  as String,
-      goalEmoji:   json['goal_emoji'] as String,
-      goalCost:    json['goal_cost']  as int,
-      chosenAt:    DateTime.parse(json['chosen_at'] as String),
+      goalKey: json['goal_key'] as String,
+      goalName: json['goal_name'] as String,
+      goalEmoji: json['goal_emoji'] as String,
+      goalCost: json['goal_cost'] as int,
+      chosenAt: DateTime.parse(json['chosen_at'] as String),
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'] as String)
           : null,

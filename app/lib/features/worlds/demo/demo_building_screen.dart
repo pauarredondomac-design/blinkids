@@ -39,7 +39,7 @@ class DemoStageGate extends ConsumerWidget {
     required this.child,
   });
 
-  final int    atStage;
+  final int atStage;
   final String unlockMessage;
   final Widget child;
 

@@ -12,6 +12,7 @@ import '../providers/auth_provider.dart';
 import 'blink_character.dart';
 import 'child_notification_bell.dart';
 import 'coin_display.dart';
+import 'game_popup.dart';
 import '../../features/worlds/vestidor/vestidor_screen.dart';
 import '../../features/worlds/world_selector_screen.dart';
 import '../../features/worlds/mercado/mercado_screen.dart';
@@ -97,7 +98,7 @@ class WorldLeftPanel extends ConsumerWidget {
         onSignOut: () async {
           Navigator.pop(ctx);
           await ref.read(authRepositoryProvider).signOut();
-          if (context.mounted) context.go('/world');
+          if (context.mounted) context.go('/child-login');
         },
       ),
     );
@@ -937,46 +938,13 @@ Widget buildWorldCenterHud(
       child: Row(
         children: [
           // ── Monedas ──────────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.55),
-              borderRadius: BorderRadius.circular(22),
-              border:
-                  Border.all(color: Colors.amber.withOpacity(0.80), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.25),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const AnimatedCoin(size: 20)
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .scale(
-                        begin: const Offset(1, 1),
-                        end: const Offset(1.15, 1.15),
-                        duration: 1800.ms,
-                        curve: Curves.easeInOut),
-                const SizedBox(width: 6),
-                Text(
-                  '$coins',
-                  style: const TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                    shadows: [
-                      Shadow(color: Colors.amber, blurRadius: 8),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          CoinChip(coins: coins, size: CoinChipSize.lg)
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.04, 1.04),
+                  duration: 1800.ms,
+                  curve: Curves.easeInOut),
 
           const Spacer(),
 
@@ -1014,12 +982,10 @@ Future<void> handleSalaryClaim(BuildContext context, WidgetRef ref) async {
   final result = await ref.read(salaryNotifierProvider.notifier).claim();
   if (!context.mounted) return;
   if (result.alreadyClaimed) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Ya cobraste tu salario esta semana 😊',
-            style: TextStyle(fontFamily: 'Nunito')),
-        behavior: SnackBarBehavior.floating,
-      ),
+    showGamePopup(
+      context,
+      'Ya cobraste tu salario esta semana 😊',
+      accentColor: const Color(0xFF7C3AED),
     );
     return;
   }

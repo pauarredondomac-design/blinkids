@@ -8,7 +8,8 @@ final parentMissionRepositoryProvider = Provider<ParentMissionRepository>(
 );
 
 /// Misiones de papá del hijo actual. Vacío en demo (sin sesión real).
-final childParentMissionsProvider = FutureProvider<List<ParentMission>>((ref) async {
+final childParentMissionsProvider =
+    FutureProvider<List<ParentMission>>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return [];
   return ref.read(parentMissionRepositoryProvider).getMissionsForCurrentChild();
@@ -19,5 +20,7 @@ final missionsCreatedForChildProvider =
     FutureProvider.family<List<ParentMission>, String>((ref, childId) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return [];
-  return ref.read(parentMissionRepositoryProvider).getMissionsCreatedForChild(childId);
+  return ref
+      .read(parentMissionRepositoryProvider)
+      .getMissionsCreatedForChild(childId);
 });

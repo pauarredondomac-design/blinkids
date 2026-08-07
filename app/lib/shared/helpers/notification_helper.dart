@@ -34,7 +34,7 @@ class NotificationHelper {
       if ((profileRow['role'] as String?) != 'child') return;
 
       final lastActiveStr = profileRow['last_active'] as String?;
-      final createdAtStr  = profileRow['created_at']  as String?;
+      final createdAtStr = profileRow['created_at'] as String?;
 
       final lastActive = lastActiveStr != null
           ? DateTime.tryParse(lastActiveStr)?.toUtc()
@@ -70,21 +70,20 @@ class NotificationHelper {
     try {
       await _db
           .from('profiles')
-          .update({'last_active': now.toIso8601String()})
-          .eq('id', userId);
+          .update({'last_active': now.toIso8601String()}).eq('id', userId);
     } catch (_) {}
   }
 
   // ── Insertar notificación de inactividad (si no hay una reciente) ──────────
   static Future<void> _maybeInsertInactivityNotif(
-    String   userId,
-    int      daysSince,
+    String userId,
+    int daysSince,
     DateTime now,
   ) async {
     final type = daysSince >= 7 ? 'inactivity_7d' : 'inactivity_3d';
 
     // Evitar spam: comprobar si ya se envió esta notificación en las últimas 24h
-    final cutoff  = now.subtract(const Duration(hours: 24)).toIso8601String();
+    final cutoff = now.subtract(const Duration(hours: 24)).toIso8601String();
     final existing = await _db
         .from('notifications')
         .select('id')
@@ -100,20 +99,21 @@ class NotificationHelper {
 
     if (daysSince >= 7) {
       title = '¡Hace una semana que no te vemos! 🌟';
-      body  = 'Tu bolsa te extraña... entra a Blinkids y mira cuánto puede crecer tu dinero.';
+      body =
+          'Tu bolsa te extraña... entra a Blinkids y mira cuánto puede crecer tu dinero.';
     } else {
       final dias = daysSince == 1 ? 'día' : 'días';
       title = '¡Te extrañamos, aventurero! 👋';
-      body  = 'Llevas $daysSince $dias sin aventuras. '
-              '¡Vuelve y revisa cómo va creciendo tu bolsa!';
+      body = 'Llevas $daysSince $dias sin aventuras. '
+          '¡Vuelve y revisa cómo va creciendo tu bolsa!';
     }
 
     await _db.from('notifications').insert({
       'user_id': userId,
-      'type':    type,
-      'title':   title,
-      'body':    body,
-      'data':    {'days_since': daysSince},
+      'type': type,
+      'title': title,
+      'body': body,
+      'data': {'days_since': daysSince},
     });
   }
 }

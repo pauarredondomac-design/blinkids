@@ -16,8 +16,8 @@ class CharacterRepository {
         .from('characters')
         .insert({
           'user_id': userId,
-          'xp':      0,
-          'level':   1,
+          'xp': 0,
+          'level': 1,
         })
         .select()
         .single();
@@ -28,14 +28,14 @@ class CharacterRepository {
     final current = await getCharacter(userId);
     if (current == null) throw Exception('Personaje no encontrado');
 
-    final newXp    = current.xp + xpToAdd;
+    final newXp = current.xp + xpToAdd;
     final newLevel = levelFromXp(newXp);
 
     final data = await supabase
         .from('characters')
         .update({
-          'xp':        newXp,
-          'level':     newLevel,
+          'xp': newXp,
+          'level': newLevel,
           'updated_at': DateTime.now().toIso8601String(),
         })
         .eq('user_id', userId)

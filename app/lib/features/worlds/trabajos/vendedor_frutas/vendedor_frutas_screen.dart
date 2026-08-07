@@ -16,15 +16,15 @@ import '../../../../shared/widgets/badges_row.dart';
 // ─── Denominaciones de monedas/billetes disponibles ──────────────────────────
 class _Denom {
   const _Denom(this.value, this.emoji, this.label);
-  final int    value;
+  final int value;
   final String emoji;
   final String label;
 }
 
 const _denoms = [
-  _Denom(1,  '🪙', '\$1'),
-  _Denom(2,  '🪙', '\$2'),
-  _Denom(5,  '💛', '\$5'),
+  _Denom(1, '🪙', '\$1'),
+  _Denom(2, '🪙', '\$2'),
+  _Denom(5, '💛', '\$5'),
   _Denom(10, '💵', '\$10'),
   _Denom(20, '💵', '\$20'),
   _Denom(50, '💵', '\$50'),
@@ -42,23 +42,22 @@ class VendedorFrutasScreen extends ConsumerStatefulWidget {
       _VendedorFrutasScreenState();
 }
 
-class _VendedorFrutasScreenState
-    extends ConsumerState<VendedorFrutasScreen> {
+class _VendedorFrutasScreenState extends ConsumerState<VendedorFrutasScreen> {
   // Niveles del juego (usa los del Job o los por defecto)
   late final List<JobLevel> _levels;
 
-  int        _levelIndex  = 0;
-  int        _changeGiven = 0;
-  _GameState _gameState   = _GameState.playing;
-  int        _secondsLeft = 60;
-  bool       _showFeedback = false;
-  Timer?     _timer;
+  int _levelIndex = 0;
+  int _changeGiven = 0;
+  _GameState _gameState = _GameState.playing;
+  int _secondsLeft = 60;
+  bool _showFeedback = false;
+  Timer? _timer;
 
   // Monedas seleccionadas en el nivel actual (para el undo)
   final List<int> _selectedDenoms = [];
 
   JobLevel get _current => _levels[_levelIndex];
-  int      get _changeNeeded => _current.change;
+  int get _changeNeeded => _current.change;
 
   @override
   void initState() {
@@ -109,7 +108,7 @@ class _VendedorFrutasScreenState
       _timer?.cancel();
       setState(() {
         _showFeedback = true;
-        _gameState    = _levelIndex < _levels.length - 1
+        _gameState = _levelIndex < _levels.length - 1
             ? _GameState.levelPassed
             : _GameState.won;
       });
@@ -136,7 +135,7 @@ class _VendedorFrutasScreenState
       _levelIndex++;
       _changeGiven = 0;
       _selectedDenoms.clear();
-      _gameState    = _GameState.playing;
+      _gameState = _GameState.playing;
       _showFeedback = false;
     });
     _startTimer();
@@ -145,20 +144,22 @@ class _VendedorFrutasScreenState
   Future<void> _finish() async {
     _timer?.cancel();
     final coinReward = widget.job?.coinReward ?? 25;
-    final xpReward   = widget.job?.xpReward   ?? 15;
-    final userId     = Supabase.instance.client.auth.currentUser?.id;
+    final xpReward = widget.job?.xpReward ?? 15;
+    final userId = Supabase.instance.client.auth.currentUser?.id;
 
     List<String> newBadges = [];
     if (userId != null) {
       // Otorgar monedas, XP y registrar completado en paralelo
       final xpFuture = awardXp(ref, xpReward);
       final futures = <Future>[
-        WalletRepository().awardStarterCoins(userId, coinReward).catchError((_) => null),
+        WalletRepository()
+            .awardStarterCoins(userId, coinReward)
+            .catchError((_) => null),
       ];
       if (widget.job != null) {
         futures.add(JobRepository().recordCompletion(
-          userId:      userId,
-          jobId:       widget.job!.id,
+          userId: userId,
+          jobId: widget.job!.id,
           coinsEarned: coinReward,
         ));
       }
@@ -180,11 +181,11 @@ class _VendedorFrutasScreenState
           children: [
             // ── Barra superior ──────────────────────────────────────────────
             _TopBar(
-              levelIndex:   _levelIndex,
-              totalLevels:  _levels.length,
-              secondsLeft:  _secondsLeft,
+              levelIndex: _levelIndex,
+              totalLevels: _levels.length,
+              secondsLeft: _secondsLeft,
               totalSeconds: widget.job?.durationSeconds ?? 60,
-              coinReward:   widget.job?.coinReward ?? 25,
+              coinReward: widget.job?.coinReward ?? 25,
               onExit: () => context.go('/world/trabajos'),
             ),
 
@@ -198,15 +199,15 @@ class _VendedorFrutasScreenState
                   : _gameState == _GameState.lost
                       ? _LostView(onRetry: () => context.go('/world/trabajos'))
                       : _PlayView(
-                          level:        _current,
-                          changeGiven:  _changeGiven,
+                          level: _current,
+                          changeGiven: _changeGiven,
                           selectedDenoms: _selectedDenoms,
                           showFeedback: _showFeedback,
-                          gameState:    _gameState,
-                          onAddCoin:    _addCoin,
-                          onUndo:       _removeLast,
-                          onReset:      _resetChange,
-                          onNextLevel:  _nextLevel,
+                          gameState: _gameState,
+                          onAddCoin: _addCoin,
+                          onUndo: _removeLast,
+                          onReset: _resetChange,
+                          onNextLevel: _nextLevel,
                         ),
             ),
           ],
@@ -227,11 +228,11 @@ class _TopBar extends StatelessWidget {
     required this.onExit,
   });
 
-  final int          levelIndex;
-  final int          totalLevels;
-  final int          secondsLeft;
-  final int          totalSeconds;
-  final int          coinReward;
+  final int levelIndex;
+  final int totalLevels;
+  final int secondsLeft;
+  final int totalSeconds;
+  final int coinReward;
   final VoidCallback onExit;
 
   Color get _timerColor {
@@ -339,10 +340,10 @@ class _PlayView extends StatelessWidget {
     required this.onNextLevel,
   });
 
-  final JobLevel   level;
-  final int        changeGiven;
-  final List<int>  selectedDenoms;
-  final bool       showFeedback;
+  final JobLevel level;
+  final int changeGiven;
+  final List<int> selectedDenoms;
+  final bool showFeedback;
   final _GameState gameState;
   final void Function(int) onAddCoin;
   final VoidCallback onUndo;
@@ -350,8 +351,8 @@ class _PlayView extends StatelessWidget {
   final VoidCallback onNextLevel;
 
   int get _changeNeeded => level.change;
-  bool get _isCorrect   => changeGiven == _changeNeeded;
-  bool get _isOver      => changeGiven > _changeNeeded;
+  bool get _isCorrect => changeGiven == _changeNeeded;
+  bool get _isOver => changeGiven > _changeNeeded;
 
   @override
   Widget build(BuildContext context) {
@@ -367,16 +368,16 @@ class _PlayView extends StatelessWidget {
         Expanded(
           flex: 4,
           child: _ChangePanel(
-            changeGiven:    changeGiven,
-            changeNeeded:   _changeNeeded,
+            changeGiven: changeGiven,
+            changeNeeded: _changeNeeded,
             selectedDenoms: selectedDenoms,
-            isCorrect:      _isCorrect,
-            isOver:         _isOver,
-            showFeedback:   showFeedback,
-            gameState:      gameState,
-            onUndo:         onUndo,
-            onReset:        onReset,
-            onNextLevel:    onNextLevel,
+            isCorrect: _isCorrect,
+            isOver: _isOver,
+            showFeedback: showFeedback,
+            gameState: gameState,
+            onUndo: onUndo,
+            onReset: onReset,
+            onNextLevel: onNextLevel,
           ),
         ),
 
@@ -394,7 +395,7 @@ class _PlayView extends StatelessWidget {
 class _CustomerPanel extends StatelessWidget {
   const _CustomerPanel({required this.level, required this.changeGiven});
   final JobLevel level;
-  final int      changeGiven;
+  final int changeGiven;
 
   @override
   Widget build(BuildContext context) {
@@ -407,7 +408,11 @@ class _CustomerPanel extends StatelessWidget {
           // Cliente
           const Text('🧑‍🌾', style: TextStyle(fontSize: 60))
               .animate(onPlay: (c) => c.repeat(reverse: true))
-              .moveY(begin: 0, end: -5, duration: 1000.ms, curve: Curves.easeInOut),
+              .moveY(
+                  begin: 0,
+                  end: -5,
+                  duration: 1000.ms,
+                  curve: Curves.easeInOut),
 
           const SizedBox(height: AppSizes.sm),
 
@@ -417,7 +422,9 @@ class _CustomerPanel extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 6)
+              ],
             ),
             child: Column(
               children: [
@@ -503,12 +510,12 @@ class _ChangePanel extends StatelessWidget {
     required this.onNextLevel,
   });
 
-  final int        changeGiven;
-  final int        changeNeeded;
-  final List<int>  selectedDenoms;
-  final bool       isCorrect;
-  final bool       isOver;
-  final bool       showFeedback;
+  final int changeGiven;
+  final int changeNeeded;
+  final List<int> selectedDenoms;
+  final bool isCorrect;
+  final bool isOver;
+  final bool showFeedback;
   final _GameState gameState;
   final VoidCallback onUndo;
   final VoidCallback onReset;
@@ -516,7 +523,7 @@ class _ChangePanel extends StatelessWidget {
 
   Color get _counterColor {
     if (isCorrect) return const Color(0xFF2E7D32);
-    if (isOver)    return const Color(0xFFC62828);
+    if (isOver) return const Color(0xFFC62828);
     return Colors.white;
   }
 
@@ -630,12 +637,12 @@ class _ChangePanel extends StatelessWidget {
           // Feedback correcto / siguiente nivel
           if (showFeedback) ...[
             const Text('✅ ¡Correcto!',
-                style: TextStyle(
-                  color: Color(0xFF69F0AE),
-                  fontFamily: 'Nunito',
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                ))
+                    style: TextStyle(
+                      color: Color(0xFF69F0AE),
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                    ))
                 .animate()
                 .fadeIn(duration: 300.ms)
                 .scale(begin: const Offset(0.7, 0.7)),
@@ -691,9 +698,9 @@ class _DenomPanel extends StatelessWidget {
           ..._denoms.map((d) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _DenomButton(
-                  denom:   d,
+                  denom: d,
                   enabled: enabled,
-                  onTap:   () => onAddCoin(d.value),
+                  onTap: () => onAddCoin(d.value),
                 ),
               )),
         ],
@@ -708,8 +715,8 @@ class _DenomButton extends StatelessWidget {
     required this.enabled,
     required this.onTap,
   });
-  final _Denom       denom;
-  final bool         enabled;
+  final _Denom denom;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
@@ -729,7 +736,8 @@ class _DenomButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.white24),
             boxShadow: const [
-              BoxShadow(color: Colors.black26, blurRadius: 3, offset: Offset(0, 2)),
+              BoxShadow(
+                  color: Colors.black26, blurRadius: 3, offset: Offset(0, 2)),
             ],
           ),
           child: Row(
@@ -757,7 +765,7 @@ class _DenomButton extends StatelessWidget {
 // ─── Pantalla de victoria ─────────────────────────────────────────────────────
 class _WonView extends StatelessWidget {
   const _WonView({required this.coinReward, required this.onFinish});
-  final int          coinReward;
+  final int coinReward;
   final VoidCallback onFinish;
 
   @override
@@ -794,7 +802,8 @@ class _WonView extends StatelessWidget {
               ),
               const SizedBox(height: AppSizes.md),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFD600).withAlpha(30),
                   borderRadius: BorderRadius.circular(20),
@@ -840,10 +849,7 @@ class _WonView extends StatelessWidget {
             ],
           ),
         ),
-      )
-          .animate()
-          .fadeIn(duration: 400.ms)
-          .scale(
+      ).animate().fadeIn(duration: 400.ms).scale(
             begin: const Offset(0.8, 0.8),
             end: const Offset(1, 1),
             curve: Curves.easeOutBack,

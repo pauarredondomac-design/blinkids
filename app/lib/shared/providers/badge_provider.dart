@@ -13,7 +13,8 @@ final playerBadgesProvider = FutureProvider<List<PlayerBadge>>((ref) async {
 });
 
 // ── Catálogo completo de medallas ─────────────────────────────────────────────
-final badgeDefinitionsProvider = FutureProvider<List<BadgeDefinition>>((ref) async {
+final badgeDefinitionsProvider =
+    FutureProvider<List<BadgeDefinition>>((ref) async {
   return _repo.getAllDefinitions();
 });
 
@@ -39,5 +40,5 @@ class BadgeCheckerNotifier extends AsyncNotifier<List<String>> {
 
 final badgeCheckerProvider =
     AsyncNotifierProvider<BadgeCheckerNotifier, List<String>>(
-      BadgeCheckerNotifier.new,
-    );
+  BadgeCheckerNotifier.new,
+);

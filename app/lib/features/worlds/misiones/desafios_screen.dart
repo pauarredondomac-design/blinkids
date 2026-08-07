@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/providers/question_provider.dart';
 import '../../../shared/widgets/activity_player.dart';
+import '../../../shared/widgets/screen_background.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Desafíos — minijuegos que mezclan todo lo aprendido (antes "Preguntas").
@@ -46,30 +47,40 @@ class DesafiosScreen extends ConsumerWidget {
     final activitiesAsync = ref.watch(questionsForModuleProvider('misiones'));
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1B0F3D),
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2A1860),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         foregroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('🎮 Desafíos',
-            style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 20)),
+            style: TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w800,
+                fontSize: 20)),
       ),
-      body: activitiesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+      body: ScreenBackground(
+          child: activitiesAsync.when(
+        loading: () =>
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
         error: (_, __) => const Center(
-          child: Text('No se pudieron cargar los desafíos.', style: TextStyle(color: Colors.white70, fontFamily: 'Nunito')),
+          child: Text('No se pudieron cargar los desafíos.',
+              style: TextStyle(color: Colors.white70, fontFamily: 'Nunito')),
         ),
         data: (all) {
-          final desafios = all.where((q) => q.groupName?.contains('Desafío') == true).toList();
+          final desafios = all
+              .where((q) => q.groupName?.contains('Desafío') == true)
+              .toList();
           return ActivityPlayer(
             activities: desafios,
             accentColor: const Color(0xFFAB47BC),
           );
         },
-      ),
+      )),
     );
   }
 }

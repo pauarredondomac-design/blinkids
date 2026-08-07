@@ -20,6 +20,7 @@ import '../misiones/misiones_screen.dart';
 import '../tienda/tienda_screen.dart';
 import '../../wallet/screens/wallet_screen.dart';
 import '../../../shared/widgets/world_side_panels.dart';
+import '../../../shared/widgets/game_popup.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SpaceWorldMap — Mundo único por ahora
@@ -74,11 +75,8 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         demoProgressProvider,
         (prev, next) {
           if (next.pendingMessage != null && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text(next.pendingMessage!),
-                  duration: const Duration(seconds: 3)),
-            );
+            showGamePopup(context, next.pendingMessage!,
+                accentColor: const Color(0xFF7C3AED));
             ref.read(demoProgressProvider.notifier).clearPendingMessage();
           }
         },

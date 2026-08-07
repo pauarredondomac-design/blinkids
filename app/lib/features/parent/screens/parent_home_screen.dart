@@ -8,14 +8,15 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../data/models/app_notification.dart';
 import '../../../data/models/profile.dart';
-import '../../../data/repositories/parent_repository.dart';
-import '../../../data/repositories/salary_repository.dart';
 import '../../../shared/providers/auth_provider.dart';
+import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/providers/parent_mission_provider.dart';
 import '../../../shared/providers/parent_provider.dart';
 import '../../../shared/providers/profile_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
+import '../../../shared/widgets/blink_avatar.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/game_popup.dart';
 import 'child_detail_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -57,12 +58,11 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
           .grantWeeklyAllowanceIfDue();
       if (granted > 0 && mounted) {
         ref.invalidate(currentWalletProvider);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content:
-              Text('¡Recibiste tu recarga semanal de $granted monedas! 🎉'),
-          backgroundColor: const Color(0xFF2E7D32),
-          behavior: SnackBarBehavior.floating,
-        ));
+        showGamePopup(
+          context,
+          '¡Recibiste tu recarga semanal de $granted monedas! 🎉',
+          accentColor: const Color(0xFF2E7D32),
+        );
       }
     } catch (_) {
       // Silencioso — no interrumpir el panel de padres
@@ -137,7 +137,7 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
                   onSignOut: () async {
                     await ref.read(authRepositoryProvider).signOut();
                     if (!context.mounted) return;
-                    context.go('/world');
+                    context.go('/child-login');
                   },
                 ),
 
@@ -670,25 +670,43 @@ class _ChildrenGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.separated(
-      itemCount: children.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (ctx, i) {
-        final child = children[i];
-        return _ChildCard(
-          child: child,
-          onViewActivity: () => onViewActivity(child),
-        )
-            .animate(delay: (60 * i).ms)
-            .fadeIn(duration: 300.ms)
-            .slideY(begin: 0.1);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const minCardWidth = 130.0;
+        const spacing = 12.0;
+        final columns =
+            ((constraints.maxWidth + spacing) / (minCardWidth + spacing))
+                .floor()
+                .clamp(1, 6);
+        final cardWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+        return SingleChildScrollView(
+          child: Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: [
+              for (var i = 0; i < children.length; i++)
+                SizedBox(
+                  width: cardWidth,
+                  child: _ChildCard(
+                    child: children[i],
+                    onViewActivity: () => onViewActivity(children[i]),
+                  )
+                      .animate(delay: (60 * i).ms)
+                      .fadeIn(duration: 300.ms)
+                      .slideY(begin: 0.1),
+                ),
+            ],
+          ),
+        );
       },
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tarjeta de hijo
+// Tarjeta de hijo — nombre arriba, Blink con su vestuario, nivel abajo
 // ─────────────────────────────────────────────────────────────────────────────
 class _ChildCard extends ConsumerWidget {
   const _ChildCard({required this.child, required this.onViewActivity});
@@ -697,302 +715,75 @@ class _ChildCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(childStatsProvider(child));
+    final level = ref.watch(childStatsProvider(child)).valueOrNull?.level;
+    final loadout = ref.watch(childLoadoutProvider(child.id)).valueOrNull;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF0D1230),
-            Color(0xFF12103A),
-          ],
-        ),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF7C3AED).withAlpha(80),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF7C3AED).withAlpha(30),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: statsAsync.when(
-        loading: () => SizedBox(
-          height: 80,
-          child: Center(
-            child: CircularProgressIndicator(
-              color: const Color(0xFF7C3AED).withAlpha(150),
-              strokeWidth: 2,
+        onTap: onViewActivity,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0D1230),
+                Color(0xFF12103A),
+              ],
             ),
-          ),
-        ),
-        error: (_, __) => _ChildCardBasic(child: child, onView: onViewActivity),
-        data: (stats) => _ChildCardFull(stats: stats, onView: onViewActivity),
-      ),
-    );
-  }
-}
-
-// Tarjeta simple (sin stats)
-class _ChildCardBasic extends StatelessWidget {
-  const _ChildCardBasic({required this.child, required this.onView});
-  final Profile child;
-  final VoidCallback onView;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      const Text('🐣', style: TextStyle(fontSize: 36)),
-      const SizedBox(width: 14),
-      Expanded(
-        child: Text(
-          child.displayName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
-        ),
-      ),
-      FilledButton(
-        onPressed: onView,
-        child: const Text('Ver actividad'),
-      ),
-    ]);
-  }
-}
-
-// Tarjeta completa (con stats)
-class _ChildCardFull extends StatelessWidget {
-  const _ChildCardFull({required this.stats, required this.onView});
-  final ChildStats stats;
-  final VoidCallback onView;
-
-  void _openSalaryDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (_) =>
-          _SalaryDialog(childId: stats.childId, childName: stats.displayName),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        // Avatar del personaje
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('🦊', style: TextStyle(fontSize: 44)),
-            const SizedBox(height: 2),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7C3AED).withAlpha(60),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                'Nivel ${stats.level}',
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontFamily: 'Nunito',
-                  fontSize: 9,
-                ),
-              ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF7C3AED).withAlpha(80),
             ),
-          ],
-        ),
-        const SizedBox(width: 16),
-
-        // Nombre + XP bar + stats
-        Expanded(
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7C3AED).withAlpha(30),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Nombre y nivel
-              Row(children: [
-                Expanded(
-                  child: Text(
-                    stats.displayName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 17,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              Text(
+                child.displayName,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFD600).withAlpha(30),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                        color: const Color(0xFFFFD600).withAlpha(80)),
-                  ),
-                  child: Text(
-                    'Nv. ${stats.level}',
-                    style: const TextStyle(
-                      color: Color(0xFFFFD600),
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 6),
-
-              // Barra de progreso al siguiente nivel
-              Row(children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: stats.levelProgress,
-                      backgroundColor: Colors.white10,
-                      valueColor:
-                          const AlwaysStoppedAnimation(Color(0xFF7C3AED)),
-                      minHeight: 6,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${stats.xp} XP',
-                  style: const TextStyle(
-                    color: Colors.white38,
-                    fontFamily: 'Nunito',
-                    fontSize: 10,
-                  ),
-                ),
-              ]),
+              ),
               const SizedBox(height: 10),
-
-              // Chips de stats
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  _MiniChip('${stats.totalCoins}', const Color(0xFFFFD600),
-                      showCoin: true),
-                  _MiniChip(
-                      '🏆 ${stats.missionsJoined}', const Color(0xFF10B981)),
-                  _MiniChip('⭐ ${stats.xp} XP', const Color(0xFFBB86FC)),
-                ],
+              BlinkAvatar(size: 64, bounce: false, loadout: loadout),
+              const SizedBox(height: 10),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7C3AED).withAlpha(60),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  level != null ? 'Nivel $level' : '···',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                  ),
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 16),
-
-        // Botones de acción
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Ver actividad
-            FilledButton(
-              onPressed: onView,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.bar_chart_rounded, size: 22),
-                  SizedBox(height: 2),
-                  Text(
-                    'Ver\nactividad',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Asignar salario
-            OutlinedButton(
-              onPressed: () => _openSalaryDialog(context),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFFFD600),
-                side: const BorderSide(color: Color(0xFFFFD600), width: 1),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              ),
-              child: const Column(
-                children: [
-                  Text('💰', style: TextStyle(fontSize: 18)),
-                  SizedBox(height: 2),
-                  Text(
-                    'Salario',
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _MiniChip extends StatelessWidget {
-  const _MiniChip(this.label, this.color, {this.showCoin = false});
-  final String label;
-  final Color color;
-  final bool showCoin;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(70)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showCoin) ...[
-            const AnimatedCoin(size: 11),
-            const SizedBox(width: 3),
-          ],
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1481,15 +1272,11 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                     child: OutlinedButton.icon(
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: _code!));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              '📋 Código copiado',
-                              style: TextStyle(fontFamily: 'Nunito'),
-                            ),
-                            duration: Duration(seconds: 2),
-                            behavior: SnackBarBehavior.floating,
-                          ),
+                        showGamePopup(
+                          context,
+                          '📋 Código copiado',
+                          accentColor: const Color(0xFF7C3AED),
+                          autoDismiss: const Duration(seconds: 2),
                         );
                       },
                       icon: const Icon(Icons.copy_rounded, size: 16),
@@ -1529,226 +1316,6 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
                   ),
                 ]),
               ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// _SalaryDialog — asigna/edita el salario semanal de un hijo
-// ─────────────────────────────────────────────────────────────────────────────
-class _SalaryDialog extends StatefulWidget {
-  const _SalaryDialog({required this.childId, required this.childName});
-  final String childId;
-  final String childName;
-
-  @override
-  State<_SalaryDialog> createState() => _SalaryDialogState();
-}
-
-class _SalaryDialogState extends State<_SalaryDialog> {
-  int _amount = 25;
-  bool _loading = false;
-  bool _saved = false;
-  String? _error;
-
-  static const _min = 20;
-  static const _max = 35;
-
-  Future<void> _save() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      await SalaryRepository().upsertSalary(
-        childId: widget.childId,
-        amount: _amount,
-      );
-      if (mounted)
-        setState(() {
-          _loading = false;
-          _saved = true;
-        });
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          _error = 'Error al guardar. Verifica tu conexión.';
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: const Color(0xFF0D1230),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: const BorderSide(color: Color(0xFFFFD600), width: 1),
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(children: [
-                const Text('💰', style: TextStyle(fontSize: 24)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Salario de ${widget.childName}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white38),
-                ),
-              ]),
-              const SizedBox(height: 4),
-
-              const Text(
-                'Elige cuántas monedas Blink quieres\nasignar por semana (20 – 35).',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontFamily: 'Nunito',
-                  fontSize: 13,
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Valor actual grande
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const AnimatedCoin(size: 32),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$_amount',
-                    style: const TextStyle(
-                      color: Color(0xFFFFD600),
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 40,
-                    ),
-                  ),
-                ],
-              ),
-              const Text(
-                'monedas / semana',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontFamily: 'Nunito',
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Slider
-              Slider(
-                value: _amount.toDouble(),
-                min: _min.toDouble(),
-                max: _max.toDouble(),
-                divisions: _max - _min,
-                activeColor: const Color(0xFFFFD600),
-                inactiveColor: Colors.white24,
-                onChanged:
-                    _saved ? null : (v) => setState(() => _amount = v.toInt()),
-              ),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('$_min',
-                      style: TextStyle(color: Colors.white38, fontSize: 11)),
-                  Text('$_max',
-                      style: TextStyle(color: Colors.white38, fontSize: 11)),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    '⚠️ $_error',
-                    style: const TextStyle(
-                      color: Color(0xFFFBBF24),
-                      fontFamily: 'Nunito',
-                      fontSize: 12,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-              if (_saved)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: Colors.greenAccent.withOpacity(0.5)),
-                  ),
-                  child: const Text(
-                    '✅ ¡Salario guardado!',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.greenAccent,
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                )
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _loading ? null : _save,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFD600),
-                      foregroundColor: Colors.black87,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: _loading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.black54,
-                            ),
-                          )
-                        : const Text(
-                            'Asignar salario',
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                            ),
-                          ),
-                  ),
-                ),
             ],
           ),
         ),

@@ -9,6 +9,7 @@ import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/helpers/notification_helper.dart';
 import '../../../shared/widgets/blink_character.dart';
 import '../../../shared/widgets/world_side_panels.dart';
+import '../../../shared/widgets/game_popup.dart';
 import '../misiones/misiones_screen.dart';
 import '../misiones/desafios_screen.dart';
 import '../tienda/tienda_screen.dart';
@@ -276,15 +277,11 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
           if (b.dialogBuilder != null) {
             b.dialogBuilder!(context);
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${b.emoji} ${b.name} — ¡Próximamente!',
-                  style: const TextStyle(fontFamily: 'Nunito'),
-                ),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-              ),
+            showGamePopup(
+              context,
+              '${b.emoji} ${b.name} — ¡Próximamente!',
+              accentColor: const Color(0xFF7C3AED),
+              autoDismiss: const Duration(seconds: 2),
             );
           }
         },

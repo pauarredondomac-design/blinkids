@@ -15,6 +15,12 @@ import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/screen_background.dart';
+import '../../../shared/widgets/game_card.dart';
+import '../../../shared/widgets/game_popup.dart';
+import '../../../shared/widgets/blink_avatar.dart';
+import '../../../shared/widgets/blink_reaction.dart';
+import '../../../shared/theme/game_tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 void showTiendaDialog(BuildContext context) {
@@ -51,8 +57,16 @@ void showTiendaDialog(BuildContext context) {
 enum _TiendaCategory { todos, items, cosmeticos }
 
 sealed class _ShopEntry {}
-class _ItemEntry     extends _ShopEntry { final Item item; _ItemEntry(this.item); }
-class _CosmeticEntry extends _ShopEntry { final CosmeticDefinition cosmetic; _CosmeticEntry(this.cosmetic); }
+
+class _ItemEntry extends _ShopEntry {
+  final Item item;
+  _ItemEntry(this.item);
+}
+
+class _CosmeticEntry extends _ShopEntry {
+  final CosmeticDefinition cosmetic;
+  _CosmeticEntry(this.cosmetic);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 class TiendaScreen extends ConsumerStatefulWidget {
@@ -63,9 +77,10 @@ class TiendaScreen extends ConsumerStatefulWidget {
 }
 
 class _TiendaScreenState extends ConsumerState<TiendaScreen> {
-  _TiendaCategory _category  = _TiendaCategory.todos;
-  bool            _buying    = false;
-  List<Item>?     _remoteItems;
+  _TiendaCategory _category = _TiendaCategory.todos;
+  bool _buying = false;
+  List<Item>? _remoteItems;
+  final _blinkReaction = BlinkReactionController();
 
   @override
   void initState() {
@@ -73,9 +88,15 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
     _loadItems();
   }
 
+  @override
+  void dispose() {
+    _blinkReaction.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadItems() async {
     final worldId = ref.read(currentWorldProvider);
-    final items   = await ItemDefinitionsRepository.getShopItemsForWorld(worldId);
+    final items = await ItemDefinitionsRepository.getShopItemsForWorld(worldId);
     if (mounted) setState(() => _remoteItems = items);
   }
 
@@ -83,43 +104,55 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
   Future<void> _buyItem(Item item, int coins) async {
     if (_buying) return;
     if (coins < item.shopPrice) {
-      _snack('¡Necesitas ${item.shopPrice} 🪙! Solo tienes $coins.', Colors.red.shade700);
+      _snack('¡Necesitas ${item.shopPrice} 🪙! Solo tienes $coins.',
+          Colors.red.shade700);
       return;
     }
     final qty = await showDialog<int>(
       context: context,
       builder: (_) => _ConfirmDialog(
-        emoji:    item.emoji,
-        name:     item.name,
-        price:    item.shopPrice,
-        coins:    coins,
-        assetPath: item.imagePath != null ? 'assets/items/${item.imagePath}' : null,
-        showQty:  true,
+        emoji: item.emoji,
+        name: item.name,
+        price: item.shopPrice,
+        coins: coins,
+        assetPath:
+            item.imagePath != null ? 'assets/items/${item.imagePath}' : null,
+        showQty: true,
       ),
     );
     if (qty == null || qty <= 0 || !mounted) return;
     final totalPrice = item.shopPrice * qty;
     if (coins < totalPrice) {
-      _snack('No tienes suficientes monedas para $qty unidades 😔', Colors.red.shade700);
+      _snack('No tienes suficientes monedas para $qty unidades 😔',
+          Colors.red.shade700);
       return;
     }
     setState(() => _buying = true);
     try {
       if (DemoStore.isActive) {
         final spent = ref.read(demoProgressProvider).spendCoins(totalPrice);
-        if (!spent) { _snack('No tienes suficientes monedas 😔', Colors.red.shade700); return; }
+        if (!spent) {
+          _snack('No tienes suficientes monedas 😔', Colors.red.shade700);
+          return;
+        }
       } else {
         final uid = Supabase.instance.client.auth.currentUser?.id;
         if (uid != null) {
           final spent = await WalletRepository().spendCoins(uid, totalPrice);
-          if (!spent) { _snack('No tienes suficientes monedas 😔', Colors.red.shade700); return; }
+          if (!spent) {
+            _snack('No tienes suficientes monedas 😔', Colors.red.shade700);
+            return;
+          }
           ref.invalidate(currentWalletProvider);
         }
       }
       await ref.read(itemRepositoryProvider).addToInventory(item.id, qty);
       await MissionTracker().recordPurchase();
       ref.invalidate(inventoryProvider);
-      if (mounted) _snack('¡Compraste ${qty}x ${item.name}!', const Color(0xFF2E7D32));
+      if (mounted) {
+        _snack('¡Compraste ${qty}x ${item.name}!', const Color(0xFF2E7D32));
+        _blinkReaction.react(BlinkMood.celebrando);
+      }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
     } finally {
@@ -131,22 +164,24 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
   Future<void> _buyCostume(CosmeticDefinition c, int coins) async {
     if (_buying) return;
     if (DemoStore.isActive) {
-      _snack('Los cosméticos no están disponibles en modo demo.', Colors.orange.shade700);
+      _snack('Los cosméticos no están disponibles en modo demo.',
+          Colors.orange.shade700);
       return;
     }
     if (coins < c.price) {
-      _snack('¡Necesitas ${c.price} 🪙! Solo tienes $coins.', Colors.red.shade700);
+      _snack(
+          '¡Necesitas ${c.price} 🪙! Solo tienes $coins.', Colors.red.shade700);
       return;
     }
     final qty = await showDialog<int>(
       context: context,
       builder: (_) => _ConfirmDialog(
-        emoji:     c.emoji,
-        name:      c.name,
-        price:     c.price,
-        coins:     coins,
+        emoji: c.emoji,
+        name: c.name,
+        price: c.price,
+        coins: coins,
         assetPath: c.assetPath,
-        subtitle:  c.slot.displayName,
+        subtitle: c.slot.displayName,
       ),
     );
     if (qty == null || qty <= 0 || !mounted) return;
@@ -154,7 +189,10 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
     try {
       await ref.read(cosmeticShopProvider.notifier).buy(c.id);
       ref.invalidate(currentWalletProvider);
-      if (mounted) _snack('¡Compraste ${c.name}!', const Color(0xFF2E7D32));
+      if (mounted) {
+        _snack('¡Compraste ${c.name}!', const Color(0xFF2E7D32));
+        _blinkReaction.react(BlinkMood.celebrando);
+      }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
     } finally {
@@ -162,27 +200,20 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
     }
   }
 
-  void _snack(String msg, Color bg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(msg),
-      backgroundColor: bg,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ),
-  );
+  void _snack(String msg, Color bg) =>
+      showGamePopup(context, msg, accentColor: bg);
 
   @override
   Widget build(BuildContext context) {
-    final worldId   = ref.watch(currentWorldProvider);
-    final coins     = DemoStore.isActive
+    final worldId = ref.watch(currentWorldProvider);
+    final coins = DemoStore.isActive
         ? ref.watch(demoProgressProvider).coins
         : (ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0);
-    final items      = _remoteItems ?? shopItemsForWorld(worldId);
-    final cosmetics  = ref.watch(cosmeticsInShopProvider).valueOrNull ?? [];
+    final items = _remoteItems ?? shopItemsForWorld(worldId);
+    final cosmetics = ref.watch(cosmeticsInShopProvider).valueOrNull ?? [];
 
     final entries = <_ShopEntry>[
-      if (_category != _TiendaCategory.cosmeticos)
-        ...items.map(_ItemEntry.new),
+      if (_category != _TiendaCategory.cosmeticos) ...items.map(_ItemEntry.new),
       if (_category != _TiendaCategory.items)
         ...cosmetics.map(_CosmeticEntry.new),
     ];
@@ -201,72 +232,96 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
               'Cosméticos = ropa y accesorios para Blink.',
         ),
       ],
-      child: Row(
+      child: ScreenBackground(
+          child: Row(
         children: [
           // ── Sidebar ────────────────────────────────────────────────────────
           _Sidebar(
-            coins:    coins,
+            coins: coins,
             category: _category,
-            onBack:   () => context.pop(),
+            onBack: () => context.pop(),
             onSelect: (c) => setState(() => _category = c),
           ),
 
           // ── Grid principal ─────────────────────────────────────────────────
           Expanded(
-            child: Container(
-              color: const Color(0xFF0A0A18),
-              child: entries.isEmpty
-                  ? Center(
-                      child: Text(
-                        '😔 No hay artículos disponibles.',
-                        style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 14),
-                      ),
-                    )
-                  : GridView.builder(
-                      padding: const EdgeInsets.all(12),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 0.72,
-                      ),
-                      itemCount: entries.length,
-                      itemBuilder: (ctx, i) {
-                        final e = entries[i];
-                        return switch (e) {
-                          _ItemEntry(item: final it) => _ShopCard(
-                              key:       ValueKey(it.id),
-                              emoji:     it.emoji,
-                              name:      it.name,
-                              price:     it.shopPrice,
-                              coins:     coins,
-                              busy:      _buying,
-                              assetPath: it.imagePath != null ? 'assets/items/${it.imagePath}' : null,
-                              badge:     it.isRare ? '✨ MISIÓN' : null,
-                              badgeColor: const Color(0xFFFFD600),
-                              accentColor: const Color(0xFF7B2FBE),
-                              onBuy:     () => _buyItem(it, coins),
-                            ).animate(delay: (40 * i).ms).fadeIn(duration: 220.ms).moveY(begin: 12, end: 0),
-                          _CosmeticEntry(cosmetic: final c) => _ShopCard(
-                              key:       ValueKey(c.id),
-                              emoji:     c.emoji,
-                              name:      c.name,
-                              price:     c.price,
-                              coins:     coins,
-                              busy:      _buying,
-                              assetPath: c.assetPath,
-                              badge:     c.slot.displayName.toUpperCase(),
-                              badgeColor: const Color(0xFF00BCD4),
-                              accentColor: const Color(0xFF006064),
-                              onBuy:     () => _buyCostume(c, coins),
-                            ).animate(delay: (40 * i).ms).fadeIn(duration: 220.ms).moveY(begin: 12, end: 0),
-                        };
-                      },
-                    ),
+            child: Stack(
+              children: [
+                Container(
+                  color: Colors.transparent,
+                  child: entries.isEmpty
+                      ? Center(
+                          child: Text(
+                            '😔 No hay artículos disponibles.',
+                            style: TextStyle(
+                                color: GameTokens.textMuted, fontSize: 14),
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(12),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio: 0.72,
+                          ),
+                          itemCount: entries.length,
+                          itemBuilder: (ctx, i) {
+                            final e = entries[i];
+                            return switch (e) {
+                              _ItemEntry(item: final it) => _ShopCard(
+                                  key: ValueKey(it.id),
+                                  emoji: it.emoji,
+                                  name: it.name,
+                                  price: it.shopPrice,
+                                  coins: coins,
+                                  busy: _buying,
+                                  assetPath: it.imagePath != null
+                                      ? 'assets/items/${it.imagePath}'
+                                      : null,
+                                  badge: it.isRare ? '✨ MISIÓN' : null,
+                                  badgeColor: const Color(0xFFFFD600),
+                                  accentColor: const Color(0xFF7B2FBE),
+                                  onBuy: () => _buyItem(it, coins),
+                                )
+                                    .animate(delay: (40 * i).ms)
+                                    .fadeIn(duration: 220.ms)
+                                    .moveY(begin: 12, end: 0),
+                              _CosmeticEntry(cosmetic: final c) => _ShopCard(
+                                  key: ValueKey(c.id),
+                                  emoji: c.emoji,
+                                  name: c.name,
+                                  price: c.price,
+                                  coins: coins,
+                                  busy: _buying,
+                                  assetPath: c.assetPath,
+                                  badge: c.slot.displayName.toUpperCase(),
+                                  badgeColor: const Color(0xFF00BCD4),
+                                  accentColor: const Color(0xFF006064),
+                                  onBuy: () => _buyCostume(c, coins),
+                                )
+                                    .animate(delay: (40 * i).ms)
+                                    .fadeIn(duration: 220.ms)
+                                    .moveY(begin: 12, end: 0),
+                            };
+                          },
+                        ),
+                ),
+                // ── Presencia de Blink en la esquina ──────────────────────────
+                Positioned(
+                  left: 4,
+                  bottom: 0,
+                  child: IgnorePointer(
+                    child: BlinkAvatar(
+                        size: 100, bounce: true, reaction: _blinkReaction),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 }
@@ -281,9 +336,9 @@ class _Sidebar extends StatelessWidget {
     required this.onBack,
     required this.onSelect,
   });
-  final int                       coins;
-  final _TiendaCategory           category;
-  final VoidCallback              onBack;
+  final int coins;
+  final _TiendaCategory category;
+  final VoidCallback onBack;
   final ValueChanged<_TiendaCategory> onSelect;
 
   @override
@@ -312,19 +367,21 @@ class _Sidebar extends StatelessWidget {
                 GestureDetector(
                   onTap: onBack,
                   child: Container(
-                    width: 30, height: 30,
+                    width: 30,
+                    height: 30,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.07),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white.withOpacity(0.18)),
                     ),
-                    child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 15),
+                    child: const Icon(Icons.arrow_back_rounded,
+                        color: Colors.white, size: 15),
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
-                  'TIENDA',
-                  style: TextStyle(
+                Text(
+                  'Tienda'.toUpperCase(),
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
@@ -338,35 +395,16 @@ class _Sidebar extends StatelessWidget {
           // Monedas
           Container(
             margin: const EdgeInsets.fromLTRB(12, 14, 12, 6),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.40),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.amber.withOpacity(0.50)),
-            ),
-            child: Row(
-              children: [
-                const AnimatedCoin(size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  '$coins',
-                  style: const TextStyle(
-                    color: Colors.amber,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
+            child: CoinChip(coins: coins),
           ),
 
           const SizedBox(height: 10),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
-              'CATEGORÍAS',
+              'Categorías'.toUpperCase(),
               style: TextStyle(
-                color: Colors.white.withOpacity(0.30),
+                color: GameTokens.textMuted,
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
@@ -378,19 +416,19 @@ class _Sidebar extends StatelessWidget {
           // Categorías
           _SidebarItem(
             icon: '🏪',
-            label: 'TODOS',
+            label: 'Todos',
             active: category == _TiendaCategory.todos,
             onTap: () => onSelect(_TiendaCategory.todos),
           ),
           _SidebarItem(
             icon: '⚙️',
-            label: 'ÍTEMS',
+            label: 'Ítems',
             active: category == _TiendaCategory.items,
             onTap: () => onSelect(_TiendaCategory.items),
           ),
           _SidebarItem(
             icon: '✨',
-            label: 'COSMÉTICOS',
+            label: 'Cosméticos',
             active: category == _TiendaCategory.cosmeticos,
             onTap: () => onSelect(_TiendaCategory.cosmeticos),
           ),
@@ -407,9 +445,9 @@ class _SidebarItem extends StatelessWidget {
     required this.active,
     required this.onTap,
   });
-  final String       icon;
-  final String       label;
-  final bool         active;
+  final String icon;
+  final String label;
+  final bool active;
   final VoidCallback onTap;
 
   @override
@@ -437,9 +475,9 @@ class _SidebarItem extends StatelessWidget {
             Text(icon, style: const TextStyle(fontSize: 14)),
             const SizedBox(width: 8),
             Text(
-              label,
+              label.toUpperCase(),
               style: TextStyle(
-                color: active ? Colors.white : Colors.white.withOpacity(0.50),
+                color: active ? Colors.white : GameTokens.textSecondary,
                 fontSize: 11,
                 fontWeight: active ? FontWeight.w800 : FontWeight.w500,
                 letterSpacing: 0.5,
@@ -470,15 +508,15 @@ class _ShopCard extends StatefulWidget {
     required this.onBuy,
   });
 
-  final String       emoji;
-  final String       name;
-  final int          price;
-  final int          coins;
-  final bool         busy;
-  final String?      assetPath;
-  final String?      badge;
-  final Color?       badgeColor;
-  final Color        accentColor;
+  final String emoji;
+  final String name;
+  final int price;
+  final int coins;
+  final bool busy;
+  final String? assetPath;
+  final String? badge;
+  final Color? badgeColor;
+  final Color accentColor;
   final VoidCallback onBuy;
 
   @override
@@ -494,43 +532,51 @@ class _ShopCardState extends State<_ShopCard> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (_) => setState(() => _hovered = true),
-      onTapUp:   (_) => setState(() => _hovered = false),
+      onTapUp: (_) => setState(() => _hovered = false),
       onTapCancel: () => setState(() => _hovered = false),
       onTap: (_canAfford && !widget.busy) ? widget.onBuy : null,
-      child: AnimatedContainer(
+      child: AnimatedScale(
         duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_hovered ? 0.96 : 1.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _hovered
-                ? widget.accentColor
-                : Colors.white.withOpacity(0.10),
-            width: _hovered ? 2 : 1,
-          ),
-          boxShadow: _hovered
-              ? [BoxShadow(color: widget.accentColor.withOpacity(0.40), blurRadius: 16)]
-              : [],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(11),
+        scale: _hovered ? 0.96 : 1.0,
+        child: GameCard(
+          accentColor: widget.accentColor,
+          highlighted: _hovered,
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // ── Imagen / emoji de fondo ──────────────────────────────────
-              if (widget.assetPath != null)
-                Image.asset(
-                  widget.assetPath!,
-                  fit: BoxFit.contain,
-                  alignment: Alignment.center,
-                  errorBuilder: (_, __, ___) => _EmojiBackground(emoji: widget.emoji, color: widget.accentColor),
-                )
-              else
-                _EmojiBackground(emoji: widget.emoji, color: widget.accentColor),
+              // ── Panel "juguete" del ícono ─────────────────────────────────
+              // Fondo suave y redondeado detrás del ícono en vez de imagen a
+              // sangre completa — hace que íconos realistas/metálicos (llave,
+              // martillo, etc.) se sientan menos "de adulto" mientras no
+              // llegan sus reemplazos ilustrados. El PNG queda como placeholder.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 58),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: widget.accentColor.withOpacity(0.16),
+                    borderRadius: BorderRadius.circular(18),
+                    border:
+                        Border.all(color: widget.accentColor.withOpacity(0.30)),
+                  ),
+                  child: widget.assetPath != null
+                      ? Image.asset(
+                          widget.assetPath!,
+                          fit: BoxFit.contain,
+                          alignment: Alignment.center,
+                          errorBuilder: (_, __, ___) => _EmojiBackground(
+                              emoji: widget.emoji, color: widget.accentColor),
+                        )
+                      : _EmojiBackground(
+                          emoji: widget.emoji, color: widget.accentColor),
+                ),
+              ),
 
               // ── Gradiente inferior ───────────────────────────────────────
               Positioned(
-                left: 0, right: 0, bottom: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 height: 90,
                 child: Container(
                   decoration: BoxDecoration(
@@ -551,11 +597,14 @@ class _ShopCardState extends State<_ShopCard> {
               // ── Badge (slot / misión) ────────────────────────────────────
               if (widget.badge != null)
                 Positioned(
-                  top: 8, right: 8,
+                  top: 8,
+                  right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: (widget.badgeColor ?? Colors.amber).withOpacity(0.92),
+                      color:
+                          (widget.badgeColor ?? Colors.amber).withOpacity(0.92),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -572,7 +621,9 @@ class _ShopCardState extends State<_ShopCard> {
 
               // ── Nombre + precio ──────────────────────────────────────────
               Positioned(
-                left: 8, right: 8, bottom: 8,
+                left: 8,
+                right: 8,
+                bottom: 8,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -592,7 +643,8 @@ class _ShopCardState extends State<_ShopCard> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: _canAfford
                                 ? widget.accentColor
@@ -642,7 +694,7 @@ class _ShopCardState extends State<_ShopCard> {
 class _EmojiBackground extends StatelessWidget {
   const _EmojiBackground({required this.emoji, required this.color});
   final String emoji;
-  final Color  color;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -650,8 +702,9 @@ class _EmojiBackground extends StatelessWidget {
       color: color.withOpacity(0.12),
       child: Center(
         child: Text(emoji, style: const TextStyle(fontSize: 52))
-          .animate(onPlay: (c) => c.repeat(reverse: true))
-          .moveY(begin: 0, end: -4, duration: 2200.ms, curve: Curves.easeInOut),
+            .animate(onPlay: (c) => c.repeat(reverse: true))
+            .moveY(
+                begin: 0, end: -4, duration: 2200.ms, curve: Curves.easeInOut),
       ),
     );
   }
@@ -670,13 +723,13 @@ class _ConfirmDialog extends StatefulWidget {
     this.subtitle,
     this.showQty = false,
   });
-  final String  emoji;
-  final String  name;
-  final int     price;
-  final int     coins;
+  final String emoji;
+  final String name;
+  final int price;
+  final int coins;
   final String? assetPath;
   final String? subtitle;
-  final bool    showQty;
+  final bool showQty;
 
   @override
   State<_ConfirmDialog> createState() => _ConfirmDialogState();
@@ -695,7 +748,8 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
       backgroundColor: const Color(0xFF0D0A2A),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: const Color(0xFFCE93D8).withOpacity(0.45), width: 1.5),
+        side: BorderSide(
+            color: const Color(0xFFCE93D8).withOpacity(0.45), width: 1.5),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -704,35 +758,40 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
           if (widget.assetPath != null)
             Image.asset(
               widget.assetPath!,
-              width: 80, height: 80,
+              width: 80,
+              height: 80,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) =>
                   Text(widget.emoji, style: const TextStyle(fontSize: 56)),
             ).animate().scale(
-              begin: const Offset(0.5, 0.5),
-              end: const Offset(1, 1),
-              duration: 300.ms,
-              curve: Curves.easeOutBack,
-            )
+                  begin: const Offset(0.5, 0.5),
+                  end: const Offset(1, 1),
+                  duration: 300.ms,
+                  curve: Curves.easeOutBack,
+                )
           else
             Text(widget.emoji, style: const TextStyle(fontSize: 56))
-              .animate().scale(
-                begin: const Offset(0.5, 0.5),
-                end: const Offset(1, 1),
-                duration: 300.ms,
-                curve: Curves.easeOutBack,
-              ),
+                .animate()
+                .scale(
+                  begin: const Offset(0.5, 0.5),
+                  end: const Offset(1, 1),
+                  duration: 300.ms,
+                  curve: Curves.easeOutBack,
+                ),
           const SizedBox(height: 10),
           Text(
             '¿Comprar "${widget.name}"?',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
           ),
           if (widget.subtitle != null) ...[
             const SizedBox(height: 4),
             Text(
               widget.subtitle!,
-              style: TextStyle(color: const Color(0xFF4FC3F7).withOpacity(0.80), fontSize: 12),
+              style: TextStyle(
+                  color: const Color(0xFF4FC3F7).withOpacity(0.80),
+                  fontSize: 12),
             ),
           ],
           // ── Selector de cantidad (solo ítems) ──────────────────────────────
@@ -770,7 +829,10 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text('${widget.coins}',
-                  style: const TextStyle(color: Color(0xFFFFD600), fontWeight: FontWeight.bold, fontSize: 14)),
+                  style: const TextStyle(
+                      color: Color(0xFFFFD600),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14)),
               const SizedBox(width: 4),
               const AnimatedCoin(size: 14),
               Padding(
@@ -795,12 +857,14 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
               children: [
                 Text(
                   'Total: $total ',
-                  style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 11),
+                  style:
+                      TextStyle(color: GameTokens.textSecondary, fontSize: 11),
                 ),
                 const AnimatedCoin(size: 11),
                 Text(
                   ' (${widget.price} × $_qty)',
-                  style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 11),
+                  style:
+                      TextStyle(color: GameTokens.textSecondary, fontSize: 11),
                 ),
               ],
             ),
@@ -810,14 +874,15 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
             widget.assetPath != null && widget.assetPath!.contains('cosmeticos')
                 ? 'Se añadirá a tu guardarropa.'
                 : 'Se guardará en tu inventario.',
-            style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 11),
+            style: TextStyle(color: GameTokens.textMuted, fontSize: 11),
           ),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, null),
-          child: Text('Cancelar', style: TextStyle(color: Colors.white.withOpacity(0.50))),
+          child: Text('Cancelar',
+              style: TextStyle(color: GameTokens.textSecondary)),
         ),
         GestureDetector(
           onTap: canAfford ? () => Navigator.pop(context, _qty) : null,
@@ -826,15 +891,21 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF7B2FBE), Color(0xFFAB47BC)]),
+                gradient: const LinearGradient(
+                    colors: [Color(0xFF7B2FBE), Color(0xFFAB47BC)]),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
-                  BoxShadow(color: const Color(0xFFAB47BC).withOpacity(0.40), blurRadius: 10),
+                  BoxShadow(
+                      color: const Color(0xFFAB47BC).withOpacity(0.40),
+                      blurRadius: 10),
                 ],
               ),
               child: const Text(
                 '¡Comprar! 🔮',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13),
               ),
             ),
           ),
@@ -847,7 +918,7 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _QtyButton extends StatelessWidget {
   const _QtyButton({required this.icon, this.onTap});
-  final IconData  icon;
+  final IconData icon;
   final VoidCallback? onTap;
 
   @override
@@ -859,7 +930,8 @@ class _QtyButton extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         opacity: active ? 1.0 : 0.3,
         child: Container(
-          width: 34, height: 34,
+          width: 34,
+          height: 34,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFF7B2FBE), width: 2),

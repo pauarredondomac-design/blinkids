@@ -80,3 +80,31 @@ flutter:
     - assets/items/
     - assets/badges/
     - assets/animations/
+    - assets/fonts/
+    - assets/icons/
+
+  fonts:
+    - family: Baloo2
+      fonts:
+        - asset: assets/fonts/Baloo2-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/Baloo2-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/Baloo2-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/Baloo2-Variable.ttf
+          weight: 700
+        - asset: assets/fonts/Baloo2-Variable.ttf
+          weight: 800
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/Nunito-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/Nunito-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/Nunito-Variable.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito-Variable.ttf
+          weight: 800

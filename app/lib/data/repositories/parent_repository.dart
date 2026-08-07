@@ -5,8 +5,8 @@ import '../models/profile.dart';
 // Resultado de búsqueda de niños
 // ─────────────────────────────────────────────────────────────────────────────
 class ChildSearchResult {
-  final String  id;
-  final String  displayName;
+  final String id;
+  final String displayName;
   final String? avatarUrl;
   final String? email;
 
@@ -17,25 +17,26 @@ class ChildSearchResult {
     this.email,
   });
 
-  factory ChildSearchResult.fromJson(Map<String, dynamic> j) => ChildSearchResult(
-    id:          j['id']           as String,
-    displayName: j['display_name'] as String,
-    avatarUrl:   j['avatar_url']   as String?,
-    email:       j['email']        as String?,
-  );
+  factory ChildSearchResult.fromJson(Map<String, dynamic> j) =>
+      ChildSearchResult(
+        id: j['id'] as String,
+        displayName: j['display_name'] as String,
+        avatarUrl: j['avatar_url'] as String?,
+        email: j['email'] as String?,
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Estadísticas del hijo para mostrar en la tarjeta del panel de padre
 // ─────────────────────────────────────────────────────────────────────────────
 class ChildStats {
-  final String  childId;
-  final String  displayName;
+  final String childId;
+  final String displayName;
   final String? avatarUrl;
-  final int     xp;
-  final int     level;
-  final int     totalCoins;
-  final int     missionsJoined;
+  final int xp;
+  final int level;
+  final int totalCoins;
+  final int missionsJoined;
 
   const ChildStats({
     required this.childId,
@@ -49,8 +50,8 @@ class ChildStats {
 
   // ── Progreso dentro del nivel actual (0-100 XP por nivel) ─────────────────
   double get levelProgress => (xp % 100) / 100.0;
-  int    get xpInLevel     => xp % 100;
-  int    get xpToNext      => 100 - (xp % 100);
+  int get xpInLevel => xp % 100;
+  int get xpToNext => 100 - (xp % 100);
 
   // Emoji fijo del personaje (cosmética aún no implementada → siempre 🦊)
   static const String characterEmoji = '🦊';
@@ -105,11 +106,11 @@ class ParentRepository {
     // Notificación para el niño
     await _db.from('notifications').insert({
       'user_id': childId,
-      'type':    'link_request',
-      'title':   '¡Tu papá/mamá quiere conectarse! 👨‍👩‍👧',
-      'body':    '$parentName quiere ser tu tutor en Blinkids. '
-                 'Dile que abra sus notificaciones para aceptar.',
-      'data':    {'parent_id': parentId},
+      'type': 'link_request',
+      'title': '¡Tu papá/mamá quiere conectarse! 👨‍👩‍👧',
+      'body': '$parentName quiere ser tu tutor en Blinkids. '
+          'Dile que abra sus notificaciones para aceptar.',
+      'data': {'parent_id': parentId},
     });
   }
 
@@ -135,10 +136,10 @@ class ParentRepository {
     // Notificación para el padre
     await _db.from('notifications').insert({
       'user_id': parentId,
-      'type':    'link_accepted',
-      'title':   '¡$childName aceptó tu solicitud! ✅',
-      'body':    'Ya puedes ver la actividad de $childName en tu panel.',
-      'data':    {'child_id': childId},
+      'type': 'link_accepted',
+      'title': '¡$childName aceptó tu solicitud! ✅',
+      'body': 'Ya puedes ver la actividad de $childName en tu panel.',
+      'data': {'child_id': childId},
     });
   }
 
@@ -162,7 +163,8 @@ class ParentRepository {
     try {
       final rows = await _db
           .from('parent_child')
-          .select('profiles!child_id(id, display_name, avatar_url, role, created_at, updated_at)')
+          .select(
+              'profiles!child_id(id, display_name, avatar_url, role, created_at, updated_at)')
           .eq('parent_id', parentId);
       return (rows as List)
           .map((e) => Profile.fromJson(e['profiles'] as Map<String, dynamic>))
@@ -173,11 +175,13 @@ class ParentRepository {
   }
 
   // ── Solicitudes pendientes recibidas por el niño ──────────────────────────
-  Future<List<Map<String, dynamic>>> getPendingRequestsForChild(String childId) async {
+  Future<List<Map<String, dynamic>>> getPendingRequestsForChild(
+      String childId) async {
     try {
       final rows = await _db
           .from('link_requests')
-          .select('id, parent_id, created_at, profiles!parent_id(display_name, avatar_url)')
+          .select(
+              'id, parent_id, created_at, profiles!parent_id(display_name, avatar_url)')
           .eq('child_id', childId)
           .eq('status', 'pending')
           .order('created_at', ascending: false);
@@ -201,7 +205,7 @@ class ParentRepository {
           .select('xp, level')
           .eq('user_id', childId)
           .maybeSingle();
-      xp    = charRow?['xp']    as int? ?? 0;
+      xp = charRow?['xp'] as int? ?? 0;
       level = charRow?['level'] as int? ?? 1;
     } catch (_) {}
 
@@ -223,12 +227,12 @@ class ParentRepository {
     } catch (_) {}
 
     return ChildStats(
-      childId:        childId,
-      displayName:    displayName,
-      avatarUrl:      avatarUrl,
-      xp:             xp,
-      level:          level,
-      totalCoins:     totalCoins,
+      childId: childId,
+      displayName: displayName,
+      avatarUrl: avatarUrl,
+      xp: xp,
+      level: level,
+      totalCoins: totalCoins,
       missionsJoined: missionsJoined,
     );
   }

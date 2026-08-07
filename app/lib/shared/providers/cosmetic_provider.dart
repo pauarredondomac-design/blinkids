@@ -6,18 +6,21 @@ import 'auth_provider.dart';
 final _repo = CosmeticRepository();
 
 // ── Catálogo de cosméticos ─────────────────────────────────────────────────────
-final cosmeticCatalogProvider = FutureProvider<List<CosmeticDefinition>>((ref) async {
+final cosmeticCatalogProvider =
+    FutureProvider<List<CosmeticDefinition>>((ref) async {
   return _repo.getAll();
 });
 
 // ── Solo cosméticos vendibles en la tienda ────────────────────────────────────
-final cosmeticsInShopProvider = FutureProvider<List<CosmeticDefinition>>((ref) async {
+final cosmeticsInShopProvider =
+    FutureProvider<List<CosmeticDefinition>>((ref) async {
   ref.keepAlive();
   return _repo.getInShop();
 });
 
 // ── Cosméticos que el jugador posee ───────────────────────────────────────────
-final ownedCosmeticsProvider = FutureProvider<List<CosmeticDefinition>>((ref) async {
+final ownedCosmeticsProvider =
+    FutureProvider<List<CosmeticDefinition>>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return [];
   return _repo.getOwned();
@@ -35,6 +38,12 @@ final equippedLoadoutProvider = FutureProvider<EquippedLoadout>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return EquippedLoadout.empty;
   return _repo.getEquipped();
+});
+
+// ── Equipamiento de un hijo específico (vista del padre) ──────────────────────
+final childLoadoutProvider =
+    FutureProvider.family<EquippedLoadout, String>((ref, childId) async {
+  return _repo.getEquippedFor(childId);
 });
 
 // ── Notifier para comprar cosméticos ──────────────────────────────────────────

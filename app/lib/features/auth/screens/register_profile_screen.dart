@@ -27,12 +27,11 @@ class RegisterProfileScreen extends ConsumerStatefulWidget {
       _RegisterProfileScreenState();
 }
 
-class _RegisterProfileScreenState
-    extends ConsumerState<RegisterProfileScreen> {
+class _RegisterProfileScreenState extends ConsumerState<RegisterProfileScreen> {
   final _nameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  bool   _isLoading  = false;
-  String _status     = '';
+  bool _isLoading = false;
+  String _status = '';
   String? _nameError;
 
   @override
@@ -54,7 +53,7 @@ class _RegisterProfileScreenState
 
     setState(() {
       _isLoading = true;
-      _status    = AppStrings.creatingProfile;
+      _status = AppStrings.creatingProfile;
     });
 
     try {
@@ -62,12 +61,13 @@ class _RegisterProfileScreenState
       if (user == null) throw Exception('No hay sesión activa');
 
       final profileRepo = ref.read(profileRepositoryProvider);
-      final walletRepo  = ref.read(walletRepositoryProvider);
-      final charRepo    = ref.read(characterRepositoryProvider);
+      final walletRepo = ref.read(walletRepositoryProvider);
+      final charRepo = ref.read(characterRepositoryProvider);
 
       // Verificar que el apodo no esté en uso (solo para niños; padres pueden repetir nombre)
       if (!_isParent) {
-        final taken = await profileRepo.isDisplayNameTaken(_nameController.text.trim());
+        final taken =
+            await profileRepo.isDisplayNameTaken(_nameController.text.trim());
         if (taken) {
           if (mounted) {
             setState(() {
@@ -164,9 +164,7 @@ class _RegisterProfileScreenState
                             color: Colors.white,
                             fontFamily: 'Nunito',
                           ),
-                        )
-                            .animate()
-                            .fadeIn(delay: 200.ms),
+                        ).animate().fadeIn(delay: 200.ms),
                         const SizedBox(height: AppSizes.sm),
                         Text(
                           isParent
@@ -177,9 +175,7 @@ class _RegisterProfileScreenState
                             color: Colors.white70,
                             fontFamily: 'Nunito',
                           ),
-                        )
-                            .animate()
-                            .fadeIn(delay: 350.ms),
+                        ).animate().fadeIn(delay: 350.ms),
                       ],
                     ),
                   ),
@@ -211,15 +207,13 @@ class _RegisterProfileScreenState
                                   isParent
                                       ? 'Este nombre verán tus hijos en la app'
                                       : 'Este será tu nombre de aventurero',
-                                  style:
-                                      Theme.of(context).textTheme.bodyMedium,
+                                  style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                                 const SizedBox(height: AppSizes.xl),
                                 TextFormField(
                                   controller: _nameController,
                                   autofocus: true,
-                                  textCapitalization:
-                                      TextCapitalization.words,
+                                  textCapitalization: TextCapitalization.words,
                                   decoration: InputDecoration(
                                     hintText: AppStrings.namePlaceholder,
                                     prefixIcon: Icon(
@@ -251,9 +245,9 @@ class _RegisterProfileScreenState
                                         child: Text(
                                           _nameError!,
                                           style: const TextStyle(
-                                            color:      Color(0xFFEF4444),
+                                            color: Color(0xFFEF4444),
                                             fontFamily: 'Nunito',
-                                            fontSize:   12,
+                                            fontSize: 12,
                                           ),
                                         ),
                                       ),

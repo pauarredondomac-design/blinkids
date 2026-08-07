@@ -1,6 +1,13 @@
 # Credenciales locales (NUNCA commitear)
 dart_defines/local.json
 
+# Llave de firma de release de Android (NUNCA commitear — guardar aparte,
+# ej. en un gestor de contraseñas. Si se pierde, no se pueden subir más
+# actualizaciones a la misma ficha de Play Store).
+android/key.properties
+android/*.jks
+android/*.keystore
+
 # Miscellaneous
 *.class
 *.log

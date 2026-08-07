@@ -7,6 +7,7 @@ import '../../data/models/cosmetic.dart';
 import '../../shared/providers/cosmetic_provider.dart';
 import '../../shared/providers/wallet_provider.dart';
 import '../../shared/widgets/coin_display.dart';
+import '../../shared/widgets/game_popup.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CosmeticsScreen — Vestuario del personaje
@@ -98,13 +99,8 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
     }
   }
 
-  void _snack(String msg, Color bg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(fontFamily: 'Nunito')),
-      backgroundColor: bg,
-      behavior: SnackBarBehavior.floating,
-    ));
-  }
+  void _snack(String msg, Color bg) =>
+      showGamePopup(context, msg, accentColor: bg);
 
   String _friendlyError(Object e) {
     final s = e.toString().toLowerCase();

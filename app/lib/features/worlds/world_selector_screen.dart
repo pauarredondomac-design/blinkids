@@ -6,6 +6,7 @@ import '../../data/repositories/wallet_repository.dart';
 import '../../shared/providers/wallet_provider.dart';
 import '../../shared/providers/world_provider.dart';
 import '../../shared/widgets/coin_display.dart';
+import '../../shared/widgets/game_popup.dart';
 
 void showWorldSelectorDialog(BuildContext context, String currentWorldId) {
   final size = MediaQuery.of(context).size;
@@ -114,13 +115,8 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
     }
   }
 
-  void _showSnack(String msg, Color bg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: const TextStyle(fontFamily: 'Nunito')),
-      backgroundColor: bg,
-      behavior: SnackBarBehavior.floating,
-    ));
-  }
+  void _showSnack(String msg, Color bg) =>
+      showGamePopup(context, msg, accentColor: bg);
 
   @override
   Widget build(BuildContext context) {

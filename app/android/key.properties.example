@@ -1,0 +1,4 @@
+storePassword=
+keyPassword=
+keyAlias=blinkids
+storeFile=blinkids-release-key.jks

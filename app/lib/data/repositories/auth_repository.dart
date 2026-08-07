@@ -3,8 +3,7 @@ import '../services/supabase_service.dart';
 import '../../core/constants/app_strings.dart';
 
 class AuthRepository {
-  Stream<AuthState> get authStateChanges =>
-      supabase.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges => supabase.auth.onAuthStateChange;
 
   User? get currentUser => supabase.auth.currentUser;
 

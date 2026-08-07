@@ -51,8 +51,7 @@ class NotificationRepository {
     try {
       await _db
           .from('notifications')
-          .update({'is_read': true})
-          .eq('id', notificationId);
+          .update({'is_read': true}).eq('id', notificationId);
     } catch (_) {}
   }
 
@@ -66,10 +65,10 @@ class NotificationRepository {
   }) async {
     await _db.from('notifications').insert({
       'user_id': userId,
-      'type':    type,
-      'title':   title,
-      'body':    body,
-      'data':    data ?? {},
+      'type': type,
+      'title': title,
+      'body': body,
+      'data': data ?? {},
     });
   }
 }

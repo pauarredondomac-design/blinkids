@@ -8,7 +8,8 @@ final salaryRepositoryProvider = Provider<SalaryRepository>(
 );
 
 // ─── Estado del salario para el niño ─────────────────────────────────────────
-final mySalaryStatusProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final mySalaryStatusProvider =
+    FutureProvider<Map<String, dynamic>>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) return {};
   return ref.read(salaryRepositoryProvider).getMyStatus();
@@ -28,8 +29,7 @@ class SalaryNotifier extends AsyncNotifier<SalaryClaimResult?> {
 
   Future<SalaryClaimResult> claim() async {
     state = const AsyncValue.loading();
-    final result =
-        await ref.read(salaryRepositoryProvider).claimSalary();
+    final result = await ref.read(salaryRepositoryProvider).claimSalary();
     state = AsyncValue.data(result);
     ref.invalidate(mySalaryStatusProvider);
     return result;

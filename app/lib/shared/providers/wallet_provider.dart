@@ -35,17 +35,38 @@ final currentWalletProvider = FutureProvider<Wallet?>((ref) async {
 
 /// Categorías de la bolsa del niño (o categorías demo en memoria).
 /// Mismo cuidado que arriba: `currentUserProvider` se observa primero.
-final walletCategoriesProvider = FutureProvider<List<WalletCategory>>((ref) async {
+final walletCategoriesProvider =
+    FutureProvider<List<WalletCategory>>((ref) async {
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     ref.watch(demoProgressProvider); // rebuild cuando cambien balances
     final balances = DemoStore.instance.walletCategoryBalances;
     final now = DateTime.now();
     return [
-      WalletCategory(id: 'demo_guardar',  walletId: 'demo', category: WalletCategoryType.guardar,  balance: balances[WalletCategoryType.guardar]  ?? 0, updatedAt: now),
-      WalletCategory(id: 'demo_invertir', walletId: 'demo', category: WalletCategoryType.invertir, balance: balances[WalletCategoryType.invertir] ?? 0, updatedAt: now),
-      WalletCategory(id: 'demo_donar',    walletId: 'demo', category: WalletCategoryType.donar,    balance: balances[WalletCategoryType.donar]    ?? 0, updatedAt: now),
-      WalletCategory(id: 'demo_gastar',   walletId: 'demo', category: WalletCategoryType.gastar,   balance: balances[WalletCategoryType.gastar]   ?? 0, updatedAt: now),
+      WalletCategory(
+          id: 'demo_guardar',
+          walletId: 'demo',
+          category: WalletCategoryType.guardar,
+          balance: balances[WalletCategoryType.guardar] ?? 0,
+          updatedAt: now),
+      WalletCategory(
+          id: 'demo_invertir',
+          walletId: 'demo',
+          category: WalletCategoryType.invertir,
+          balance: balances[WalletCategoryType.invertir] ?? 0,
+          updatedAt: now),
+      WalletCategory(
+          id: 'demo_donar',
+          walletId: 'demo',
+          category: WalletCategoryType.donar,
+          balance: balances[WalletCategoryType.donar] ?? 0,
+          updatedAt: now),
+      WalletCategory(
+          id: 'demo_gastar',
+          walletId: 'demo',
+          category: WalletCategoryType.gastar,
+          balance: balances[WalletCategoryType.gastar] ?? 0,
+          updatedAt: now),
     ];
   }
 

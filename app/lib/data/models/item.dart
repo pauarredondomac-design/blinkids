@@ -16,33 +16,36 @@ class Item {
     this.imagePath,
   });
 
-  final String     id;
-  final String     emoji;
-  final String     name;
-  final String     description;
+  final String id;
+  final String emoji;
+  final String name;
+  final String description;
+
   /// 'forest' | 'space' | 'any'
-  final String     world;
+  final String world;
+
   /// Precio en la tienda. 0 = no se vende en tienda (solo misiones).
-  final int        shopPrice;
+  final int shopPrice;
   final ItemSource source;
-  final bool       isRare;
+  final bool isRare;
+
   /// Nombre de archivo en assets/items/ (ej: 'llave_inglesa.png'). null = usar emoji.
-  final String?    imagePath;
+  final String? imagePath;
 
   bool get availableInShop => shopPrice > 0;
 
   factory Item.fromJson(Map<String, dynamic> j) {
     final price = j['shop_price'] as int? ?? 0;
     return Item(
-      id:          j['item_id']     as String,
-      emoji:       j['emoji']       as String,
-      name:        j['name']        as String,
+      id: j['item_id'] as String,
+      emoji: j['emoji'] as String,
+      name: j['name'] as String,
       description: j['description'] as String? ?? '',
-      world:       j['world']       as String? ?? 'any',
-      shopPrice:   price,
-      source:      price > 0 ? ItemSource.shop : ItemSource.mission,
-      isRare:      j['is_rare']     as bool? ?? false,
-      imagePath:   j['image_name']  as String?,
+      world: j['world'] as String? ?? 'any',
+      shopPrice: price,
+      source: price > 0 ? ItemSource.shop : ItemSource.mission,
+      isRare: j['is_rare'] as bool? ?? false,
+      imagePath: j['image_name'] as String?,
     );
   }
 }
@@ -232,7 +235,7 @@ List<Item> shopItemsForWorld(String worldId) =>
 class InventoryStack {
   const InventoryStack({required this.item, required this.qty});
   final Item item;
-  final int  qty;
+  final int qty;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -241,7 +244,7 @@ class InventoryStack {
 class ItemRequirement {
   const ItemRequirement({required this.itemId, required this.qty});
   final String itemId;
-  final int    qty;
+  final int qty;
 
   Item? get item => itemById(itemId);
 }
@@ -252,7 +255,7 @@ class ItemRequirement {
 class ItemReward {
   const ItemReward({required this.itemId, required this.qty});
   final String itemId;
-  final int    qty;
+  final int qty;
 
   Item? get item => itemById(itemId);
 }
@@ -271,8 +274,8 @@ class PlayerListing {
 
   final String id;
   final String itemId;
-  final int    qty;
-  final int    pricePerUnit;
+  final int qty;
+  final int pricePerUnit;
   final String sellerName;
 
   Item? get item => itemById(itemId);

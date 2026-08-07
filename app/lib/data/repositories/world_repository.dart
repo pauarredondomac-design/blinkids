@@ -19,17 +19,14 @@ class WorldRepository {
           .eq('user_id', userId)
           .eq('is_unlocked', true);
 
-      final worldIds = (progressRows as List)
-          .map((r) => r['world_id'] as String)
-          .toList();
+      final worldIds =
+          (progressRows as List).map((r) => r['world_id'] as String).toList();
 
       if (worldIds.isEmpty) return [];
 
       // 2. Convertir UUIDs → slugs consultando la tabla worlds
-      final worldRows = await _client
-          .from('worlds')
-          .select('slug')
-          .inFilter('id', worldIds);
+      final worldRows =
+          await _client.from('worlds').select('slug').inFilter('id', worldIds);
 
       return (worldRows as List).map((r) => r['slug'] as String).toList();
     } catch (_) {
@@ -60,10 +57,10 @@ class WorldRepository {
     // 2. Upsert en world_progress
     await _client.from('world_progress').upsert(
       {
-        'user_id':      userId,
-        'world_id':     worldId,
-        'is_unlocked':  true,
-        'unlocked_at':  DateTime.now().toIso8601String(),
+        'user_id': userId,
+        'world_id': worldId,
+        'is_unlocked': true,
+        'unlocked_at': DateTime.now().toIso8601String(),
       },
       onConflict: 'user_id,world_id',
     );

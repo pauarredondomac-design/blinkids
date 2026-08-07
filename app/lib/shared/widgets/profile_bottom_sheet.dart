@@ -305,7 +305,7 @@ class ProfileBottomSheet extends ConsumerWidget {
               await ref.read(authRepositoryProvider).signOut();
               ref.invalidate(equippedLoadoutProvider);
               ref.invalidate(ownedCosmeticsProvider);
-              if (context.mounted) context.go('/world');
+              if (context.mounted) context.go('/child-login');
             },
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),

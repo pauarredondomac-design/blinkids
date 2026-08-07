@@ -20,8 +20,8 @@ class AnalyticsService {
     if (kIsWeb) return 'web';
     try {
       if (Platform.isAndroid) return 'android';
-      if (Platform.isIOS)     return 'ios';
-      if (Platform.isMacOS)   return 'macos';
+      if (Platform.isIOS) return 'ios';
+      if (Platform.isMacOS) return 'macos';
       if (Platform.isWindows) return 'windows';
     } catch (_) {}
     return 'unknown';
@@ -39,11 +39,11 @@ class AnalyticsService {
     try {
       final uid = Supabase.instance.client.auth.currentUser?.id;
       await Supabase.instance.client.from('analytics_events').insert({
-        'user_id':     uid,
-        'event_name':  eventName,
-        'properties':  properties,
+        'user_id': uid,
+        'event_name': eventName,
+        'properties': properties,
         'app_version': appVersion,
-        'platform':    _platform,
+        'platform': _platform,
       });
     } catch (_) {
       // Silencioso: las analíticas nunca deben bloquear el flujo del juego
@@ -68,8 +68,7 @@ class AnalyticsService {
   Future<void> register(String role) =>
       track('register', properties: {'role': role});
 
-  Future<void> tutorialCompleted() =>
-      track('tutorial_completed');
+  Future<void> tutorialCompleted() => track('tutorial_completed');
 
   Future<void> worldEntered(String worldId) =>
       track('world_entered', properties: {'world_id': worldId});
@@ -80,38 +79,38 @@ class AnalyticsService {
   Future<void> missionCompleted(String missionId, int xpGained) =>
       track('mission_completed', properties: {
         'mission_id': missionId,
-        'xp_gained':  xpGained,
+        'xp_gained': xpGained,
       });
 
   Future<void> quizCompleted(String questionId, bool correct, int xpGained) =>
       track('quiz_completed', properties: {
         'question_id': questionId,
-        'correct':     correct,
-        'xp_gained':   xpGained,
+        'correct': correct,
+        'xp_gained': xpGained,
       });
 
   Future<void> jobCompleted(String jobId, int coinsEarned) =>
       track('job_completed', properties: {
-        'job_id':       jobId,
+        'job_id': jobId,
         'coins_earned': coinsEarned,
       });
 
   Future<void> itemPurchased(String itemId, int price) =>
       track('item_purchased', properties: {
         'item_id': itemId,
-        'price':   price,
+        'price': price,
       });
 
   Future<void> cosmeticPurchased(String cosmeticId, int price) =>
       track('cosmetic_purchased', properties: {
         'cosmetic_id': cosmeticId,
-        'price':       price,
+        'price': price,
       });
 
   Future<void> cosmeticEquipped(String cosmeticId, String slot) =>
       track('cosmetic_equipped', properties: {
         'cosmetic_id': cosmeticId,
-        'slot':        slot,
+        'slot': slot,
       });
 
   Future<void> badgeEarned(String badgeId) =>
@@ -120,7 +119,7 @@ class AnalyticsService {
   Future<void> coinsReceived(int amount, String from) =>
       track('coins_received', properties: {
         'amount': amount,
-        'from':   from,
+        'from': from,
       });
 
   Future<void> onboardingStep(String step) =>

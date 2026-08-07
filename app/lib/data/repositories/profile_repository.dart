@@ -3,11 +3,8 @@ import '../services/supabase_service.dart';
 
 class ProfileRepository {
   Future<Profile?> getProfile(String userId) async {
-    final data = await supabase
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .maybeSingle();
+    final data =
+        await supabase.from('profiles').select().eq('id', userId).maybeSingle();
     return data != null ? Profile.fromJson(data) : null;
   }
 

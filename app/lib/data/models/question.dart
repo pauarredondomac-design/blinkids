@@ -1,13 +1,26 @@
-enum QuestionType { multipleChoice, trueFalse, orderSteps, classify, dragMatch, fillBlank }
+enum QuestionType {
+  multipleChoice,
+  trueFalse,
+  orderSteps,
+  classify,
+  dragMatch,
+  fillBlank
+}
 
 QuestionType _typeFromString(String? raw) {
   switch (raw) {
-    case 'true_false':   return QuestionType.trueFalse;
-    case 'order_steps':  return QuestionType.orderSteps;
-    case 'classify':     return QuestionType.classify;
-    case 'drag_match':   return QuestionType.dragMatch;
-    case 'fill_blank':   return QuestionType.fillBlank;
-    default:             return QuestionType.multipleChoice;
+    case 'true_false':
+      return QuestionType.trueFalse;
+    case 'order_steps':
+      return QuestionType.orderSteps;
+    case 'classify':
+      return QuestionType.classify;
+    case 'drag_match':
+      return QuestionType.dragMatch;
+    case 'fill_blank':
+      return QuestionType.fillBlank;
+    default:
+      return QuestionType.multipleChoice;
   }
 }
 
@@ -15,8 +28,10 @@ class QuestionOption {
   final String id;
   final String text;
   final String? icon;
+
   /// Solo para 'classify': a qué bolsa pertenece este ítem ('a' o 'b').
   final String? bucket;
+
   /// Solo para 'drag_match': lado derecho del par (si el ítem es un par ya formado).
   final String? right;
 
@@ -44,6 +59,7 @@ class Question {
   final QuestionType type;
   final String questionText;
   final List<QuestionOption> options;
+
   /// Para multipleChoice/trueFalse: id de la opción correcta.
   /// Para orderSteps: lista ordenada de ids (secuencia correcta).
   /// Para classify: mapa {'a': 'Etiqueta bolsa A', 'b': 'Etiqueta bolsa B'}.

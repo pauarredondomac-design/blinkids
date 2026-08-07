@@ -19,21 +19,24 @@ class CraftingJob {
     this.fuelReward = 0,
   });
 
-  final String              id;
-  final String              emoji;
-  final String              name;
-  final String              npcName;
-  final String              npcEmoji;
-  final String              story;
+  final String id;
+  final String emoji;
+  final String name;
+  final String npcName;
+  final String npcEmoji;
+  final String story;
+
   /// 'forest' | 'space'
-  final String              world;
+  final String world;
   final List<ItemRequirement> requirements;
-  final int                 coinReward;
-  final int                 xpReward;
+  final int coinReward;
+  final int xpReward;
+
   /// Ítem opcional de recompensa (además de monedas)
-  final ItemReward?         itemReward;
+  final ItemReward? itemReward;
+
   /// Combustible directo (0-100) que se suma a la barra al completar
-  final int                 fuelReward;
+  final int fuelReward;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,16 +50,17 @@ const allCraftingJobs = <CraftingJob>[
     name: 'Reparar la Cabaña',
     npcName: 'Osito Bruno',
     npcEmoji: '🐻',
-    story: '¡Hola aventurero! Un árbol cayó sobre mi cabaña durante la tormenta. '
+    story:
+        '¡Hola aventurero! Un árbol cayó sobre mi cabaña durante la tormenta. '
         'Necesito 3 tablones de madera y un martillo para repararla. '
         '¿Me puedes ayudar? ¡Te lo agradeceré con muchas monedas!',
     world: 'forest',
     requirements: [
       ItemRequirement(itemId: 'wood_plank', qty: 3),
-      ItemRequirement(itemId: 'hammer',     qty: 1),
+      ItemRequirement(itemId: 'hammer', qty: 1),
     ],
     coinReward: 250,
-    xpReward:   40,
+    xpReward: 40,
   ),
   CraftingJob(
     id: 'heal_fox',
@@ -69,11 +73,11 @@ const allCraftingJobs = <CraftingJob>[
         'para hacer la medicina. ¡Date prisa, por favor!',
     world: 'forest',
     requirements: [
-      ItemRequirement(itemId: 'magic_herb',    qty: 2),
+      ItemRequirement(itemId: 'magic_herb', qty: 2),
       ItemRequirement(itemId: 'health_potion', qty: 1),
     ],
     coinReward: 200,
-    xpReward:   30,
+    xpReward: 30,
   ),
   CraftingJob(
     id: 'squirrel_feast',
@@ -89,7 +93,7 @@ const allCraftingJobs = <CraftingJob>[
       ItemRequirement(itemId: 'acorn', qty: 5),
     ],
     coinReward: 150,
-    xpReward:   20,
+    xpReward: 20,
     itemReward: ItemReward(itemId: 'magic_herb', qty: 2),
   ),
 
@@ -106,10 +110,10 @@ const allCraftingJobs = <CraftingJob>[
     world: 'space',
     requirements: [
       ItemRequirement(itemId: 'space_bolt', qty: 3),
-      ItemRequirement(itemId: 'wrench',     qty: 1),
+      ItemRequirement(itemId: 'wrench', qty: 1),
     ],
     coinReward: 300,
-    xpReward:   50,
+    xpReward: 50,
     fuelReward: 10,
   ),
   CraftingJob(
@@ -123,11 +127,11 @@ const allCraftingJobs = <CraftingJob>[
         'para reactivar los sistemas. ¡Muchas gracias, humano amigo!',
     world: 'space',
     requirements: [
-      ItemRequirement(itemId: 'battery',     qty: 2),
+      ItemRequirement(itemId: 'battery', qty: 2),
       ItemRequirement(itemId: 'fuel_capsule', qty: 1),
     ],
     coinReward: 250,
-    xpReward:   35,
+    xpReward: 35,
   ),
   CraftingJob(
     id: 'fix_robot',
@@ -140,12 +144,12 @@ const allCraftingJobs = <CraftingJob>[
         'y 1 perno espacial. ¡Es urgente para la misión!',
     world: 'space',
     requirements: [
-      ItemRequirement(itemId: 'wrench',        qty: 1),
+      ItemRequirement(itemId: 'wrench', qty: 1),
       ItemRequirement(itemId: 'lunar_circuit', qty: 2),
-      ItemRequirement(itemId: 'space_bolt',    qty: 1),
+      ItemRequirement(itemId: 'space_bolt', qty: 1),
     ],
     coinReward: 350,
-    xpReward:   60,
+    xpReward: 60,
     fuelReward: 10,
   ),
 ];

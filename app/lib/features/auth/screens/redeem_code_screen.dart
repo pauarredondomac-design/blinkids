@@ -13,9 +13,9 @@ class RedeemCodeScreen extends StatefulWidget {
 
 class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
   final _codeCtrl = TextEditingController();
-  bool   _loading  = false;
+  bool _loading = false;
   String _errorMsg = '';
-  bool   _success  = false;
+  bool _success = false;
 
   Future<void> _redeem() async {
     final code = _codeCtrl.text.trim().toUpperCase();
@@ -23,17 +23,25 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
       setState(() => _errorMsg = 'El código tiene 6 caracteres.');
       return;
     }
-    setState(() { _loading = true; _errorMsg = ''; });
+    setState(() {
+      _loading = true;
+      _errorMsg = '';
+    });
     try {
-      await Supabase.instance.client.rpc('redeem_invite_code', params: {'p_code': code});
-      if (mounted) setState(() { _success = true; _loading = false; });
+      await Supabase.instance.client
+          .rpc('redeem_invite_code', params: {'p_code': code});
+      if (mounted)
+        setState(() {
+          _success = true;
+          _loading = false;
+        });
       await Future.delayed(2.seconds);
       if (mounted) context.go('/world');
     } catch (e) {
       final msg = e.toString();
       if (mounted) {
         setState(() {
-          _loading  = false;
+          _loading = false;
           _errorMsg = msg.contains('Invalid') || msg.contains('invalid')
               ? 'Código inválido o expirado.'
               : 'Error al canjear. Intenta de nuevo.';
@@ -71,17 +79,27 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('🔗', style: TextStyle(fontSize: 64)).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+        const Text('🔗', style: TextStyle(fontSize: 64))
+            .animate()
+            .scale(duration: 600.ms, curve: Curves.elasticOut),
         const SizedBox(height: 20),
         const Text(
           '¡Vincula tu cuenta!',
-          style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w900, fontSize: 28, color: Colors.white),
+          style: TextStyle(
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w900,
+              fontSize: 28,
+              color: Colors.white),
           textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 200.ms),
         const SizedBox(height: 8),
         const Text(
           'Pide el código de 6 letras a tu papá o mamá\ne introdúcelo aquí.',
-          style: TextStyle(fontFamily: 'Nunito', fontSize: 14, color: Colors.white54, height: 1.5),
+          style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 14,
+              color: Colors.white54,
+              height: 1.5),
           textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 300.ms),
         const SizedBox(height: 32),
@@ -97,18 +115,28 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
             maxLength: 6,
             textAlign: TextAlign.center,
             textCapitalization: TextCapitalization.characters,
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]'))],
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]'))
+            ],
             style: const TextStyle(
-              color: Color(0xFF1A1A2E), fontFamily: 'Nunito',
-              fontWeight: FontWeight.w900, fontSize: 32, letterSpacing: 8,
+              color: Color(0xFF1A1A2E),
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w900,
+              fontSize: 32,
+              letterSpacing: 8,
             ),
             decoration: const InputDecoration(
               hintText: 'ABC123',
-              hintStyle: TextStyle(color: Color(0xFF9EA3B8), fontSize: 28, letterSpacing: 8,
-                  fontFamily: 'Nunito', fontWeight: FontWeight.w700),
+              hintStyle: TextStyle(
+                  color: Color(0xFF9EA3B8),
+                  fontSize: 28,
+                  letterSpacing: 8,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w700),
               counterStyle: TextStyle(color: Color(0xFF9EA3B8), fontSize: 11),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
             onChanged: (_) => setState(() => _errorMsg = ''),
           ),
@@ -123,8 +151,10 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.red.withOpacity(0.4)),
             ),
-            child: Text(_errorMsg,
-              style: const TextStyle(color: Colors.redAccent, fontFamily: 'Nunito', fontSize: 13),
+            child: Text(
+              _errorMsg,
+              style: const TextStyle(
+                  color: Colors.redAccent, fontFamily: 'Nunito', fontSize: 13),
               textAlign: TextAlign.center,
             ),
           ),
@@ -140,13 +170,18 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]),
+                    gradient: const LinearGradient(
+                        colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)]),
                     borderRadius: BorderRadius.circular(30),
                   ),
-                  child: const Text('Vincular cuenta',
+                  child: const Text(
+                    'Vincular cuenta',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w900,
-                        fontSize: 18, color: Colors.white),
+                    style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        color: Colors.white),
                   ),
                 ),
               ),
@@ -154,7 +189,8 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
         const SizedBox(height: 16),
         TextButton(
           onPressed: () => context.pop(),
-          child: const Text('Más tarde', style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
+          child: const Text('Más tarde',
+              style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
         ),
       ],
     );
@@ -164,17 +200,24 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('🎉', style: TextStyle(fontSize: 80)).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+        const Text('🎉', style: TextStyle(fontSize: 80))
+            .animate()
+            .scale(duration: 600.ms, curve: Curves.elasticOut),
         const SizedBox(height: 20),
         const Text(
           '¡Cuenta vinculada!',
-          style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w900, fontSize: 28, color: Color(0xFF4CAF50)),
+          style: TextStyle(
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w900,
+              fontSize: 28,
+              color: Color(0xFF4CAF50)),
           textAlign: TextAlign.center,
         ).animate().fadeIn(),
         const SizedBox(height: 8),
         const Text(
           '¡Ya puedes disfrutar el juego completo!',
-          style: TextStyle(fontFamily: 'Nunito', fontSize: 16, color: Colors.white70),
+          style: TextStyle(
+              fontFamily: 'Nunito', fontSize: 16, color: Colors.white70),
           textAlign: TextAlign.center,
         ).animate().fadeIn(delay: 200.ms),
       ],

@@ -64,11 +64,14 @@ class CosmeticRepository {
           .from('player_cosmetics')
           .select('cosmetic_id, obtained_at, cosmetic_definitions(*)')
           .order('obtained_at', ascending: false);
-      return (rows as List).map((r) {
-        final def = r['cosmetic_definitions'] as Map<String, dynamic>?;
-        if (def == null) return null;
-        return CosmeticDefinition.fromJson(def);
-      }).whereType<CosmeticDefinition>().toList();
+      return (rows as List)
+          .map((r) {
+            final def = r['cosmetic_definitions'] as Map<String, dynamic>?;
+            if (def == null) return null;
+            return CosmeticDefinition.fromJson(def);
+          })
+          .whereType<CosmeticDefinition>()
+          .toList();
     } catch (_) {
       return [];
     }
@@ -76,9 +79,7 @@ class CosmeticRepository {
 
   Future<Set<String>> getOwnedIds() async {
     try {
-      final rows = await _db
-          .from('player_cosmetics')
-          .select('cosmetic_id');
+      final rows = await _db.from('player_cosmetics').select('cosmetic_id');
       return (rows as List).map((r) => r['cosmetic_id'] as String).toSet();
     } catch (_) {
       return {};
@@ -96,8 +97,30 @@ class CosmeticRepository {
       final map = <String, CosmeticDefinition?>{};
       for (final r in rows as List) {
         final slot = r['slot'] as String;
-        final def  = r['cosmetic_definitions'] as Map<String, dynamic>?;
-        map[slot]  = def != null ? CosmeticDefinition.fromJson(def) : null;
+        final def = r['cosmetic_definitions'] as Map<String, dynamic>?;
+        map[slot] = def != null ? CosmeticDefinition.fromJson(def) : null;
+      }
+      return EquippedLoadout(map);
+    } catch (_) {
+      return EquippedLoadout.empty;
+    }
+  }
+
+  /// Equipamiento de OTRO jugador (ej. un padre viendo el vestuario de su
+  /// hijo). RLS ya permite esta lectura vía la política "parent reads child
+  /// equipped" en `character_equipped`.
+  Future<EquippedLoadout> getEquippedFor(String userId) async {
+    try {
+      final rows = await _db
+          .from('character_equipped')
+          .select('slot, cosmetic_id, cosmetic_definitions(*)')
+          .eq('user_id', userId);
+
+      final map = <String, CosmeticDefinition?>{};
+      for (final r in rows as List) {
+        final slot = r['slot'] as String;
+        final def = r['cosmetic_definitions'] as Map<String, dynamic>?;
+        map[slot] = def != null ? CosmeticDefinition.fromJson(def) : null;
       }
       return EquippedLoadout(map);
     } catch (_) {
@@ -109,7 +132,8 @@ class CosmeticRepository {
 
   /// Compra un cosmético: descuenta monedas y registra propiedad.
   Future<int> buy(String cosmeticId) async {
-    final result = await _db.rpc('buy_cosmetic', params: {'p_cosmetic_id': cosmeticId});
+    final result =
+        await _db.rpc('buy_cosmetic', params: {'p_cosmetic_id': cosmeticId});
     return (result as Map<String, dynamic>?)?['balance'] as int? ?? 0;
   }
 

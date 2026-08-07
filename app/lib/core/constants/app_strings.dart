@@ -71,7 +71,8 @@ abstract class AppStrings {
   static const emailRequired = 'El correo es obligatorio';
   static const emailInvalid = 'Ingresa un correo válido';
   static const passwordRequired = 'La contraseña es obligatoria';
-  static const passwordTooShort = 'La contraseña debe tener al menos 6 caracteres';
+  static const passwordTooShort =
+      'La contraseña debe tener al menos 6 caracteres';
 
   // Monedas
   static const coins = 'monedas';

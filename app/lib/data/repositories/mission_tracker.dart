@@ -18,8 +18,8 @@ class MissionTracker {
 
   // ── Registro de acciones ─────────────────────────────────────────────────
 
-  Future<void> recordQuiz()     => _increment('quiz');
-  Future<void> recordJob()      => _increment('job');
+  Future<void> recordQuiz() => _increment('quiz');
+  Future<void> recordJob() => _increment('job');
   Future<void> recordPurchase() => _increment('purchase');
 
   Future<void> _increment(String type) async {
@@ -51,8 +51,8 @@ class MissionTracker {
       final s = DemoStore.instance;
       return {
         MissionObjectiveType.completeQuizzes: s.progressFor('quiz'),
-        MissionObjectiveType.completeJobs:    s.progressFor('job'),
-        MissionObjectiveType.buyFromShop:     s.progressFor('purchase'),
+        MissionObjectiveType.completeJobs: s.progressFor('job'),
+        MissionObjectiveType.buyFromShop: s.progressFor('purchase'),
       };
     }
     try {
@@ -68,9 +68,9 @@ class MissionTracker {
       if (row == null) return _zero();
 
       return {
-        MissionObjectiveType.completeQuizzes: (row['quizzes']   as int?) ?? 0,
-        MissionObjectiveType.completeJobs:    (row['jobs']      as int?) ?? 0,
-        MissionObjectiveType.buyFromShop:     (row['purchases'] as int?) ?? 0,
+        MissionObjectiveType.completeQuizzes: (row['quizzes'] as int?) ?? 0,
+        MissionObjectiveType.completeJobs: (row['jobs'] as int?) ?? 0,
+        MissionObjectiveType.buyFromShop: (row['purchases'] as int?) ?? 0,
       };
     } catch (_) {
       return _zero();
@@ -78,16 +78,17 @@ class MissionTracker {
   }
 
   Map<MissionObjectiveType, int> _zero() => {
-    MissionObjectiveType.completeQuizzes: 0,
-    MissionObjectiveType.completeJobs:    0,
-    MissionObjectiveType.buyFromShop:     0,
-  };
+        MissionObjectiveType.completeQuizzes: 0,
+        MissionObjectiveType.completeJobs: 0,
+        MissionObjectiveType.buyFromShop: 0,
+      };
 
   // ── Reclamación de recompensas ────────────────────────────────────────────
 
   /// Devuelve true si la misión ya fue reclamada por el usuario actual.
   Future<bool> isClaimed(String missionId) async {
-    if (DemoStore.isActive) return DemoStore.instance.isMissionClaimed(missionId);
+    if (DemoStore.isActive)
+      return DemoStore.instance.isMissionClaimed(missionId);
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return false;
@@ -118,7 +119,7 @@ class MissionTracker {
 
       await _client.from('mission_claims').upsert(
         {
-          'user_id':    userId,
+          'user_id': userId,
           'mission_id': missionId,
           'claimed_at': DateTime.now().toIso8601String(),
         },

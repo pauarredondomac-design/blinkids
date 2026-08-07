@@ -8,7 +8,9 @@ final questionRepositoryProvider = Provider<QuestionRepository>(
 
 final questionsForWorldProvider =
     FutureProvider.family<List<Question>, String>((ref, worldSlug) async {
-  return ref.read(questionRepositoryProvider).getQuestionsForWorld(worldSlug: worldSlug);
+  return ref
+      .read(questionRepositoryProvider)
+      .getQuestionsForWorld(worldSlug: worldSlug);
 });
 
 /// Actividades narrativas de un módulo (trabajos, mi_bolsa, banco_estelar, misiones).
