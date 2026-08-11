@@ -35,6 +35,28 @@ class NotificationRepository {
     }
   }
 
+  /// Igual que [getNotifications] pero en vivo (Realtime): la lista se
+  /// actualiza sola apenas se crea/marca leída una notificación, sin que
+  /// el usuario tenga que salir y volver a entrar a la pantalla.
+  Stream<List<AppNotification>> watchNotifications(String userId) {
+    return _db
+        .from('notifications')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .map((rows) =>
+            rows.take(25).map((r) => AppNotification.fromJson(r)).toList());
+  }
+
+  /// Igual que [getUnreadCount] pero en vivo (Realtime).
+  Stream<int> watchUnreadCount(String userId) {
+    return _db
+        .from('notifications')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .map((rows) => rows.where((r) => r['is_read'] == false).length);
+  }
+
   /// Marca todas las notificaciones del usuario como leídas.
   Future<void> markAllRead(String userId) async {
     try {

@@ -16,21 +16,24 @@ final walletRepositoryProvider = Provider<WalletRepository>(
 /// de auth cuando arranca en modo demo — y el provider se queda pegado
 /// mostrando el wallet demo para siempre, incluso después de iniciar
 /// sesión de verdad (bug real que causaba "monedas siempre en 500").
-final currentWalletProvider = FutureProvider<Wallet?>((ref) async {
+final currentWalletProvider = StreamProvider<Wallet?>((ref) {
   final user = ref.watch(currentUserProvider);
   if (user == null) {
     // Rebuild reactivamente cuando cambien las monedas demo.
     final coins = ref.watch(demoProgressProvider).coins;
-    return Wallet(
+    return Stream.value(Wallet(
       id: 'demo',
       userId: 'demo',
       totalCoins: coins,
       realBalanceCents: 0,
       createdAt: DateTime(2024),
       updatedAt: DateTime.now(),
-    );
+    ));
   }
-  return ref.read(walletRepositoryProvider).getWallet(user.id);
+  // Stream en vivo (Supabase Realtime): si el papá manda monedas, o se
+  // aprueba una misión, o cae el interés semanal, el saldo se actualiza
+  // solo en pantalla, sin que el niño tenga que salir y volver a entrar.
+  return ref.read(walletRepositoryProvider).watchWallet(user.id);
 });
 
 /// Categorías de la bolsa del niño (o categorías demo en memoria).

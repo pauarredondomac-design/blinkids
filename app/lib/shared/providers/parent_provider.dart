@@ -27,16 +27,15 @@ final childStatsProvider =
       .getChildStats(child.id, child.displayName, child.avatarUrl);
 });
 
-// ── Notificaciones ────────────────────────────────────────────────────────────
-final unreadCountProvider = FutureProvider<int>((ref) async {
+// ── Notificaciones (en vivo, vía Supabase Realtime) ─────────────────────────
+final unreadCountProvider = StreamProvider<int>((ref) {
   final userId = ref.watch(currentUserProvider)?.id;
-  if (userId == null) return 0;
-  return ref.read(notificationRepositoryProvider).getUnreadCount(userId);
+  if (userId == null) return Stream.value(0);
+  return ref.read(notificationRepositoryProvider).watchUnreadCount(userId);
 });
 
-final notificationsListProvider =
-    FutureProvider<List<AppNotification>>((ref) async {
+final notificationsListProvider = StreamProvider<List<AppNotification>>((ref) {
   final userId = ref.watch(currentUserProvider)?.id;
-  if (userId == null) return [];
-  return ref.read(notificationRepositoryProvider).getNotifications(userId);
+  if (userId == null) return Stream.value(<AppNotification>[]);
+  return ref.read(notificationRepositoryProvider).watchNotifications(userId);
 });

@@ -35,6 +35,17 @@ class WalletRepository {
     return data != null ? Wallet.fromJson(data) : null;
   }
 
+  /// Igual que [getWallet] pero en vivo: emite un valor nuevo cada vez que
+  /// cambia la fila en Supabase (Realtime), sin que el usuario tenga que
+  /// salir y volver a entrar a la pantalla para ver el saldo actualizado.
+  Stream<Wallet?> watchWallet(String userId) {
+    return supabase
+        .from('wallets')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .map((rows) => rows.isEmpty ? null : Wallet.fromJson(rows.first));
+  }
+
   /// Devuelve el wallet existente o lo crea si aún no existe.
   /// Seguro llamarlo varias veces (no duplica por UNIQUE user_id).
   Future<Wallet> getOrCreateWallet(String userId) async {
