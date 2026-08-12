@@ -34,15 +34,15 @@ Future<void> main() async {
   PaintingBinding.instance.imageCache.maximumSize = 200;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 80 << 20; // 80 MB
 
-  runApp(const ProviderScope(child: FinQuestApp()));
+  runApp(const ProviderScope(child: BlinkidsApp()));
 
   // Servicios secundarios en background — no bloquean el arranque
   AnalyticsService.instance.appOpen(voluntaryOpen: true);
   PushNotificationService.instance.init();
 }
 
-class FinQuestApp extends ConsumerWidget {
-  const FinQuestApp({super.key});
+class BlinkidsApp extends ConsumerWidget {
+  const BlinkidsApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

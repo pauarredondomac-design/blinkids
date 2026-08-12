@@ -123,14 +123,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Blink cae desde arriba con rebote
                 _BlinkHero(),
 
                 const SizedBox(height: 28),
 
-                // "Blinkids" letra por letra
-                const _LetterByLetter(text: 'Blinkids'),
+                // Logo "Blinkids"
+                SizedBox(
+                  width: 260,
+                  child: Image.asset(
+                    'assets/ui/blinkids_logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                )
+                    .animate()
+                    .fadeIn(
+                      delay: const Duration(milliseconds: 1000),
+                      duration: const Duration(milliseconds: 500),
+                    )
+                    .slideY(
+                      begin: 0.4,
+                      end: 0,
+                      delay: const Duration(milliseconds: 1000),
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeOutBack,
+                    ),
 
                 const SizedBox(height: 14),
 
@@ -226,68 +245,6 @@ class _BlinkHero extends StatelessWidget {
           duration: const Duration(milliseconds: 900),
           curve: Curves.elasticOut,
         );
-  }
-}
-
-// ─── Título letra por letra ───────────────────────────────────────────────────
-class _LetterByLetter extends StatelessWidget {
-  const _LetterByLetter({required this.text});
-  final String text;
-
-  static const _startDelay = 1000; // ms cuando empieza la primera letra
-  static const _letterGap = 90; // ms entre letras
-  static const _letterDur = 380; // duración de cada letra
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: List.generate(text.length, (i) {
-        final delay = Duration(milliseconds: _startDelay + i * _letterGap);
-        final isFirst = i == 0;
-
-        return Text(
-          text[i],
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.w900,
-            fontSize: isFirst ? 80.0 : 72.0,
-            color: isFirst ? const Color(0xFFFFD700) : Colors.white,
-            letterSpacing: 1.2,
-            height: 1.0,
-            shadows: [
-              Shadow(
-                color:
-                    isFirst ? const Color(0xAAFFD700) : const Color(0x553D5AFE),
-                blurRadius: isFirst ? 24 : 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-        )
-            .animate()
-            .fadeIn(
-              delay: delay,
-              duration: const Duration(milliseconds: _letterDur),
-            )
-            .slideY(
-              begin: 0.8,
-              end: 0,
-              delay: delay,
-              duration: const Duration(milliseconds: _letterDur),
-              curve: Curves.easeOutBack,
-            )
-            .scaleXY(
-              begin: 0.4,
-              end: 1.0,
-              delay: delay,
-              duration: const Duration(milliseconds: _letterDur),
-              curve: Curves.easeOutBack,
-            );
-      }),
-    );
   }
 }
 

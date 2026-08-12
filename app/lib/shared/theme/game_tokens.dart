@@ -24,7 +24,7 @@ abstract class GameTokens {
 
   // ── Texto ──────────────────────────────────────────────────────────────
   static const textPrimary = Colors.white;
-  static const textSecondary = Colors.white70;
+  static const textSecondary = Color(0xFFD8D8E0); // gris cálido, más legible sobre fondos oscuros
   static const textMuted = Colors.white38;
 
   // ── Bordes / radius ────────────────────────────────────────────────────

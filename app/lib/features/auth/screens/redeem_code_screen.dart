@@ -188,7 +188,8 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
 
         const SizedBox(height: 16),
         TextButton(
-          onPressed: () => context.pop(),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/world'),
           child: const Text('Más tarde',
               style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
         ),

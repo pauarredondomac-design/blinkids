@@ -15,6 +15,7 @@ import '../../../shared/widgets/badges_row.dart';
 import '../../../shared/widgets/blink_avatar.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/game_popup.dart';
+import '../../auth/screens/pin_pad_widget.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ChildDetailScreen — Registro de actividad del hijo
@@ -113,6 +114,25 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
   void _snack(String msg, Color bg) =>
       showGamePopup(context, msg, accentColor: bg);
 
+  Future<void> _handleResetPin() async {
+    final newPin = await showDialog<String>(
+      context: context,
+      builder: (_) => _ResetPinDialog(childName: widget.child.displayName),
+    );
+    if (newPin == null || !mounted) return;
+
+    try {
+      await Supabase.instance.client.rpc('parent_reset_child_pin', params: {
+        'p_child_id': widget.child.id,
+        'p_new_pin': newPin,
+      });
+      _snack('¡PIN de ${widget.child.displayName} actualizado! 🔑',
+          const Color(0xFF2E7D32));
+    } catch (e) {
+      _snack('Error: ${_friendlyError(e)}', Colors.red.shade700);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final statsAsync = ref.watch(childStatsProvider(widget.child));
@@ -126,6 +146,15 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: IconButton(
+              onPressed: _handleResetPin,
+              icon: const Icon(Icons.password_rounded),
+              tooltip: 'Reiniciar PIN de ${widget.child.displayName}',
+              color: Colors.white70,
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton.icon(
@@ -1107,6 +1136,138 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Diálogo para reiniciar el PIN del hijo
+// ─────────────────────────────────────────────────────────────────────────────
+class _ResetPinDialog extends StatefulWidget {
+  const _ResetPinDialog({required this.childName});
+  final String childName;
+
+  @override
+  State<_ResetPinDialog> createState() => _ResetPinDialogState();
+}
+
+class _ResetPinDialogState extends State<_ResetPinDialog> {
+  // Pasos: 0 = nuevo PIN, 1 = confirmar
+  int _step = 0;
+  String _pin = '';
+  String _pinConfirm = '';
+  String _errorMsg = '';
+
+  void _onDigit(String digit) {
+    if (_step == 0) {
+      if (_pin.length >= 6) return;
+      setState(() {
+        _pin += digit;
+        _errorMsg = '';
+      });
+      if (_pin.length == 6) {
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) setState(() => _step = 1);
+        });
+      }
+    } else {
+      if (_pinConfirm.length >= 6) return;
+      setState(() {
+        _pinConfirm += digit;
+        _errorMsg = '';
+      });
+      if (_pinConfirm.length == 6) {
+        if (_pinConfirm == _pin) {
+          Navigator.of(context).pop(_pin);
+        } else {
+          setState(() {
+            _errorMsg = 'Los PINs no coinciden. Inténtalo de nuevo.';
+            _pinConfirm = '';
+          });
+        }
+      }
+    }
+  }
+
+  void _onDelete() {
+    setState(() {
+      if (_step == 0 && _pin.isNotEmpty) {
+        _pin = _pin.substring(0, _pin.length - 1);
+      } else if (_step == 1 && _pinConfirm.isNotEmpty) {
+        _pinConfirm = _pinConfirm.substring(0, _pinConfirm.length - 1);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentPin = _step == 0 ? _pin : _pinConfirm;
+    return Dialog(
+      backgroundColor: const Color(0xFF0D1230),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.password_rounded,
+                color: Color(0xFF4FC3F7), size: 36),
+            const SizedBox(height: 12),
+            Text(
+              _step == 0
+                  ? 'Nuevo PIN para\n${widget.childName}'
+                  : 'Confirma el nuevo PIN',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+                color: Colors.white,
+              ),
+            ),
+            if (_errorMsg.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                _errorMsg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.redAccent,
+                    fontFamily: 'Nunito',
+                    fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(6, (i) {
+                final filled = i < currentPin.length;
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: filled ? const Color(0xFF4FC3F7) : Colors.transparent,
+                    border: Border.all(
+                      color:
+                          filled ? const Color(0xFF4FC3F7) : Colors.white38,
+                      width: 2,
+                    ),
+                  ),
+                );
+              }),
+            ),
+            const SizedBox(height: 20),
+            PinPadWidget(onDigit: _onDigit, onDelete: _onDelete),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
+            ),
+          ],
         ),
       ),
     );

@@ -651,7 +651,7 @@ class _RightChildrenPanel extends ConsumerWidget {
             ),
             error: (e, _) => _ErrorState(message: e.toString()),
             data: (list) => list.isEmpty
-                ? _EmptyChildren(onAddChild: onAddChild)
+                ? const _EmptyChildren()
                 : _ChildrenGrid(
                     children: list,
                     onViewActivity: onViewActivity,
@@ -793,8 +793,7 @@ class _ChildCard extends ConsumerWidget {
 // Estado vacío: sin hijos vinculados
 // ─────────────────────────────────────────────────────────────────────────────
 class _EmptyChildren extends StatelessWidget {
-  const _EmptyChildren({required this.onAddChild});
-  final VoidCallback onAddChild;
+  const _EmptyChildren();
 
   @override
   Widget build(BuildContext context) {
@@ -820,33 +819,13 @@ class _EmptyChildren extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Toca "Agregar hijo" para generar\nun código y compartirlo con tu hijo.',
+            'Toca "Agregar hijo" arriba para generar\nun código y compartirlo con tu hijo.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white38,
               fontFamily: 'Nunito',
               fontSize: 13,
               height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: onAddChild,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text(
-              'Agregar hijo',
-              style: TextStyle(
-                fontFamily: 'Nunito',
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF7C3AED),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
         ],

@@ -313,11 +313,10 @@ class _MisionesSidebar extends StatelessWidget {
           right: BorderSide(color: Color(0xFF2A1A5E), width: 1.5),
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header agrupado — mismo patrón que Tienda/Vestidor/Mi Bolsa/Banco Estelar
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header agrupado — mismo patrón que Tienda/Vestidor/Mi Bolsa/Banco Estelar
             Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               decoration: const BoxDecoration(
@@ -405,13 +404,12 @@ class _MisionesSidebar extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Item de categoría en el sidebar
+// ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
 class _CategoryItem extends StatelessWidget {
   const _CategoryItem({

@@ -10,6 +10,7 @@ import '../providers/wallet_provider.dart';
 import '../providers/character_provider.dart';
 import '../providers/world_provider.dart';
 import '../providers/cosmetic_provider.dart';
+import '../providers/music_provider.dart';
 import 'coin_display.dart';
 import '../../features/worlds/vestidor/vestidor_screen.dart';
 
@@ -29,6 +30,7 @@ class ProfileBottomSheet extends ConsumerWidget {
     final character = ref.watch(currentCharacterProvider).valueOrNull;
     final wallet = ref.watch(currentWalletProvider).valueOrNull;
     final world = ref.watch(currentWorldProvider);
+    final musicOn = ref.watch(musicProvider);
 
     final supaUser = Supabase.instance.client.auth.currentUser;
     final isDemo = supaUser == null || (supaUser.isAnonymous == true);
@@ -227,6 +229,12 @@ class ProfileBottomSheet extends ConsumerWidget {
                       ),
                       // Solo los niños ven el estado del vínculo padre-hijo
                       if (isChild) const _ParentLinkSection(),
+                      _OptionTile(
+                        icon: musicOn ? '🔊' : '🔇',
+                        label: musicOn ? 'Silenciar música' : 'Activar música',
+                        onTap: () =>
+                            ref.read(musicProvider.notifier).toggle(),
+                      ),
                       _OptionTile(
                         icon: '🔔',
                         label: 'Notificaciones',

@@ -341,12 +341,11 @@ class _JobsSidebar extends StatelessWidget {
           right: BorderSide(color: Color(0xFF2A1A5E), width: 1.5),
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header agrupado — mismo patrón que Tienda/Vestidor/Mi Bolsa/
-            // Banco Estelar/Misiones.
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header agrupado — mismo patrón que Tienda/Vestidor/Mi Bolsa/
+          // Banco Estelar/Misiones.
             Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               decoration: const BoxDecoration(
@@ -431,8 +430,7 @@ class _JobsSidebar extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 

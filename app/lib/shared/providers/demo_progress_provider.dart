@@ -20,7 +20,7 @@ class DemoStore extends ChangeNotifier {
   static bool get isActive => Supabase.instance.client.auth.currentUser == null;
 
   int stage =
-      0; // 0=solo banco, 1=trabajos, 2=misiones, 3=mercado, 4=tienda, 5=completo
+      0; // 0=solo bolsa, 1=banco, 2=misiones, 3=trabajos, 4=tienda, 5=completo
   int coins = 500;
   int xp = 0;
   int fuel = 0;
@@ -45,14 +45,14 @@ class DemoStore extends ChangeNotifier {
 
   bool isUnlocked(String buildingId) {
     switch (buildingId) {
-      case 'banco':
-        return true;
       case 'alcancia':
-        return stage >= 3;
-      case 'trabajos':
+        return true;
+      case 'banco':
         return stage >= 1;
       case 'misiones':
         return stage >= 2;
+      case 'trabajos':
+        return stage >= 3;
       case 'mercado':
         return stage >= 5; // mercado oculto, reservado para futuro
       case 'tienda':
@@ -65,11 +65,11 @@ class DemoStore extends ChangeNotifier {
   String? get nextUnlock {
     switch (stage) {
       case 0:
-        return 'Trabajos';
+        return 'Banco Estelar';
       case 1:
         return 'Misiones';
       case 2:
-        return 'Mi Bolsa';
+        return 'Trabajos';
       case 3:
         return 'Tienda';
       default:

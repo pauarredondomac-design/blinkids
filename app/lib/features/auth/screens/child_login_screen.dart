@@ -176,24 +176,26 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     TextButton(
-                      onPressed: () => context.pushReplacement('/child-signup'),
+                      onPressed: () => context.push('/child-signup'),
                       child: const Text(
                         'Registrarte',
                         style: TextStyle(
                             color: Colors.white54,
                             fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
                             fontSize: 12),
                       ),
                     ),
                     const Text('•',
                         style: TextStyle(color: Colors.white24, fontSize: 12)),
                     TextButton(
-                      onPressed: () => context.pushReplacement('/parent-auth'),
+                      onPressed: () => context.push('/parent-auth'),
                       child: const Text(
                         'Iniciar sesión padre',
                         style: TextStyle(
                             color: Colors.white54,
                             fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
                             fontSize: 12),
                       ),
                     ),
@@ -270,7 +272,8 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
         ),
         const SizedBox(height: 16),
         TextButton(
-          onPressed: () => context.pop(),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/world'),
           child: const Text('← Volver',
               style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
         ),

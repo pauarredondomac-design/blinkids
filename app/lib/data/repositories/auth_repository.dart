@@ -9,7 +9,7 @@ class AuthRepository {
 
   bool get isAuthenticated => currentUser != null;
 
-  /// Inicia sesión con Google OAuth en móvil (usa deep link finquest://callback).
+  /// Inicia sesión con Google OAuth en móvil (usa deep link blinkids://callback).
   Future<void> signInWithGoogle() async {
     await supabase.auth.signInWithOAuth(
       OAuthProvider.google,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 
-/// Botón principal reutilizable de FinQuest.
+/// Botón principal reutilizable de Blinkids.
 class FinButton extends StatelessWidget {
   const FinButton({
     super.key,

@@ -161,11 +161,10 @@ class _MercadoSidebar extends StatelessWidget {
           right: BorderSide(color: Color(0xFF2A1A5E), width: 1.5),
         ),
       ),
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
 
             // Botón volver
             Padding(
@@ -294,8 +293,7 @@ class _MercadoSidebar extends StatelessWidget {
             }),
           ],
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -983,9 +981,11 @@ class _MarketListingCard extends StatelessWidget {
                 child: Text(
                   canAfford ? 'Comprar' : 'Sin fondos',
                   style: TextStyle(
-                    color: (canAfford && !busy)
-                        ? Colors.white
-                        : Colors.white.withOpacity(0.35),
+                    color: !canAfford
+                        ? const Color(0xFFFF8A5C)
+                        : busy
+                            ? Colors.white.withOpacity(0.35)
+                            : Colors.white,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),

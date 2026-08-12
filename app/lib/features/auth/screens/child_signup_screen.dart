@@ -61,12 +61,10 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
       _nameOk = false;
     });
     try {
-      final result = await Supabase.instance.client
-          .from('profiles')
-          .select('id')
-          .ilike('display_name', name)
-          .limit(1);
-      final available = (result as List).isEmpty;
+      // RPC SECURITY DEFINER: funciona sin sesión activa (RLS bloquea SELECT
+      // directo a profiles antes de autenticarse).
+      final available = await Supabase.instance.client
+          .rpc('is_display_name_available', params: {'p_name': name}) as bool;
       if (mounted) {
         setState(() {
           _nameOk = available;
@@ -77,12 +75,10 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
         });
       }
     } catch (_) {
-      // RLS puede bloquear la lectura antes de tener sesión.
-      // Permitimos continuar; _createAccount() hace la verificación final.
       if (mounted)
         setState(() {
           _checking = false;
-          _nameOk = true;
+          _nameOk = false;
         });
     }
   }
@@ -395,7 +391,8 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
 
         const SizedBox(height: 16),
         TextButton(
-          onPressed: () => context.pop(),
+          onPressed: () =>
+              context.canPop() ? context.pop() : context.go('/world'),
           child: const Text('← Volver',
               style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
         ),

@@ -50,14 +50,10 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
       _nameAvailable = false;
     });
     try {
-      // Verificamos directamente en profiles con ILIKE (sin RPC para evitar
-      // restricciones de auth en esta pantalla donde aún no hay sesión).
-      final result = await Supabase.instance.client
-          .from('profiles')
-          .select('id')
-          .ilike('display_name', name)
-          .limit(1);
-      final available = (result as List).isEmpty;
+      // RPC SECURITY DEFINER: funciona sin sesión activa (RLS bloquea SELECT
+      // directo a profiles antes de autenticarse).
+      final available = await Supabase.instance.client
+          .rpc('is_display_name_available', params: {'p_name': name}) as bool;
       if (mounted) {
         setState(() {
           _nameAvailable = available;
@@ -68,7 +64,6 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
         });
       }
     } catch (_) {
-      // Sin sesión activa RLS puede bloquear la lectura; dejamos indeterminado.
       if (mounted)
         setState(() {
           _checking = false;

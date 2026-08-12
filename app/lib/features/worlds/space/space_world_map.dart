@@ -164,6 +164,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
     return Scaffold(
       backgroundColor: const Color(0xFF020A18),
+      resizeToAvoidBottomInset: false,
       body: LayoutBuilder(
         builder: (ctx, constraints) {
           final w = constraints.maxWidth;
@@ -541,25 +542,29 @@ class _StaticBackground extends StatelessWidget {
 void _showDemoDialog(BuildContext context, WidgetRef ref, String demoRoute) {
   // Mapeo demoRoute → widget
   final configs = <String, (Widget, int, String)>{
+    '/demo/bolsa': (
+      const WalletScreen(),
+      0,
+      '🔓 ¡Desbloqueaste Banco Estelar!'
+    ),
     '/demo/banco': (
       const BancoEstelarScreen(),
-      0,
-      '🔓 ¡Desbloqueaste Trabajos!'
-    ),
-    '/demo/trabajos': (
-      const TrabajosScreen(),
       1,
       '🔓 ¡Desbloqueaste Misiones!'
     ),
     '/demo/misiones': (
       const MisionesScreen(),
       2,
-      '🔓 ¡Desbloqueaste Mi Bolsa!'
+      '🔓 ¡Desbloqueaste Trabajos!'
     ),
-    '/demo/bolsa': (const WalletScreen(), 3, '🔓 ¡Desbloqueaste la Tienda!'),
+    '/demo/trabajos': (
+      const TrabajosScreen(),
+      3,
+      '🔓 ¡Desbloqueaste la Tienda!'
+    ),
     '/demo/tienda': (const TiendaScreen(), 4, '🎉 ¡Has completado la demo!'),
   };
-  final cfg = configs[demoRoute] ?? configs['/demo/banco']!;
+  final cfg = configs[demoRoute] ?? configs['/demo/bolsa']!;
   final screen = cfg.$1;
   final atStage = cfg.$2;
   final unlockMsg = cfg.$3;

@@ -131,6 +131,37 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
     }
   }
 
+  Future<void> _forgotPassword() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty) {
+      setState(() => _errorLogin = 'Escribe tu correo arriba para poder enviarte el link.');
+      return;
+    }
+    setState(() {
+      _loadingLogin = true;
+      _errorLogin = '';
+    });
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (mounted) {
+        setState(() => _loadingLogin = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Te enviamos un correo a $email con un link para restablecer tu contraseña.'),
+            backgroundColor: const Color(0xFF388E3C),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loadingLogin = false;
+          _errorLogin = 'No pudimos enviar el correo. Verifica tu internet.';
+        });
+      }
+    }
+  }
+
   String _mapAuthError(String msg) {
     if (msg.contains('Invalid login'))
       return 'Correo o contraseña incorrectos.';
@@ -258,7 +289,9 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
 
                           const SizedBox(height: 8),
                           TextButton(
-                            onPressed: () => context.pop(),
+                            onPressed: () => context.canPop()
+                                ? context.pop()
+                                : context.go('/world'),
                             child: const Text('← Volver',
                                 style: TextStyle(
                                     color: Colors.white38,
@@ -294,11 +327,27 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
             obscure: _obscureLogin,
             onToggleObscure: () =>
                 setState(() => _obscureLogin = !_obscureLogin)),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: _loadingLogin ? null : _forgotPassword,
+            style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+            child: const Text('¿Olvidaste tu contraseña?',
+                style: TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontFamily: 'Nunito',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ),
         if (_errorLogin.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           _ErrorBox(msg: _errorLogin),
         ],
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         _loadingLogin
             ? const Center(
                 child: CircularProgressIndicator(color: Color(0xFFFFD700)))

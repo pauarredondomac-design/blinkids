@@ -669,10 +669,10 @@ class _ShopCardState extends State<_ShopCard> {
                         ),
                         if (!_canAfford) ...[
                           const SizedBox(width: 6),
-                          Text(
+                          const Text(
                             'Sin fondos',
                             style: TextStyle(
-                              color: Colors.red.shade300,
+                              color: Color(0xFFFF8A5C),
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
                             ),
