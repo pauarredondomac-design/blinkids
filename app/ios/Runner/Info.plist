@@ -51,5 +51,9 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Blinkids no utiliza el micrófono en ninguna funcionalidad actual.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Blinkids no utiliza tu ubicación en ninguna funcionalidad actual.</string>
 </dict>
 </plist>
