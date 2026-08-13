@@ -18,17 +18,24 @@ Future<void> main() async {
   CrashReportingService.init();
 
   // Orientación e UI inmersiva en paralelo (ambas son sincrónicas en Android)
-  await Future.wait([
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]),
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
-    Supabase.initialize(
-      url: AppStrings.supabaseUrl,
-      anonKey: AppStrings.supabaseAnonKey,
-    ),
-  ]);
+  try {
+    await Future.wait([
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]),
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky),
+      Supabase.initialize(
+        url: AppStrings.supabaseUrl,
+        anonKey: AppStrings.supabaseAnonKey,
+      ),
+    ]).timeout(const Duration(seconds: 8));
+  } catch (_) {
+    // Sin conexión o Supabase tardó demasiado en validar la sesión guardada:
+    // seguimos arrancando la app de todos modos (modo demo sigue funcionando
+    // sin red; las pantallas con sesión real ya manejan sus propios errores
+    // de conexión al hacer cada consulta).
+  }
 
   // Aumenta caché de imágenes para que el mapa no parpadee al volver de pantallas
   PaintingBinding.instance.imageCache.maximumSize = 200;

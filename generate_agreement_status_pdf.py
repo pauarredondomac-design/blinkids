@@ -127,13 +127,14 @@ pdf.set_y(26)
 pdf.set_text_color(*DARK_TEXT)
 para(pdf,
      'Comparacion entregable por entregable del acuerdo firmado contra el estado real '
-     'del codigo, actualizado con los cambios mas recientes (notificaciones push '
-     'conectadas y sincronizacion en tiempo real de billetera y notificaciones).')
+     'del codigo, actualizado con los cambios mas recientes (apps de Android e iOS ya '
+     'compiladas y subidas -iOS en pruebas de TestFlight-, recuperacion de acceso para '
+     'padres e hijos, y varios ajustes de estabilidad reportados durante las pruebas).')
 pdf.ln(1.5)
 
 pdf.set_font('Helvetica', 'B', 9)
 pdf.cell(18, 4.6, 'Leyenda:')
-for label, color in [('REALIZADO', GREEN), ('REALIZADO + EXTRA', ACCENT), ('FALTA', RED)]:
+for label, color in [('REALIZADO', GREEN), ('REALIZADO + EXTRA', ACCENT), ('EN PROGRESO', AMBER), ('FALTA', RED)]:
     tag(pdf, label, color)
     pdf.cell(2.5, 4.6, '')
 pdf.ln(7)
@@ -143,7 +144,8 @@ pdf.set_text_color(*GREEN)
 pdf.cell(0, 9, '17 de 18 realizados', align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 pdf.set_font('Helvetica', '', 9)
 pdf.set_text_color(*DARK_TEXT)
-pdf.cell(0, 5, 'Solo falta 1: publicar la app en las tiendas (Apple Store / Play Store)',
+pdf.cell(0, 5, 'El item 18 (publicacion en tiendas) esta en progreso: ambas apps ya '
+         'estan compiladas, firmadas y subidas; falta la publicacion final.',
          align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 pdf.ln(4)
 
@@ -160,8 +162,10 @@ item(pdf, 2, 'Base de datos, seguridad y sincronizacion en tiempo real', 'REALIZ
      'cae el interes semanal, el saldo y la campanita se actualizan solos en pantalla '
      'sin salir y volver a entrar. Se puede extender a otras tablas si hace falta.')
 
-item(pdf, 3, 'Registro, inicio de sesion y roles', 'REALIZADO', GREEN,
-     'Registro, login, recuperar contrasena, rol nino/padre y sesion persistente.')
+item(pdf, 3, 'Registro, inicio de sesion y roles', 'REALIZADO + EXTRA', ACCENT,
+     'Registro, login, rol nino/padre y sesion persistente. Extra: recuperacion de '
+     'acceso completa para ambos roles -el papa puede restablecer su contrasena por '
+     'correo, y puede reiniciar el PIN de su hijo directamente desde su panel-.')
 
 item(pdf, 4, 'Tutorial interactivo de bienvenida', 'REALIZADO', GREEN,
      '4 pantallas animadas y 200 monedas de inicio al completarlo, tal cual se acordo.')
@@ -221,14 +225,18 @@ pdf.set_line_width(0.3)
 pdf.line(MARGIN, pdf.get_y(), PAGE_W - MARGIN, pdf.get_y())
 pdf.ln(1.2)
 
-item(pdf, 18, 'App publicada en Apple Store y Play Store con notificaciones push', 'FALTA', RED,
+item(pdf, 18, 'App publicada en Apple Store y Play Store con notificaciones push', 'EN PROGRESO', AMBER,
       'OJO: este documento se contradice a si mismo (la tabla de precios cobra 8h por '
       'esto; la seccion "Lo que NO incluye este MVP" dice que publicar en las tiendas y '
       'el push quedan fuera del MVP). Falta definir cual de las dos aplica. Estado real: '
-      'las notificaciones push YA funcionan (probadas, se conectaron los 4 disparadores '
-      'y OneSignal confirma la entrega). Falta solo publicar: Android tiene la firma de '
-      'produccion lista pero falta la cuenta de Play Console y subir el AAB; iOS no se '
-      'puede compilar ni publicar sin una Mac con Xcode.')
+      'las notificaciones push YA funcionan (probadas, los 4 disparadores confirman '
+      'entrega). Android: build de release firmado con llave de produccion, listo para '
+      'subir en cuanto se tenga la cuenta de Play Console. iOS: la app ya se compilo, se '
+      'firmo con la cuenta de Apple Developer del cliente y esta subida a App Store '
+      'Connect, actualmente en pruebas de TestFlight. Falta: completar la ficha de la '
+      'tienda (capturas, descripcion, politica de privacidad) en ambas plataformas y '
+      'enviar a revision -esto ya no es un tema tecnico, es llenar informacion y '
+      'aprobar-.')
 
 # ── Extras y pendientes ────────────────────────────────────────────────────────
 h1(pdf, 'Extras implementados (fuera del alcance del acuerdo)')
@@ -246,20 +254,89 @@ for line in [
     'de la bolsa, domingo de pago, inactividad), probadas y funcionando.',
     'Sincronizacion en tiempo real (Realtime) del saldo de la billetera y de las '
     'notificaciones dentro de la app.',
+    'App de iOS compilada, firmada y subida a App Store Connect (TestFlight).',
+    'El papa puede reiniciar el PIN de su hijo directamente desde su panel si lo olvida.',
+    'Recuperacion de contrasena por correo para la cuenta de los padres.',
+    'Boton para silenciar/activar la musica de fondo.',
+    'Ronda de ajustes reportados durante pruebas: navegacion que no dejaba regresar, '
+    'verificacion de nombre de aventurero repetido antes de crear el PIN, orden de '
+    'desbloqueo de la demo, y texto que se veia recortado en pantallas de iPhone.',
+    'Icono y pantalla de bienvenida (splash) con el arte final de la marca.',
 ]:
     bullet(pdf, line)
 
 pdf.ln(2)
 h1(pdf, 'Lo que falta')
 for line in [
-    'Publicacion real en Google Play - falta crear la cuenta de Play Console y subir el '
-    'AAB (ya generado y firmado).',
-    'Publicacion real en App Store - requiere una Mac con Xcode y la cuenta de Apple '
-    'Developer del cliente; no se puede hacer desde este entorno.',
+    'Publicacion real en Google Play - falta crear/activar la cuenta de Play Console y '
+    'subir el AAB (ya generado y firmado con llave de produccion).',
+    'Publicacion real en App Store - el build ya esta en TestFlight; falta completar '
+    'la ficha de la app (capturas, descripcion, clasificacion de edad) y enviarla a '
+    'revision de Apple.',
     'Definir con el cliente que aplica del item 18: lo que dice la tabla de precios o lo '
     'que dice la seccion "Lo que NO incluye este MVP" (se contradicen entre si).',
 ]:
     bullet(pdf, line)
+
+# ── Cuentas necesarias para la migracion ──────────────────────────────────────
+pdf.add_page()
+h1(pdf, 'Cuentas necesarias para la migracion')
+para(pdf,
+     'Servicios externos de los que depende la app. Si el proyecto se entrega a otro '
+     'equipo, o el cliente quiere administrar estas cuentas directamente, esto es lo '
+     'que hay que tomar en cuenta por cada uno.')
+pdf.ln(1.5)
+
+item(pdf, 1, 'Supabase (base de datos, autenticacion, backend)', 'ACTIVO', GREEN,
+     'Todo el backend: base de datos, login de padres e hijos, reglas de seguridad '
+     '(RLS) y las funciones que mueven monedas entre billeteras. Proyecto: '
+     'mzwvazjofbdelsejxoqi. Para tomar control: crear cuenta en supabase.com y pedir '
+     'que agreguen esa cuenta como miembro del proyecto, o transferir el proyecto '
+     'completo a la nueva organizacion.')
+
+item(pdf, 2, 'GitHub (repositorio de codigo)', 'ACTIVO', GREEN,
+     'github.com/merinogomez17-sudo/blinkids_v1, rama main. Para tomar control: crear '
+     'cuenta/organizacion y pedir que agreguen esa cuenta como colaboradora, o '
+     'transferir el repositorio.')
+
+item(pdf, 3, 'Google Cloud Console (inicio de sesion con Google)', 'ACTIVO', GREEN,
+     'Las credenciales OAuth que permiten "Entrar con Google" viven en un proyecto de '
+     'Google Cloud aparte, configuradas dentro de Supabase (no en el codigo de la '
+     'app). Para tomar control: pedir acceso a ese proyecto de Google Cloud, o crear '
+     'uno nuevo y actualizar las credenciales en Supabase.')
+
+item(pdf, 4, 'OneSignal (notificaciones push)', 'ACTIVO', GREEN,
+     'Ya configurado y funcionando: los 4 tipos de push (mision nueva, ganancias de '
+     'la bolsa, domingo de pago, inactividad) se prueban y llegan correctamente. Para '
+     'tomar control: pedir que agreguen la cuenta nueva como colaboradora en el '
+     'dashboard de onesignal.com de esta app.')
+
+item(pdf, 5, 'Google Play Console (publicar en Android)', 'PENDIENTE', RED,
+     'Necesaria para subir la app a Play Store. El AAB ya esta generado y firmado '
+     'con una llave de produccion propia (no es la de debug), listo para subir en '
+     'cuanto se tenga la cuenta. Costo: USD 25 pago unico.')
+
+item(pdf, 6, 'Apple Developer Program (publicar en iOS)', 'ACTIVO - VER NOTA', AMBER,
+     'La cuenta ya esta activa, a nombre del cliente, y es la que se uso para subir '
+     'el build actual a TestFlight. IMPORTANTE: es una cuenta tipo "Individual", y '
+     'Apple no permite que ese tipo de cuenta le de permiso de firma a otra persona '
+     'directamente -por eso, para compilar la app, se genero un certificado manual '
+     'en vez de agregar al equipo como miembro-. Si quien reciba el proyecto necesita '
+     'compilar para iOS, va a tener que repetir ese mismo proceso (o el cliente puede '
+     'cambiar su cuenta a tipo "Organizacion", que si permite compartir el permiso de '
+     'firma directamente).')
+
+pdf.ln(1)
+h2_note = 'Nota general'
+pdf.set_font('Helvetica', 'B', 9.3)
+pdf.set_text_color(*DARK_TEXT)
+pdf.cell(0, 5, h2_note, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+para(pdf,
+     'La anon key de Supabase y el App ID de OneSignal SI estan escritos en el codigo '
+     'de la app -eso es normal y esperado, ambos estan disenados para viajar dentro '
+     'de la app-. Las llaves que si son secretas (contrasena de la base de datos, '
+     'REST API Key de OneSignal) estan guardadas del lado del servidor, no en el '
+     'repositorio.', size=8.3, gap=3.9)
 
 pdf.output('Blinkids_Estado_vs_Acuerdo.pdf')
 print('OK: Blinkids_Estado_vs_Acuerdo.pdf generado')

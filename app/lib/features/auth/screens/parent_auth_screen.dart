@@ -167,7 +167,19 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
       return 'Correo o contraseña incorrectos.';
     if (msg.contains('Email already')) return 'Este correo ya está registrado.';
     if (msg.contains('Password should')) return 'La contraseña es muy corta.';
-    return msg;
+    // Errores de red/conexión (SocketException, ClientException, timeouts,
+    // etc.) nunca deben mostrarse tal cual al usuario.
+    final lower = msg.toLowerCase();
+    if (lower.contains('socket') ||
+        lower.contains('connection') ||
+        lower.contains('network') ||
+        lower.contains('client') ||
+        lower.contains('timeout') ||
+        lower.contains('host')) {
+      return 'No se pudo conectar. Verifica tu internet e inténtalo de nuevo.';
+    }
+    // Cualquier otro mensaje no reconocido: nunca exponer el texto técnico.
+    return 'Ocurrió un error. Inténtalo de nuevo.';
   }
 
   @override

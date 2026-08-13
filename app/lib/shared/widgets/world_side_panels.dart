@@ -475,17 +475,16 @@ class _RedeemCodeDialogState extends State<_RedeemCodeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final keyboardH = MediaQuery.of(context).viewInsets.bottom;
     return Dialog(
       backgroundColor: const Color(0xFF0D1230),
-      insetPadding: EdgeInsets.fromLTRB(24, 40, 24, keyboardH + 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
         side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 380),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: _success
               ? _RedeemSuccessView(onClose: () => Navigator.pop(context))

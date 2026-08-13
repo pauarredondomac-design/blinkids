@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../data/models/app_notification.dart';
 import '../../../data/models/profile.dart';
+import '../../../data/repositories/parent_repository.dart';
 import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/providers/parent_mission_provider.dart';
@@ -18,6 +19,18 @@ import '../../../shared/widgets/blink_avatar.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/game_popup.dart';
 import 'child_detail_screen.dart';
+
+// Tips que Blink le muestra al papá, cambia según el día.
+const _blinkTips = [
+  'Felicita a tu hijo cuando completa misiones. El refuerzo positivo es clave '
+      'para el aprendizaje financiero. 🌟',
+  'El esfuerzo constante hoy construye sus sueños de mañana. 🌟',
+  'Deja que tu hijo decida en qué gastar sus monedas — equivocarse aquí es '
+      'gratis, y es la mejor forma de aprender. 💡',
+  'Un "Trabajo en casa" con recompensa pequeña y frecuente enseña mejor que '
+      'uno grande y raro. 🏠',
+];
+String get _dailyTip => _blinkTips[DateTime.now().day % _blinkTips.length];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ParentHomeScreen
@@ -498,35 +511,43 @@ class _LeftPanel extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // ── Consejo del día ───────────────────────────────────────────────
-          const _GlassCard(
-            accentColor: Color(0xFF10B981),
-            child: Column(
+          // ── Consejo de Blink ───────────────────────────────────────────────
+          _GlassCard(
+            accentColor: const Color(0xFF10B981),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(children: [
-                  Text('💡', style: TextStyle(fontSize: 18)),
-                  SizedBox(width: 8),
-                  Text(
-                    'Consejo del día',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                    ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Consejo de Blink',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _dailyTip,
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontFamily: 'Nunito',
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
-                ]),
-                SizedBox(height: 8),
-                Text(
-                  'Felicita a tu hijo cuando completa misiones. '
-                  'El refuerzo positivo es clave para el aprendizaje financiero. 🌟',
-                  style: TextStyle(
-                    color: Colors.white60,
-                    fontFamily: 'Nunito',
-                    fontSize: 12,
-                    height: 1.4,
-                  ),
+                ),
+                const SizedBox(width: 8),
+                Image.asset(
+                  'assets/blink/poses/celebrando.png',
+                  width: 52,
+                  errorBuilder: (_, __, ___) => const SizedBox(width: 52),
                 ),
               ],
             ),
@@ -603,51 +624,59 @@ class _RightChildrenPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.only(top: 16, bottom: 12),
-          child: Row(children: [
-            const Text(
-              '👨‍👩‍👧 Mis Hijos',
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: 'Nunito',
-                fontWeight: FontWeight.w800,
-                fontSize: 20,
-              ),
-            ),
-            const Spacer(),
-            // Botón agregar hijo
-            FilledButton.icon(
-              onPressed: onAddChild,
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text(
-                'Agregar hijo',
-                style: TextStyle(
-                    fontFamily: 'Nunito',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF7C3AED),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-            ),
-          ]),
-        ),
+    final weekly = ref.watch(parentWeeklySummaryProvider);
+    final chores = ref.watch(activeHomeChoresProvider);
+    final activity = ref.watch(parentRecentActivityProvider);
 
-        // Lista de hijos
-        Expanded(
-          child: children.when(
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 12),
+            child: Row(children: [
+              const Text(
+                '👨‍👩‍👧 Mis Hijos',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                ),
+              ),
+              const Spacer(),
+              // Botón agregar hijo
+              FilledButton.icon(
+                onPressed: onAddChild,
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text(
+                  'Agregar hijo',
+                  style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF7C3AED),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+              ),
+            ]),
+          ),
+
+          // Lista de hijos
+          children.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: CircularProgressIndicator(color: Color(0xFF7C3AED)),
+              ),
             ),
             error: (e, _) => _ErrorState(message: e.toString()),
             data: (list) => list.isEmpty
@@ -657,6 +686,356 @@ class _RightChildrenPanel extends ConsumerWidget {
                     onViewActivity: onViewActivity,
                   ),
           ),
+
+          const SizedBox(height: 20),
+          _WeeklySummarySection(summary: weekly),
+
+          const SizedBox(height: 20),
+          _HomeChoresSection(chores: chores),
+
+          const SizedBox(height: 20),
+          _RecentActivitySection(activity: activity),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Esta semana: monedas / misiones / trabajos
+// ─────────────────────────────────────────────────────────────────────────────
+class _WeeklySummarySection extends StatelessWidget {
+  const _WeeklySummarySection({required this.summary});
+  final AsyncValue<ParentWeeklySummary> summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = summary.valueOrNull ?? ParentWeeklySummary.empty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '📅 Esta semana',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                  icon: '🪙',
+                  value: '${s.coinsEarned}',
+                  label: 'Monedas ganadas',
+                  color: const Color(0xFFFFD600)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatTile(
+                  icon: '⭐',
+                  value: '${s.missionsCompleted}',
+                  label: 'Misiones completadas',
+                  color: const Color(0xFF10B981)),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatTile(
+                  icon: '💼',
+                  value: '${s.jobsCompleted}',
+                  label: 'Trabajos completados',
+                  color: AppColors.accent),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+  final String icon, value, label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassCard(
+      accentColor: color,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w900,
+              fontSize: 22,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white54,
+              fontFamily: 'Nunito',
+              fontSize: 10,
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Trabajos en casa (activos, de todos los hijos)
+// ─────────────────────────────────────────────────────────────────────────────
+class _HomeChoresSection extends StatelessWidget {
+  const _HomeChoresSection({required this.chores});
+  final AsyncValue<List<HomeChoreEntry>> chores;
+
+  @override
+  Widget build(BuildContext context) {
+    final list = chores.valueOrNull ?? [];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '🏠 Trabajos en casa',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Tareas que le asignaste a tus hijos.',
+          style: TextStyle(
+            color: Colors.white38,
+            fontFamily: 'Nunito',
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (list.isEmpty)
+          const _GlassCard(
+            child: Text(
+              'Aún no has asignado ningún trabajo en casa. Entra al perfil '
+              'de tu hijo para crear uno.',
+              style: TextStyle(
+                  color: Colors.white38, fontFamily: 'Nunito', fontSize: 12),
+            ),
+          )
+        else
+          _GlassCard(
+            child: Column(
+              children: [
+                for (var i = 0; i < list.length; i++) ...[
+                  if (i > 0) const Divider(color: Colors.white10, height: 20),
+                  _ChoreRow(entry: list[i]),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ChoreRow extends StatelessWidget {
+  const _ChoreRow({required this.entry});
+  final HomeChoreEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final (mission, childName) = entry;
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981).withAlpha(40),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Center(child: Text('🧹', style: TextStyle(fontSize: 16))),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                mission.title,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13),
+              ),
+              Text(
+                'Asignado a $childName',
+                style: const TextStyle(
+                    color: Colors.white38, fontFamily: 'Nunito', fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            const AnimatedCoin(size: 13),
+            const SizedBox(width: 3),
+            Text(
+              '${mission.coinReward}',
+              style: const TextStyle(
+                  color: Color(0xFFFFD600),
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13),
+            ),
+          ],
+        ),
+        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981).withAlpha(40),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Text(
+            'Activo',
+            style: TextStyle(
+                color: Color(0xFF10B981),
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w700,
+                fontSize: 10),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Actividad reciente (todos los hijos)
+// ─────────────────────────────────────────────────────────────────────────────
+class _RecentActivitySection extends StatelessWidget {
+  const _RecentActivitySection({required this.activity});
+  final AsyncValue<List<ParentActivityItem>> activity;
+
+  @override
+  Widget build(BuildContext context) {
+    final list = activity.valueOrNull ?? [];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '🕐 Actividad reciente',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (list.isEmpty)
+          const _GlassCard(
+            child: Text(
+              'Aquí vas a ver lo que tus hijos van completando.',
+              style: TextStyle(
+                  color: Colors.white38, fontFamily: 'Nunito', fontSize: 12),
+            ),
+          )
+        else
+          _GlassCard(
+            child: Column(
+              children: [
+                for (var i = 0; i < list.length; i++) ...[
+                  if (i > 0) const Divider(color: Colors.white10, height: 20),
+                  _ActivityRow(item: list[i]),
+                ],
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.item});
+  final ParentActivityItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final verb = item.activityType == 'mision_papa'
+        ? 'completó la tarea'
+        : 'completó el trabajo';
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981).withAlpha(40),
+            shape: BoxShape.circle,
+          ),
+          child: const Center(child: Text('✅', style: TextStyle(fontSize: 14))),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(fontFamily: 'Nunito', fontSize: 12.5),
+              children: [
+                TextSpan(
+                  text: '${item.childName} $verb ',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                TextSpan(
+                  text: item.title,
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            const Text('+', style: TextStyle(color: Color(0xFFFFD600), fontSize: 12)),
+            Text(
+              '${item.coinAmount}',
+              style: const TextStyle(
+                  color: Color(0xFFFFD600),
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13),
+            ),
+            const SizedBox(width: 3),
+            const Text('🪙', style: TextStyle(fontSize: 11)),
+          ],
+        ),
+        const SizedBox(width: 10),
+        Text(
+          item.timeAgo,
+          style: const TextStyle(
+              color: Colors.white30, fontFamily: 'Nunito', fontSize: 10),
         ),
       ],
     );
@@ -681,24 +1060,22 @@ class _ChildrenGrid extends ConsumerWidget {
         final cardWidth =
             (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
-        return SingleChildScrollView(
-          child: Wrap(
-            spacing: spacing,
-            runSpacing: spacing,
-            children: [
-              for (var i = 0; i < children.length; i++)
-                SizedBox(
-                  width: cardWidth,
-                  child: _ChildCard(
-                    child: children[i],
-                    onViewActivity: () => onViewActivity(children[i]),
-                  )
-                      .animate(delay: (60 * i).ms)
-                      .fadeIn(duration: 300.ms)
-                      .slideY(begin: 0.1),
-                ),
-            ],
-          ),
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (var i = 0; i < children.length; i++)
+              SizedBox(
+                width: cardWidth,
+                child: _ChildCard(
+                  child: children[i],
+                  onViewActivity: () => onViewActivity(children[i]),
+                )
+                    .animate(delay: (60 * i).ms)
+                    .fadeIn(duration: 300.ms)
+                    .slideY(begin: 0.1),
+              ),
+          ],
         );
       },
     );

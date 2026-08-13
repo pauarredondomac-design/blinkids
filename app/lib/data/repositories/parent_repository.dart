@@ -58,6 +58,69 @@ class ChildStats {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Resumen semanal del panel de padre (todos los hijos vinculados)
+// ─────────────────────────────────────────────────────────────────────────────
+class ParentWeeklySummary {
+  final int coinsEarned;
+  final int missionsCompleted;
+  final int jobsCompleted;
+
+  const ParentWeeklySummary({
+    required this.coinsEarned,
+    required this.missionsCompleted,
+    required this.jobsCompleted,
+  });
+
+  factory ParentWeeklySummary.fromJson(Map<String, dynamic> j) =>
+      ParentWeeklySummary(
+        coinsEarned: (j['coins_earned'] as num?)?.toInt() ?? 0,
+        missionsCompleted: (j['missions_completed'] as num?)?.toInt() ?? 0,
+        jobsCompleted: (j['jobs_completed'] as num?)?.toInt() ?? 0,
+      );
+
+  static const empty =
+      ParentWeeklySummary(coinsEarned: 0, missionsCompleted: 0, jobsCompleted: 0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ítem de actividad reciente (trabajo o tarea de papá completados)
+// ─────────────────────────────────────────────────────────────────────────────
+class ParentActivityItem {
+  final String childName;
+  final String activityType; // 'trabajo' | 'mision_papa'
+  final String title;
+  final int coinAmount;
+  final DateTime occurredAt;
+
+  const ParentActivityItem({
+    required this.childName,
+    required this.activityType,
+    required this.title,
+    required this.coinAmount,
+    required this.occurredAt,
+  });
+
+  factory ParentActivityItem.fromJson(Map<String, dynamic> j) =>
+      ParentActivityItem(
+        childName: j['child_name'] as String? ?? '',
+        activityType: j['activity_type'] as String? ?? 'trabajo',
+        title: j['title'] as String? ?? '',
+        coinAmount: (j['coin_amount'] as num?)?.toInt() ?? 0,
+        occurredAt: DateTime.parse(j['occurred_at'] as String),
+      );
+
+  String get icon => activityType == 'mision_papa' ? '📋' : '🔨';
+
+  String get timeAgo {
+    final diff = DateTime.now().difference(occurredAt);
+    if (diff.inMinutes < 1) return 'ahora mismo';
+    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'hace ${diff.inHours} h';
+    return 'hace ${diff.inDays} días';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ParentRepository
 // ─────────────────────────────────────────────────────────────────────────────
 class ParentRepository {
@@ -235,6 +298,34 @@ class ParentRepository {
       totalCoins: totalCoins,
       missionsJoined: missionsJoined,
     );
+  }
+
+  // ── Resumen semanal (monedas/misiones/trabajos) de todos los hijos ───────
+  Future<ParentWeeklySummary> getWeeklySummary() async {
+    try {
+      final rows = await _db.rpc('get_parent_weekly_summary');
+      final row = (rows as List).isNotEmpty
+          ? rows.first as Map<String, dynamic>
+          : null;
+      return row != null
+          ? ParentWeeklySummary.fromJson(row)
+          : ParentWeeklySummary.empty;
+    } catch (_) {
+      return ParentWeeklySummary.empty;
+    }
+  }
+
+  // ── Actividad reciente (trabajos y tareas de papá) de todos los hijos ────
+  Future<List<ParentActivityItem>> getRecentActivity({int limit = 8}) async {
+    try {
+      final rows = await _db
+          .rpc('get_parent_recent_activity', params: {'p_limit': limit});
+      return (rows as List)
+          .map((e) => ParentActivityItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   // ── Genera un código de invitación para que el niño vincule su cuenta ────────

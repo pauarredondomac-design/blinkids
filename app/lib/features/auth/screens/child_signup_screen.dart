@@ -180,22 +180,34 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
     } on AuthException catch (e) {
       if (mounted)
         setState(() {
-          _errorMsg = 'Error: ${e.message}';
+          _errorMsg = _friendlyError(e.message);
           _loading = false;
         });
     } catch (e) {
-      final msg = e.toString();
-      final friendly = msg.contains('ya está en uso') || msg.contains('already')
-          ? '¡Ese nombre ya está ocupado! Elige otro.'
-          : msg.contains('network') || msg.contains('SocketException')
-              ? 'Sin conexión. Verifica tu internet.'
-              : 'Error: $msg';
       if (mounted)
         setState(() {
-          _errorMsg = friendly;
+          _errorMsg = _friendlyError(e.toString());
           _loading = false;
         });
     }
+  }
+
+  // Traduce mensajes técnicos a algo que un niño/padre pueda entender.
+  // Nunca debe devolver el texto técnico original.
+  String _friendlyError(String msg) {
+    final lower = msg.toLowerCase();
+    if (lower.contains('ya está en uso') || lower.contains('already')) {
+      return '¡Ese nombre ya está ocupado! Elige otro.';
+    }
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('connection') ||
+        lower.contains('client') ||
+        lower.contains('timeout') ||
+        lower.contains('host')) {
+      return 'Sin conexión. Verifica tu internet.';
+    }
+    return 'Ocurrió un error. Inténtalo de nuevo.';
   }
 
   @override

@@ -129,7 +129,7 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
     } on PostgrestException catch (e) {
       final msg = e.code == '23505'
           ? '¡Ese nombre ya está ocupado! 😅 Prueba con otro.'
-          : 'Error al guardar: ${e.message}';
+          : _friendlyError(e.message);
       if (mounted)
         setState(() {
           _errorMessage = msg;
@@ -138,16 +138,31 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
     } on AuthException catch (e) {
       if (mounted)
         setState(() {
-          _errorMessage = 'Error auth: ${e.message}';
+          _errorMessage = _friendlyError(e.message);
           _loading = false;
         });
     } catch (e) {
       if (mounted)
         setState(() {
-          _errorMessage = 'Error inesperado: $e';
+          _errorMessage = _friendlyError(e.toString());
           _loading = false;
         });
     }
+  }
+
+  // Traduce mensajes técnicos a algo que un niño pueda entender.
+  // Nunca debe devolver el texto técnico original.
+  String _friendlyError(String msg) {
+    final lower = msg.toLowerCase();
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('connection') ||
+        lower.contains('client') ||
+        lower.contains('timeout') ||
+        lower.contains('host')) {
+      return 'Sin conexión. Verifica tu internet.';
+    }
+    return 'Ocurrió un error. Inténtalo de nuevo.';
   }
 
   @override
