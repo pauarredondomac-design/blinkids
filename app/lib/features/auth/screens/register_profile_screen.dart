@@ -13,7 +13,6 @@ import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/character_provider.dart';
 import '../../../shared/widgets/fin_button.dart';
 import '../../../shared/widgets/loading_overlay.dart';
-import '../../../data/services/supabase_service.dart';
 
 /// Pantalla 2 del registro: ingresar nombre y crear el perfil completo.
 /// Crea en secuencia: perfil → cartera → personaje → registro de tutorial.
@@ -92,29 +91,18 @@ class _RegisterProfileScreenState extends ConsumerState<RegisterProfileScreen> {
       // 3. Crear personaje (Juan) — solo para niños
       if (!_isParent) {
         await charRepo.createCharacter(user.id);
-
-        // 4. Registrar progreso de tutorial (pendiente)
-        await _createTutorialRecord(user.id);
       }
 
       if (!mounted) return;
 
       // Navegar al destino correcto
-      context.go(_isParent ? '/parent' : '/tutorial');
+      context.go(_isParent ? '/parent' : '/world');
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
         context.showError('Error al crear el perfil: ${e.toString()}');
       }
     }
-  }
-
-  Future<void> _createTutorialRecord(String userId) async {
-    await supabase.from('tutorial_progress').insert({
-      'user_id': userId,
-      'current_step': 0,
-      'is_completed': false,
-    });
   }
 
   @override

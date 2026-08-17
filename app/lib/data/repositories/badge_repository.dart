@@ -20,7 +20,7 @@ class BadgeRepository {
       final rows = await _db
           .from('player_badges')
           .select(
-              'badge_id, earned_at, badge_definitions(name, description, emoji)')
+              'badge_id, earned_at, badge_definitions(name, description, emoji, image_asset)')
           .order('earned_at', ascending: false);
 
       return (rows as List).map((r) {
@@ -31,6 +31,7 @@ class BadgeRepository {
           name: def?['name'] as String?,
           description: def?['description'] as String?,
           emoji: def?['emoji'] as String?,
+          imageAsset: def?['image_asset'] as String?,
         );
       }).toList();
     } catch (_) {
@@ -44,7 +45,7 @@ class BadgeRepository {
       final rows = await _db
           .from('player_badges')
           .select(
-              'badge_id, earned_at, badge_definitions(name, description, emoji)')
+              'badge_id, earned_at, badge_definitions(name, description, emoji, image_asset)')
           .eq('user_id', childId)
           .order('earned_at', ascending: false);
 
@@ -56,6 +57,7 @@ class BadgeRepository {
           name: def?['name'] as String?,
           description: def?['description'] as String?,
           emoji: def?['emoji'] as String?,
+          imageAsset: def?['image_asset'] as String?,
         );
       }).toList();
     } catch (_) {

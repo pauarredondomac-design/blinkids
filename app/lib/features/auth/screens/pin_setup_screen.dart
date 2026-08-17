@@ -90,7 +90,7 @@ class _PinSetupScreenState extends State<PinSetupScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('child_pin', _pin);
 
-      if (mounted) context.go('/tutorial');
+      if (mounted) context.go('/world');
     } catch (_) {
       if (mounted) {
         setState(() {

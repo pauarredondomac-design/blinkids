@@ -26,8 +26,8 @@ class ChildNotificationBell extends ConsumerStatefulWidget {
 
 class _ChildNotificationBellState extends ConsumerState<ChildNotificationBell> {
   void _openPanel() {
-    // Marcar todas como leídas al abrir
-    final userId = ref.read(currentUserProvider)?.id;
+    // Marcar todas como leídas al abrir (nunca en modo demo/anónimo)
+    final userId = ref.read(currentRealUserProvider)?.id;
     if (userId != null) {
       ref.read(notificationRepositoryProvider).markAllRead(userId).then((_) {
         if (!mounted) return;

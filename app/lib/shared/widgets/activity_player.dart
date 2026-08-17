@@ -3,13 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/models/question.dart';
+import '../../data/repositories/building_question_repository.dart';
+import '../../data/repositories/mission_tracker.dart';
 import '../../data/repositories/question_repository.dart';
 import '../../data/repositories/wallet_repository.dart';
+import '../providers/demo_progress_provider.dart';
 import '../providers/wallet_provider.dart';
 import '../providers/character_provider.dart';
 import '../providers/fuel_provider.dart';
 import 'coin_display.dart';
 import 'badges_row.dart';
+import 'badge_unlock_celebration.dart';
 import 'rocket_launch_overlay.dart';
 import 'game_card.dart';
 import 'blink_dialogue_box.dart';
@@ -95,7 +99,7 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
       BadgeUnlockToast.show(context, 'hito-${_current.id}',
           name: _current.badgeName, emoji: '⭐');
     } else {
-      showBadgeUnlockToasts(context, ref, newBadges);
+      showBadgeUnlockCelebrations(context, ref, newBadges);
     }
     if (reachedFullFuel) await handleFuelReachedFull(context, ref);
   }
@@ -402,7 +406,44 @@ class _MechanicBody extends StatelessWidget {
             accentColor: accentColor,
             answered: answered,
             onSubmit: onSubmit);
+      case QuestionType.reflection:
+        return _ReflexionBody(
+            accentColor: accentColor,
+            answered: answered,
+            onSubmit: onSubmit);
     }
+  }
+}
+
+// ─── Reflexión (sin respuesta incorrecta) ─────────────────────────────────────
+class _ReflexionBody extends StatelessWidget {
+  const _ReflexionBody({
+    required this.accentColor,
+    required this.answered,
+    required this.onSubmit,
+  });
+  final Color accentColor;
+  final bool answered;
+  final void Function(bool) onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: answered ? null : () => onSubmit(true),
+        style: FilledButton.styleFrom(
+          backgroundColor: accentColor,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: Text(
+          answered ? '¡Listo!' : 'Continuar',
+          style: const TextStyle(
+              fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+      ),
+    );
   }
 }
 
@@ -424,62 +465,109 @@ class _ElegirBody extends StatefulWidget {
 
 class _ElegirBodyState extends State<_ElegirBody> {
   String? _selected;
+  static const _letters = ['A', 'B', 'C', 'D', 'E'];
 
   @override
   Widget build(BuildContext context) {
+    final options = widget.question.options;
     return Column(
-      children: widget.question.options.map((opt) {
+      children: List.generate(options.length, (i) {
+        final opt = options[i];
         final isSelected = _selected == opt.id;
         final isCorrectOpt = widget.question.correctAnswer == opt.id;
-        Color? bg;
-        Color border = Colors.white24;
+        Color accent = Colors.white38;
+        Color bg = Colors.white.withOpacity(0.05);
+        IconData? trailingIcon;
         if (widget.answered) {
           if (isCorrectOpt) {
-            bg = const Color(0xFF4ADE80).withOpacity(0.25);
-            border = const Color(0xFF4ADE80);
+            accent = const Color(0xFF4ADE80);
+            bg = const Color(0xFF4ADE80).withOpacity(0.16);
+            trailingIcon = Icons.check_circle_rounded;
           } else if (isSelected) {
-            bg = Colors.redAccent.withOpacity(0.20);
-            border = Colors.redAccent;
+            accent = Colors.redAccent;
+            bg = Colors.redAccent.withOpacity(0.14);
+            trailingIcon = Icons.cancel_rounded;
           }
         } else if (isSelected) {
-          bg = widget.accentColor.withOpacity(0.2);
-          border = widget.accentColor;
+          accent = widget.accentColor;
+          bg = widget.accentColor.withOpacity(0.16);
         }
         return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: GestureDetector(
-            onTap: widget.answered
-                ? null
-                : () {
-                    setState(() => _selected = opt.id);
-                    widget.onSubmit(isCorrectOpt);
-                  },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: bg ?? Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: border),
-              ),
-              child: Row(
-                children: [
-                  if (opt.icon != null) ...[
-                    Text(opt.icon!, style: const TextStyle(fontSize: 18)),
-                    const SizedBox(width: 8)
-                  ],
-                  Expanded(
-                      child: Text(opt.text,
-                          style: const TextStyle(
-                              color: Colors.white,
+          padding: const EdgeInsets.only(bottom: 10),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: accent.withOpacity(0.7), width: 1.6),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withOpacity(0.18),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: widget.answered
+                    ? null
+                    : () {
+                        setState(() => _selected = opt.id);
+                        widget.onSubmit(isCorrectOpt);
+                      },
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: accent.withOpacity(0.22),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: accent),
+                        ),
+                        child: Text(
+                          _letters[i % _letters.length],
+                          style: TextStyle(
+                              color: accent,
                               fontFamily: 'Nunito',
-                              fontSize: 14))),
-                ],
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      if (opt.icon != null) ...[
+                        Text(opt.icon!, style: const TextStyle(fontSize: 18)),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: Text(opt.text,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                height: 1.3)),
+                      ),
+                      if (trailingIcon != null) ...[
+                        const SizedBox(width: 6),
+                        Icon(trailingIcon, color: accent, size: 20),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         );
-      }).toList(),
+      }),
     );
   }
 }
@@ -527,6 +615,16 @@ class _OrdenarBodyState extends State<_OrdenarBody> {
     }
   }
 
+  /// Quita [opt] de la secuencia elegida y lo regresa a las opciones
+  /// disponibles — permite corregir un orden antes de completarlo.
+  void _unpick(QuestionOption opt) {
+    if (widget.answered) return;
+    setState(() {
+      _picked.remove(opt);
+      _remaining.add(opt);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -534,28 +632,42 @@ class _OrdenarBodyState extends State<_OrdenarBody> {
       children: [
         Text('Toca en el orden correcto:',
             style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.white.withOpacity(0.7),
                 fontFamily: 'Nunito',
+                fontWeight: FontWeight.w600,
                 fontSize: 12)),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: List.generate(widget.question.options.length, (i) {
             final filled = i < _picked.length;
-            return Container(
-              width: 40,
-              height: 40,
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 36,
+              height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: filled
-                    ? widget.accentColor.withOpacity(0.3)
-                    : Colors.white.withOpacity(0.06),
+                gradient: filled
+                    ? LinearGradient(colors: [
+                        widget.accentColor,
+                        widget.accentColor.withOpacity(0.6),
+                      ])
+                    : null,
+                color: filled ? null : Colors.white.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                     color: filled ? widget.accentColor : Colors.white24),
+                boxShadow: filled
+                    ? [
+                        BoxShadow(
+                            color: widget.accentColor.withOpacity(0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2)),
+                      ]
+                    : null,
               ),
-              child: Text(filled ? '${i + 1}' : '${i + 1}',
+              child: Text('${i + 1}',
                   style: TextStyle(
                       color: filled ? Colors.white : Colors.white38,
                       fontFamily: 'Nunito',
@@ -563,23 +675,45 @@ class _OrdenarBodyState extends State<_OrdenarBody> {
             );
           }),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         if (_picked.isNotEmpty)
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: _picked
-                .map((o) => Chip(
-                      label: Text(o.text,
+            spacing: 8,
+            runSpacing: 8,
+            children: _picked.asMap().entries.map((e) {
+              final i = e.key;
+              final o = e.value;
+              return GestureDetector(
+                onTap: () => _unpick(o),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: widget.accentColor.withOpacity(0.22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: widget.accentColor),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('${i + 1}. ${o.text}',
                           style: const TextStyle(
                               color: Colors.white,
                               fontFamily: 'Nunito',
-                              fontSize: 12)),
-                      backgroundColor: widget.accentColor.withOpacity(0.35),
-                    ))
-                .toList(),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13)),
+                      if (!widget.answered) ...[
+                        const SizedBox(width: 6),
+                        const Icon(Icons.close_rounded,
+                            color: Colors.white70, size: 15),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -588,16 +722,23 @@ class _OrdenarBodyState extends State<_OrdenarBody> {
                     onTap: () => _pick(opt),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                          horizontal: 14, vertical: 11),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.white.withOpacity(0.07),
+                        borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: Colors.white24),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2)),
+                        ],
                       ),
                       child: Text(opt.text,
                           style: const TextStyle(
                               color: Colors.white,
                               fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w600,
                               fontSize: 13)),
                     ),
                   ))
@@ -638,6 +779,10 @@ class _ClasificarBodyState extends State<_ClasificarBody> {
       (widget.question.correctAnswer as Map?)?.cast<String, dynamic>() ??
       {'a': 'Sí', 'b': 'No'};
 
+  List<QuestionOption> _itemsIn(String bucket) => widget.question.options
+      .where((o) => _placed[o.id] == bucket)
+      .toList();
+
   void _drop(QuestionOption opt, String bucket) {
     if (widget.answered || _placed.containsKey(opt.id)) return;
     setState(() {
@@ -651,72 +796,105 @@ class _ClasificarBodyState extends State<_ClasificarBody> {
     }
   }
 
+  /// Quita [opt] de la bolsa donde cayó y lo regresa a las tarjetas
+  /// pendientes — permite corregir una clasificación antes de completarla.
+  void _remove(QuestionOption opt) {
+    if (widget.answered) return;
+    setState(() {
+      _placed.remove(opt.id);
+      _pending.add(opt);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
                 child: _BucketZone(
                     label: _labels['a']?.toString() ?? 'Sí',
-                    bucket: 'a',
                     accentColor: widget.accentColor,
-                    onAccept: (opt) => _drop(opt, 'a'))),
+                    items: _itemsIn('a'),
+                    answered: widget.answered,
+                    onAccept: (opt) => _drop(opt, 'a'),
+                    onRemoveItem: _remove)),
             const SizedBox(width: 10),
             Expanded(
                 child: _BucketZone(
                     label: _labels['b']?.toString() ?? 'No',
-                    bucket: 'b',
                     accentColor: widget.accentColor,
-                    onAccept: (opt) => _drop(opt, 'b'))),
+                    items: _itemsIn('b'),
+                    answered: widget.answered,
+                    onAccept: (opt) => _drop(opt, 'b'),
+                    onRemoveItem: _remove)),
           ],
         ),
         const SizedBox(height: 14),
-        Text('Arrastra cada tarjeta a su bolsa:',
-            style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
-                fontFamily: 'Nunito',
-                fontSize: 12)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _pending
-              .map((opt) => Draggable<QuestionOption>(
-                    data: opt,
-                    feedback: Material(
-                        color: Colors.transparent,
-                        child: _ClasifChip(
-                            opt: opt, accentColor: widget.accentColor)),
-                    childWhenDragging: Opacity(
-                        opacity: 0.3,
-                        child: _ClasifChip(
-                            opt: opt, accentColor: widget.accentColor)),
-                    child:
-                        _ClasifChip(opt: opt, accentColor: widget.accentColor),
-                  ))
-              .toList(),
-        ),
+        if (_pending.isNotEmpty) ...[
+          Text('Arrastra cada tarjeta a su bolsa:',
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _pending
+                .map((opt) => Draggable<QuestionOption>(
+                      data: opt,
+                      feedback: Material(
+                          color: Colors.transparent,
+                          child: _ClasifChip(
+                              opt: opt, accentColor: widget.accentColor)),
+                      childWhenDragging: Opacity(
+                          opacity: 0.3,
+                          child: _ClasifChip(
+                              opt: opt, accentColor: widget.accentColor)),
+                      child: _ClasifChip(
+                          opt: opt, accentColor: widget.accentColor),
+                    ))
+                .toList(),
+          ),
+        ],
       ],
     );
   }
 }
 
 class _ClasifChip extends StatelessWidget {
-  const _ClasifChip({required this.opt, required this.accentColor});
+  const _ClasifChip({
+    required this.opt,
+    required this.accentColor,
+    this.onTap,
+    this.removable = false,
+  });
   final QuestionOption opt;
   final Color accentColor;
+  final VoidCallback? onTap;
+  final bool removable;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: accentColor.withOpacity(removable ? 0.22 : 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: accentColor.withOpacity(0.5)),
+        border: Border.all(color: accentColor.withOpacity(0.6)),
+        boxShadow: removable
+            ? null
+            : [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2)),
+              ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -727,23 +905,36 @@ class _ClasifChip extends StatelessWidget {
           ],
           Text(opt.text,
               style: const TextStyle(
-                  color: Colors.white, fontFamily: 'Nunito', fontSize: 13)),
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12.5)),
+          if (removable) ...[
+            const SizedBox(width: 5),
+            const Icon(Icons.close_rounded, color: Colors.white70, size: 14),
+          ],
         ],
       ),
     );
+    return onTap != null ? GestureDetector(onTap: onTap, child: chip) : chip;
   }
 }
 
 class _BucketZone extends StatefulWidget {
-  const _BucketZone(
-      {required this.label,
-      required this.bucket,
-      required this.accentColor,
-      required this.onAccept});
+  const _BucketZone({
+    required this.label,
+    required this.accentColor,
+    required this.items,
+    required this.answered,
+    required this.onAccept,
+    required this.onRemoveItem,
+  });
   final String label;
-  final String bucket;
   final Color accentColor;
+  final List<QuestionOption> items;
+  final bool answered;
   final void Function(QuestionOption) onAccept;
+  final void Function(QuestionOption) onRemoveItem;
 
   @override
   State<_BucketZone> createState() => _BucketZoneState();
@@ -756,27 +947,54 @@ class _BucketZoneState extends State<_BucketZone> {
       onAcceptWithDetails: (details) => widget.onAccept(details.data),
       builder: (context, candidate, __) {
         final hovering = candidate.isNotEmpty;
-        return Container(
-          height: 72,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.all(8),
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          constraints: const BoxConstraints(minHeight: 76),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: hovering
-                ? widget.accentColor.withOpacity(0.3)
-                : Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(14),
+            gradient: hovering
+                ? LinearGradient(colors: [
+                    widget.accentColor.withOpacity(0.35),
+                    widget.accentColor.withOpacity(0.15),
+                  ])
+                : null,
+            color: hovering ? null : Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: widget.accentColor.withOpacity(hovering ? 0.9 : 0.4),
-                width: hovering ? 2 : 1.2,
-                style: BorderStyle.solid),
+              color: widget.accentColor.withOpacity(hovering ? 0.9 : 0.45),
+              width: hovering ? 2 : 1.4,
+            ),
           ),
-          child: Text(widget.label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontFamily: 'Nunito',
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: widget.accentColor,
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13)),
+              if (widget.items.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: widget.items
+                      .map((o) => _ClasifChip(
+                            opt: o,
+                            accentColor: widget.accentColor,
+                            removable: !widget.answered,
+                            onTap: widget.answered
+                                ? null
+                                : () => widget.onRemoveItem(o),
+                          ))
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
         );
       },
     );
@@ -802,6 +1020,7 @@ class _RelacionarBody extends StatefulWidget {
 class _RelacionarBodyState extends State<_RelacionarBody> {
   String? _selectedLeftId;
   final Map<String, String> _matched = {}; // leftId -> rightId chosen
+  final List<String> _matchOrder = []; // leftIds, en el orden en que se unieron
   late List<QuestionOption> _rightShuffled;
 
   @override
@@ -811,15 +1030,26 @@ class _RelacionarBodyState extends State<_RelacionarBody> {
       ..shuffle(Random(widget.question.id.hashCode));
   }
 
+  /// Tocar una tarjeta izquierda ya unida la desune (deshacer).
   void _tapLeft(QuestionOption opt) {
-    if (widget.answered || _matched.containsKey(opt.id)) return;
-    setState(() => _selectedLeftId = opt.id);
+    if (widget.answered) return;
+    if (_matched.containsKey(opt.id)) {
+      setState(() {
+        _matched.remove(opt.id);
+        _matchOrder.remove(opt.id);
+      });
+      return;
+    }
+    setState(
+        () => _selectedLeftId = _selectedLeftId == opt.id ? null : opt.id);
   }
 
   void _tapRight(QuestionOption right) {
     if (widget.answered || _selectedLeftId == null) return;
+    if (_matched.values.contains(right.id)) return; // ya está en uso
     setState(() {
       _matched[_selectedLeftId!] = right.id;
+      _matchOrder.add(_selectedLeftId!);
       _selectedLeftId = null;
     });
     if (_matched.length == widget.question.options.length) {
@@ -829,85 +1059,392 @@ class _RelacionarBodyState extends State<_RelacionarBody> {
     }
   }
 
+  int? _numberFor(String leftId) {
+    final idx = _matchOrder.indexOf(leftId);
+    return idx == -1 ? null : idx + 1;
+  }
+
+  Widget _numberBadge(int number, Color color) => Container(
+        width: 20,
+        height: 20,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: Text('$number',
+            style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 10,
+                fontWeight: FontWeight.w800)),
+      );
+
   @override
   Widget build(BuildContext context) {
     final lefts = widget.question.options;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    const doneColor = Color(0xFF4ADE80);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: Column(
-            children: lefts.map((o) {
-              final done = _matched.containsKey(o.id);
-              final selected = _selectedLeftId == o.id;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: GestureDetector(
-                  onTap: () => _tapLeft(o),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: done
-                          ? const Color(0xFF4ADE80).withOpacity(0.2)
-                          : (selected
-                              ? widget.accentColor.withOpacity(0.3)
-                              : Colors.white.withOpacity(0.06)),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
+        if (!widget.answered)
+          Text(
+              'Toca una tarjeta y luego su pareja. Toca una ya unida para deshacerla.',
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11.5)),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                children: lefts.map((o) {
+                  final done = _matched.containsKey(o.id);
+                  final selected = _selectedLeftId == o.id;
+                  final number = _numberFor(o.id);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: GestureDetector(
+                      onTap: () => _tapLeft(o),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 12),
+                        decoration: BoxDecoration(
                           color: done
-                              ? const Color(0xFF4ADE80)
+                              ? doneColor.withOpacity(0.18)
                               : (selected
-                                  ? widget.accentColor
-                                  : Colors.white24)),
+                                  ? widget.accentColor.withOpacity(0.28)
+                                  : Colors.white.withOpacity(0.06)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: done
+                                  ? doneColor
+                                  : (selected
+                                      ? widget.accentColor
+                                      : Colors.white24),
+                              width: selected ? 1.8 : 1.2),
+                        ),
+                        child: Row(
+                          children: [
+                            if (number != null) ...[
+                              _numberBadge(number, doneColor),
+                              const SizedBox(width: 8),
+                            ],
+                            Expanded(
+                              child: Text(o.text,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: 'Nunito',
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12.5)),
+                            ),
+                            if (done && !widget.answered)
+                              const Icon(Icons.close_rounded,
+                                  color: Colors.white54, size: 15),
+                          ],
+                        ),
+                      ),
                     ),
-                    child: Text(o.text,
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                children: _rightShuffled.map((o) {
+                  final usedBy = _matched.entries
+                      .where((e) => e.value == o.id)
+                      .map((e) => e.key)
+                      .toList();
+                  final done = usedBy.isNotEmpty;
+                  final number = done ? _numberFor(usedBy.first) : null;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: GestureDetector(
+                      onTap: () => _tapRight(o),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: done
+                              ? doneColor.withOpacity(0.10)
+                              : Colors.white.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: done
+                                  ? doneColor.withOpacity(0.6)
+                                  : Colors.white24),
+                        ),
+                        child: Row(
+                          children: [
+                            if (number != null) ...[
+                              _numberBadge(number, doneColor.withOpacity(0.7)),
+                              const SizedBox(width: 8),
+                            ],
+                            Expanded(
+                              child: Text(o.right ?? o.text,
+                                  style: TextStyle(
+                                      color: done
+                                          ? Colors.white60
+                                          : Colors.white,
+                                      fontFamily: 'Nunito',
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12.5)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pregunta diaria de edificio — una sola pregunta con carcasa de diálogo de
+// Blink (pose en la esquina + burbuja con la pregunta, al estilo
+// ScreenTutorial) y reacciones de Blink en la retroalimentación en vez del
+// banner plano de ActivityPlayer. Reutiliza _MechanicBody (mismo motor de
+// mecánicas Elegir/Clasificar/Relacionar/Ordenar) pero es independiente de
+// ActivityPlayer — no lo modifica ni cambia su comportamiento.
+//
+// Se muestra una sola vez al día por edificio (BuildingQuestionRepository):
+// no vuelve a salir el resto del día sin importar si se contestó bien o mal.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Muestra la pregunta diaria del edificio [buildingSlug] si corresponde
+/// (primera vez hoy). No hace nada si ya se mostró hoy o si aún no hay
+/// preguntas "Diario" cargadas para ese edificio.
+Future<void> maybeShowDailyBuildingQuestion(
+  BuildContext context,
+  WidgetRef ref, {
+  required String buildingSlug,
+  required Color accentColor,
+  String worldIdForFuel = 'space',
+  // Clave del catálogo de preguntas (questions.module_slug), si es distinta
+  // de [buildingSlug]. Necesario cuando ese module_slug ya lo usa OTRA
+  // función (ej. 'banco_estelar' ya lo usa goal_dream_flow.dart para las
+  // actividades reales de Mis Sueños, sin filtrar por group_name) — así no
+  // se mezclan las preguntas diarias con ese catálogo existente.
+  String? questionModuleSlug,
+  // Nombre del grupo que marca las preguntas diarias dentro de ese catálogo.
+  // Todas usan 'Diario' salvo Misiones, que ya traía su propio grupo
+  // '🌞 Diaria' cargado de antes — se reutiliza tal cual en vez de duplicar
+  // esas preguntas con una etiqueta nueva.
+  String dailyGroupName = 'Diario',
+}) async {
+  final repo = BuildingQuestionRepository();
+  if (!await repo.isIntroComplete()) return;
+  if (await repo.shownToday(buildingSlug)) return;
+
+  final all = await QuestionRepository()
+      .getQuestionsForModule(questionModuleSlug ?? buildingSlug);
+  final pool = all.where((q) => q.groupName == dailyGroupName).toList();
+  if (pool.isEmpty) return;
+  pool.shuffle();
+  final question = pool.first;
+
+  if (!context.mounted) return;
+  await showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withOpacity(0.75),
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (ctx, __, ___) => _DailyQuestionDialog(
+      question: question,
+      buildingSlug: buildingSlug,
+      accentColor: accentColor,
+      worldIdForFuel: worldIdForFuel,
+    ),
+  );
+}
+
+class _DailyQuestionDialog extends ConsumerStatefulWidget {
+  const _DailyQuestionDialog({
+    required this.question,
+    required this.buildingSlug,
+    required this.accentColor,
+    required this.worldIdForFuel,
+  });
+  final Question question;
+  final String buildingSlug;
+  final Color accentColor;
+  final String worldIdForFuel;
+
+  @override
+  ConsumerState<_DailyQuestionDialog> createState() =>
+      _DailyQuestionDialogState();
+}
+
+class _DailyQuestionDialogState extends ConsumerState<_DailyQuestionDialog> {
+  _AnswerState _answerState = _AnswerState.unanswered;
+
+  Question get _q => widget.question;
+
+  Future<void> _handleSubmit(bool isCorrect) async {
+    if (_answerState != _AnswerState.unanswered) return;
+    setState(() =>
+        _answerState = isCorrect ? _AnswerState.correct : _AnswerState.wrong);
+
+    await BuildingQuestionRepository().markShown(
+      widget.buildingSlug,
+      questionId: _q.id,
+      correct: isCorrect,
+    );
+    await MissionTracker().recordQuiz();
+
+    if (!DemoStore.isActive) {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId != null) {
+        QuestionRepository().recordAnswer(
+          userId: userId,
+          questionId: _q.id,
+          isCorrect: isCorrect,
+        );
+      }
+    }
+
+    if (!isCorrect) return;
+
+    if (DemoStore.isActive) {
+      ref.read(demoProgressProvider).addCoins(_q.coinReward);
+    } else {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId != null) {
+        await WalletRepository()
+            .awardStarterCoins(userId, _q.coinReward)
+            .catchError((_) {});
+        ref.invalidate(currentWalletProvider);
+      }
+    }
+
+    final newBadges = await awardXp(ref, _q.xpReward);
+    var reachedFullFuel = false;
+    if (_q.fuelReward > 0) {
+      reachedFullFuel = await ref
+          .read(fuelNotifierProvider.notifier)
+          .addFuel(widget.worldIdForFuel, _q.fuelReward);
+    }
+    if (!mounted) return;
+    showBadgeUnlockCelebrations(context, ref, newBadges);
+    if (reachedFullFuel) await handleFuelReachedFull(context, ref);
+  }
+
+  String get _blinkPose {
+    switch (_answerState) {
+      case _AnswerState.correct:
+        return 'assets/blink/poses/contento.png';
+      case _AnswerState.wrong:
+        return 'assets/blink/poses/triste.png';
+      case _AnswerState.unanswered:
+        return 'assets/blink/poses/dialogo.png';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final answered = _answerState != _AnswerState.unanswered;
+    final retroColor = _answerState == _AnswerState.correct
+        ? const Color(0xFF4ADE80)
+        : widget.accentColor;
+
+    return Material(
+      color: Colors.transparent,
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Blink + burbuja de diálogo con la pregunta ──────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Image.asset(_blinkPose,
+                          width: 84, height: 84, fit: BoxFit.contain),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GameCard(
+                          accentColor: widget.accentColor,
+                          padding: const EdgeInsets.all(14),
+                          child: Text(
+                            _q.questionText,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                                height: 1.3),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _MechanicBody(
+                    key: ValueKey('daily-${_q.id}'),
+                    question: _q,
+                    accentColor: widget.accentColor,
+                    answered: answered,
+                    onSubmit: _handleSubmit,
+                  ),
+                  if (answered) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: retroColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: retroColor.withOpacity(0.5)),
+                      ),
+                      child: Text(
+                        _answerState == _AnswerState.correct
+                            ? (_q.explanation ?? '¡Muy bien!')
+                            : (_q.retroWrong ??
+                                '¡Casi! Lo volvemos a intentar mañana.'),
                         style: const TextStyle(
                             color: Colors.white,
                             fontFamily: 'Nunito',
-                            fontSize: 12.5)),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            children: _rightShuffled.map((o) {
-              final usedBy = _matched.entries
-                  .where((e) => e.value == o.id)
-                  .map((e) => e.key)
-                  .toList();
-              final done = usedBy.isNotEmpty;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: GestureDetector(
-                  onTap: () => _tapRight(o),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: done
-                          ? Colors.white.withOpacity(0.03)
-                          : Colors.white.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: done ? Colors.white12 : Colors.white24),
+                            fontSize: 13,
+                            height: 1.35),
+                      ),
                     ),
-                    child: Text(o.right ?? o.text,
-                        style: TextStyle(
-                            color: done ? Colors.white38 : Colors.white,
-                            fontFamily: 'Nunito',
-                            fontSize: 12.5)),
-                  ),
-                ),
-              );
-            }).toList(),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: widget.accentColor,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: const Text('¡Listo!',
+                            style: TextStyle(
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

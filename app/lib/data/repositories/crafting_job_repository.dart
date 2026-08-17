@@ -24,7 +24,7 @@ class CraftingJobRepository {
       final rows = await _client
           .from('jobs')
           .select(
-              'id, emoji, name, npc_name, npc_emoji, story, requirements, coin_reward, xp_reward, fuel_reward, item_reward')
+              'id, emoji, name, npc_name, npc_emoji, story, requirements, coin_reward, xp_reward, fuel_reward, item_reward, chapter, chapter_number, order_in_chapter')
           .eq('type', 'crafting')
           .eq('world_id', worldId)
           .eq('is_active', true)
@@ -68,6 +68,9 @@ class CraftingJobRepository {
       xpReward: (r['xp_reward'] as num).toInt(),
       fuelReward: (r['fuel_reward'] as num? ?? 0).toInt(),
       itemReward: itemReward,
+      chapter: r['chapter'] as String?,
+      chapterNumber: r['chapter_number'] as int?,
+      orderInChapter: r['order_in_chapter'] as int?,
     );
   }
 

@@ -872,7 +872,8 @@ class _ChoreRow extends StatelessWidget {
             color: const Color(0xFF10B981).withAlpha(40),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Center(child: Text('🧹', style: TextStyle(fontSize: 16))),
+          child:
+              const Center(child: Text('🧹', style: TextStyle(fontSize: 16))),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1018,7 +1019,8 @@ class _ActivityRow extends StatelessWidget {
         ),
         Row(
           children: [
-            const Text('+', style: TextStyle(color: Color(0xFFFFD600), fontSize: 12)),
+            const Text('+',
+                style: TextStyle(color: Color(0xFFFFD600), fontSize: 12)),
             Text(
               '${item.coinAmount}',
               style: const TextStyle(
@@ -1506,11 +1508,12 @@ class _AddChildDialogState extends ConsumerState<_AddChildDialog> {
     });
     try {
       final result = await Supabase.instance.client.rpc('generate_invite_code');
-      if (mounted)
+      if (mounted) {
         setState(() {
           _code = result as String;
           _loading = false;
         });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {

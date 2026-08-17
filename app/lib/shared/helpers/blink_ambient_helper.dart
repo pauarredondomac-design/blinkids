@@ -45,7 +45,7 @@ class BlinkAmbientHelper {
     }
 
     final user = Supabase.instance.client.auth.currentUser;
-    if (user != null) {
+    if (user != null && !user.isAnonymous) {
       try {
         final row = await Supabase.instance.client
             .from('profiles')

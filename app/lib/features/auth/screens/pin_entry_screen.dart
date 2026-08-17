@@ -41,8 +41,9 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
           .select('display_name')
           .eq('id', userId)
           .maybeSingle();
-      if (mounted)
+      if (mounted) {
         setState(() => _displayName = data?['display_name'] as String? ?? '');
+      }
     } catch (_) {}
   }
 

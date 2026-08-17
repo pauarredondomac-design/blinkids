@@ -44,8 +44,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await repo.signInWithGoogle();
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         context.showError('Error al conectar con Google: ${e.toString()}');
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -136,13 +137,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Navigator.pop(context);
               try {
                 await ref.read(authRepositoryProvider).resetPassword(email);
-                if (mounted)
+                if (mounted) {
                   context.showSuccess(
                       '¡Correo enviado! Revisa tu bandeja de entrada.');
+                }
               } catch (_) {
-                if (mounted)
+                if (mounted) {
                   context.showError(
                       'No se pudo enviar el correo. Inténtalo más tarde.');
+                }
               }
             },
             child: const Text('Reenviar correo'),

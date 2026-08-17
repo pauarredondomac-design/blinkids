@@ -30,11 +30,12 @@ class _RedeemCodeScreenState extends State<RedeemCodeScreen> {
     try {
       await Supabase.instance.client
           .rpc('redeem_invite_code', params: {'p_code': code});
-      if (mounted)
+      if (mounted) {
         setState(() {
           _success = true;
           _loading = false;
         });
+      }
       await Future.delayed(2.seconds);
       if (mounted) context.go('/world');
     } catch (e) {

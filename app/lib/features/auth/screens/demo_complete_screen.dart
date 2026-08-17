@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/blink_character.dart';
+import '../../../shared/widgets/modal_corners.dart';
 
 class DemoCompleteScreen extends StatelessWidget {
   const DemoCompleteScreen({super.key});
@@ -9,7 +10,9 @@ class DemoCompleteScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
+      body: ModalCorners(
+        size: 100,
+        child: Stack(
         fit: StackFit.expand,
         children: [
           // Fondo
@@ -166,6 +169,7 @@ class DemoCompleteScreen extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

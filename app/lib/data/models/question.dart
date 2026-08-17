@@ -4,7 +4,12 @@ enum QuestionType {
   orderSteps,
   classify,
   dragMatch,
-  fillBlank
+  fillBlank,
+
+  /// Preguntas sin respuesta incorrecta — cualquier elección (o solo
+  /// continuar) muestra el mensaje positivo. Usado para preguntas de
+  /// reflexión ("¿Qué harías?", "no hay cantidad correcta", etc.).
+  reflection,
 }
 
 QuestionType _typeFromString(String? raw) {
@@ -19,6 +24,8 @@ QuestionType _typeFromString(String? raw) {
       return QuestionType.dragMatch;
     case 'fill_blank':
       return QuestionType.fillBlank;
+    case 'reflection':
+      return QuestionType.reflection;
     default:
       return QuestionType.multipleChoice;
   }

@@ -128,7 +128,21 @@ class _BadgeChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(badge.displayEmoji, style: const TextStyle(fontSize: 16)),
+            badge.imageAsset != null
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: Image.asset(
+                      badge.imageAsset!,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Text(
+                        badge.displayEmoji,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  )
+                : Text(badge.displayEmoji,
+                    style: const TextStyle(fontSize: 16)),
             const SizedBox(width: 4),
             Text(
               badge.displayName,
@@ -265,30 +279,6 @@ class BadgeUnlockToast extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();
-}
-
-/// Muestra un toast por cada medalla nueva (con nombre/emoji reales) en
-/// secuencia, para usar tras `awardXp()` u otra acción que pueda otorgar
-/// medallas. Seguro de llamar con una lista vacía.
-Future<void> showBadgeUnlockToasts(
-  BuildContext context,
-  WidgetRef ref,
-  List<String> newBadgeIds,
-) async {
-  if (newBadgeIds.isEmpty) return;
-  final defs = await ref.read(badgeDefinitionsProvider.future);
-  for (final id in newBadgeIds) {
-    if (!context.mounted) return;
-    BadgeDefinition? def;
-    for (final d in defs) {
-      if (d.id == id) {
-        def = d;
-        break;
-      }
-    }
-    BadgeUnlockToast.show(context, id, name: def?.name, emoji: def?.emoji);
-    await Future.delayed(const Duration(milliseconds: 3500));
-  }
 }
 
 class _ToastEntry extends StatefulWidget {

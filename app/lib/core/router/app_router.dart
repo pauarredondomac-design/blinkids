@@ -9,7 +9,6 @@ import '../../features/auth/screens/child_signup_screen.dart';
 import '../../features/auth/screens/child_login_screen.dart';
 import '../../features/auth/screens/parent_auth_screen.dart';
 import '../../features/auth/screens/redeem_code_screen.dart';
-import '../../features/tutorial/screens/tutorial_screen.dart';
 import '../../features/worlds/space/space_world_map.dart';
 import '../../features/worlds/space/banco_estelar_screen.dart';
 import '../../features/worlds/forest/forest_world_map.dart';
@@ -41,7 +40,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/child-login',
         '/parent-auth',
         '/world',
-        '/tutorial',
       ];
       if (openRoutes.contains(loc)) return null;
       if (loc.startsWith('/space/') || loc.startsWith('/world/')) return null;
@@ -88,13 +86,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/redeem-code',
         name: 'redeem-code',
         builder: (_, __) => const RedeemCodeScreen(),
-      ),
-
-      // ── Tutorial ──────────────────────────────────────────────────────────────
-      GoRoute(
-        path: '/tutorial',
-        name: 'tutorial',
-        builder: (_, __) => const TutorialScreen(),
       ),
 
       // ── Mundo Espacio ─────────────────────────────────────────────────────────

@@ -37,8 +37,9 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
   }
 
   void _onPinDelete() {
-    if (_pin.isNotEmpty)
+    if (_pin.isNotEmpty) {
       setState(() => _pin = _pin.substring(0, _pin.length - 1));
+    }
   }
 
   Future<void> _login() async {

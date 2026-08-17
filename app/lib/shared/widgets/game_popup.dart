@@ -69,7 +69,7 @@ Future<void> showGamePopup(
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text(
+                  const Text(
                     'Toca para cerrar',
                     style: TextStyle(
                       color: GameTokens.textMuted,

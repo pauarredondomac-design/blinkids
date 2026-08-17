@@ -75,11 +75,12 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
         });
       }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _checking = false;
           _nameOk = false;
         });
+      }
     }
   }
 
@@ -176,19 +177,21 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
       // Invalidar caché del perfil para que se vuelva a cargar con el nuevo perfil
       ref.invalidate(currentProfileProvider);
 
-      if (mounted) context.go('/tutorial');
+      if (mounted) context.go('/world');
     } on AuthException catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorMsg = _friendlyError(e.message);
           _loading = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorMsg = _friendlyError(e.toString());
           _loading = false;
         });
+      }
     }
   }
 

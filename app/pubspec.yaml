@@ -23,6 +23,7 @@ dependencies:
 
   # Backend
   supabase_flutter: ^2.9.0
+  http: ^1.6.0
 
   # Autenticación social
   google_sign_in: ^6.2.1
@@ -77,6 +78,10 @@ flutter:
     - assets/worlds/sea/
     - assets/ui/coin/
     - assets/ui/
+    - assets/ui/modal/
+    - assets/ui/modal/buttons/
+    - assets/ui/modal/categories/
+    - assets/ui/modal/actions/
     - assets/sounds/
     - assets/items/
     - assets/badges/

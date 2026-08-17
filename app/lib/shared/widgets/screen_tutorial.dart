@@ -20,11 +20,18 @@ class ScreenTutorial extends StatefulWidget {
     required this.tutorialKey,
     required this.steps,
     required this.child,
+    this.onReady,
   });
 
   final String tutorialKey;
   final List<TutorialStep> steps; // fallback hardcodeado
   final Widget child;
+
+  /// Se dispara una sola vez por montaje de esta pantalla: de inmediato si
+  /// el tutorial ya se había visto antes, o justo al cerrarlo si se está
+  /// viendo por primera vez. Útil como gancho para mostrar algo DESPUÉS
+  /// de la intro/instrucciones (ej. la pregunta diaria del edificio).
+  final VoidCallback? onReady;
 
   @override
   State<ScreenTutorial> createState() => _ScreenTutorialState();
@@ -56,12 +63,14 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
     }
 
     final client = Supabase.instance.client;
-    final userId = client.auth.currentUser?.id;
-    if (userId == null) {
+    final user = client.auth.currentUser;
+    if (user == null || user.isAnonymous) {
       final seen = DemoStore.instance.isTutorialSeen(widget.tutorialKey);
       if (mounted) setState(() => _show = !seen);
+      if (seen) widget.onReady?.call();
       return;
     }
+    final userId = user.id;
     try {
       final data = await client
           .from('profiles')
@@ -71,15 +80,19 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
       final map = (data?['tutorials_seen'] as Map<String, dynamic>?) ?? {};
       final seen = map[widget.tutorialKey] == true;
       if (mounted) setState(() => _show = !seen);
+      if (seen) widget.onReady?.call();
     } catch (_) {
       if (mounted) setState(() => _show = false);
+      widget.onReady?.call();
     }
   }
 
   Future<void> _dismiss() async {
     if (mounted) setState(() => _show = false);
+    widget.onReady?.call();
     final client = Supabase.instance.client;
-    if (client.auth.currentUser == null) {
+    final user = client.auth.currentUser;
+    if (user == null || user.isAnonymous) {
       DemoStore.instance.markTutorialSeen(widget.tutorialKey);
       return;
     }

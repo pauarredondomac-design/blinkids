@@ -10,14 +10,14 @@ final walletRepositoryProvider = Provider<WalletRepository>(
 
 /// Cartera del usuario autenticado (o stub en demo).
 ///
-/// IMPORTANTE: `ref.watch(currentUserProvider)` se llama SIEMPRE primero,
+/// IMPORTANTE: `ref.watch(currentRealUserProvider)` se llama SIEMPRE primero,
 /// sin importar la rama. Si se condiciona antes con `DemoStore.isActive`
 /// (un getter plano, no reactivo), Riverpod nunca registra la dependencia
 /// de auth cuando arranca en modo demo — y el provider se queda pegado
 /// mostrando el wallet demo para siempre, incluso después de iniciar
 /// sesión de verdad (bug real que causaba "monedas siempre en 500").
 final currentWalletProvider = StreamProvider<Wallet?>((ref) {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) {
     // Rebuild reactivamente cuando cambien las monedas demo.
     final coins = ref.watch(demoProgressProvider).coins;
@@ -37,10 +37,10 @@ final currentWalletProvider = StreamProvider<Wallet?>((ref) {
 });
 
 /// Categorías de la bolsa del niño (o categorías demo en memoria).
-/// Mismo cuidado que arriba: `currentUserProvider` se observa primero.
+/// Mismo cuidado que arriba: `currentRealUserProvider` se observa primero.
 final walletCategoriesProvider =
     FutureProvider<List<WalletCategory>>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) {
     ref.watch(demoProgressProvider); // rebuild cuando cambien balances
     final balances = DemoStore.instance.walletCategoryBalances;

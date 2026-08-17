@@ -11,7 +11,7 @@ import '../../../../shared/providers/wallet_provider.dart';
 import '../../../../shared/providers/character_provider.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../shared/widgets/coin_display.dart';
-import '../../../../shared/widgets/badges_row.dart';
+import '../../../../shared/widgets/badge_unlock_celebration.dart';
 
 // ─── Denominaciones de monedas/billetes disponibles ──────────────────────────
 class _Denom {
@@ -168,7 +168,7 @@ class _VendedorFrutasScreenState extends ConsumerState<VendedorFrutasScreen> {
       ref.invalidate(currentWalletProvider);
     }
 
-    if (mounted) showBadgeUnlockToasts(context, ref, newBadges);
+    if (mounted) showBadgeUnlockCelebrations(context, ref, newBadges);
     if (mounted) context.go('/world/trabajos');
   }
 

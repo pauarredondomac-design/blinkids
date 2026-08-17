@@ -166,134 +166,133 @@ class _MercadoSidebar extends StatelessWidget {
         children: [
           const SizedBox(height: 12),
 
-            // Botón volver
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: GestureDetector(
-                onTap: onBack,
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.18),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // Título
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                'MERCADO',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 2.0,
-                  shadows: [
-                    Shadow(
-                      color: const Color(0xFFFFB300).withOpacity(0.60),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // Coins pill
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+          // Botón volver
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: GestureDetector(
+              onTap: onBack,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.amber.withOpacity(0.55)),
+                  color: Colors.white.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.18),
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const AnimatedCoin(size: 14),
-                    const SizedBox(width: 5),
-                    Text(
-                      '$coins',
-                      style: const TextStyle(
-                        color: Colors.amber,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: Colors.white,
+                  size: 18,
                 ),
               ),
             ),
+          ),
 
-            const SizedBox(height: 18),
+          const SizedBox(height: 14),
 
-            // Divider con label
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+          // Título
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text(
+              'MERCADO',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2.0,
+                shadows: [
+                  Shadow(
+                    color: const Color(0xFFFFB300).withOpacity(0.60),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Coins pill
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.amber.withOpacity(0.55)),
+              ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFF2A1A5E),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
+                  const AnimatedCoin(size: 14),
+                  const SizedBox(width: 5),
                   Text(
-                    'SECCIONES',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.35),
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFF2A1A5E),
+                    '$coins',
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
                     ),
                   ),
                 ],
               ),
             ),
+          ),
 
-            const SizedBox(height: 8),
+          const SizedBox(height: 18),
 
-            // Nav items
-            ..._tabs.asMap().entries.map((entry) {
-              final i = entry.key;
-              final (emoji, label) = entry.value;
-              final isSelected = selectedTab == i;
-              return _MercadoSidebarItem(
-                emoji: emoji,
-                label: label,
-                isSelected: isSelected,
-                onTap: () => onSelectTab(i),
-              );
-            }),
-          ],
-        ),
-      );
+          // Divider con label
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: const Color(0xFF2A1A5E),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'SECCIONES',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.35),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: const Color(0xFF2A1A5E),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Nav items
+          ..._tabs.asMap().entries.map((entry) {
+            final i = entry.key;
+            final (emoji, label) = entry.value;
+            final isSelected = selectedTab == i;
+            return _MercadoSidebarItem(
+              emoji: emoji,
+              label: label,
+              isSelected: isSelected,
+              onTap: () => onSelectTab(i),
+            );
+          }),
+        ],
+      ),
+    );
   }
 }
 
@@ -774,11 +773,12 @@ class _ExploreTabState extends ConsumerState<_ExploreTab> {
     final items = await ref
         .read(itemRepositoryProvider)
         .getMarketListings(widget.worldId);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _listings = items;
         _loading = false;
       });
+    }
   }
 
   Future<void> _buyListing(PlayerListing listing) async {
@@ -1078,11 +1078,12 @@ class _AddListingDialogState extends State<_AddListingDialog> {
                     ))
                 .toList(),
             onChanged: (s) {
-              if (s != null)
+              if (s != null) {
                 setState(() {
                   _selected = s;
                   _qty = 1;
                 });
+              }
             },
           ),
           const SizedBox(height: 12),

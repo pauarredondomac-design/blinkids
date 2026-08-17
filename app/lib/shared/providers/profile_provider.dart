@@ -9,7 +9,7 @@ final profileRepositoryProvider = Provider<ProfileRepository>(
 
 /// Perfil del usuario autenticado actualmente.
 final currentProfileProvider = FutureProvider<Profile?>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return null;
   return ref.read(profileRepositoryProvider).getProfile(user.id);
 });

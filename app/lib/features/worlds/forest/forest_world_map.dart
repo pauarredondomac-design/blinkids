@@ -11,7 +11,7 @@ import '../../../shared/widgets/blink_character.dart';
 import '../../../shared/widgets/world_side_panels.dart';
 import '../../../shared/widgets/game_popup.dart';
 import '../misiones/misiones_screen.dart';
-import '../misiones/desafios_screen.dart';
+import '../misiones/quizzes_screen.dart';
 import '../tienda/tienda_screen.dart';
 import '../mercado/mercado_screen.dart';
 import '../trabajos/trabajos_screen.dart';
@@ -94,12 +94,12 @@ class _ForestWorldMapState extends ConsumerState<ForestWorldMap> {
     ),
     _BuildingData(
       asset: 'assets/worlds/forest/building_preguntas.png',
-      name: 'Desafíos',
-      emoji: '🎮',
+      name: 'Quizzes',
+      emoji: '🧠',
       imgX: 1120,
       imgY: 280,
       widthImg: 520,
-      dialogBuilder: showDesafiosDialog,
+      dialogBuilder: showQuizzesDialog,
     ),
     _BuildingData(
       asset: 'assets/worlds/forest/building_tienda.png',

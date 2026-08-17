@@ -232,8 +232,7 @@ class ProfileBottomSheet extends ConsumerWidget {
                       _OptionTile(
                         icon: musicOn ? '🔊' : '🔇',
                         label: musicOn ? 'Silenciar música' : 'Activar música',
-                        onTap: () =>
-                            ref.read(musicProvider.notifier).toggle(),
+                        onTap: () => ref.read(musicProvider.notifier).toggle(),
                       ),
                       _OptionTile(
                         icon: '🔔',
@@ -536,11 +535,12 @@ class _RedeemCodeDialogState extends State<_RedeemCodeDialog> {
     try {
       await Supabase.instance.client
           .rpc('redeem_invite_code', params: {'p_code': code});
-      if (mounted)
+      if (mounted) {
         setState(() {
           _success = true;
           _loading = false;
         });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {

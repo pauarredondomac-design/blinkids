@@ -35,6 +35,15 @@ class DemoStore extends ChangeNotifier {
   // Tutoriales ya vistos en esta sesión demo
   final Set<String> seenTutorials = {};
 
+  // Edificios cuya pregunta diaria ya se mostró en esta sesión demo
+  // (cada sesión demo es "un día nuevo", así que basta con un set en memoria).
+  final Set<String> dailyQuestionsShown = {};
+
+  /// true cuando el jugador ya terminó el recorrido guiado (map_guide) del
+  /// mapa. Mientras sea false, no debe salir ninguna pregunta diaria — el
+  /// primer día es solo intro + instrucciones, sin preguntas.
+  bool introComplete = false;
+
   // Balances de las 4 misiones del dinero (Guardar / Invertir / Donar / Disfrutar)
   final Map<WalletCategoryType, int> walletCategoryBalances = {
     WalletCategoryType.guardar: 0,
@@ -154,6 +163,14 @@ class DemoStore extends ChangeNotifier {
 
   bool isTutorialSeen(String key) => seenTutorials.contains(key);
 
+  bool dailyQuestionShownToday(String buildingSlug) =>
+      dailyQuestionsShown.contains(buildingSlug);
+
+  void markDailyQuestionShown(String buildingSlug) {
+    dailyQuestionsShown.add(buildingSlug);
+    // No notifyListeners — no hay UI que dependa reactivamente de esto.
+  }
+
   /// Distribuye monedas entre el pool libre y una categoría de la bolsa.
   /// [categoryId] — 'demo_guardar' | 'demo_invertir' | 'demo_donar' | 'demo_gastar'
   void distributeCoins(
@@ -215,6 +232,8 @@ class DemoStore extends ChangeNotifier {
     claimedMissions.clear();
     listings.clear();
     seenTutorials.clear();
+    dailyQuestionsShown.clear();
+    introComplete = false;
     walletCategoryBalances.updateAll((_, __) => 0);
     notifyListeners();
   }

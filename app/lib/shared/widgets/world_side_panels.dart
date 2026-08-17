@@ -319,10 +319,11 @@ class _WorldOptionsDialogState extends State<_WorldOptionsDialog> {
               .select('display_name')
               .eq('id', parentId)
               .maybeSingle();
-          if (mounted)
+          if (mounted) {
             setState(() {
               _parentName = p?['display_name'] as String?;
             });
+          }
         }
       }
     } catch (_) {}
@@ -454,11 +455,12 @@ class _RedeemCodeDialogState extends State<_RedeemCodeDialog> {
     try {
       await Supabase.instance.client
           .rpc('redeem_invite_code', params: {'p_code': code});
-      if (mounted)
+      if (mounted) {
         setState(() {
           _success = true;
           _loading = false;
         });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {

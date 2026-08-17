@@ -1,27 +1,37 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/models/wallet.dart';
-import '../../../data/models/child_goal.dart';
 import '../../../shared/providers/wallet_provider.dart';
-import '../../../shared/providers/child_goal_provider.dart';
-import '../../../shared/providers/question_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
-import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/activity_player.dart';
+import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/screen_background.dart';
-import '../../../shared/widgets/game_card.dart';
-import '../../../shared/widgets/game_icon.dart';
+import '../../../shared/widgets/modal_corners.dart';
 import '../../../shared/theme/game_tokens.dart';
+
+// Tasa de crecimiento semanal de "Invertir" — visible como "+3.5% Semanal".
+// Nota: es un valor INFORMATIVO/proyectado. El saldo real (el que se mueve
+// en Mi Bolsa) no cambia solo — aquí solo se VE cómo iría creciendo.
+const double _weeklyInvestRate = 0.035;
+
+double _investedCurrentValue(WalletCategory cat) {
+  final elapsedSeconds = DateTime.now().difference(cat.updatedAt).inSeconds;
+  final weeks = elapsedSeconds / (7 * 24 * 3600);
+  if (weeks <= 0) return cat.balance.toDouble();
+  return cat.balance * math.pow(1 + _weeklyInvestRate, weeks).toDouble();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC API
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Muestra el Banco Estelar como panel flotante sobre el mapa espacial.
-void showBancoEstelarDialog(BuildContext context) {
-  showGeneralDialog(
+Future<void> showBancoEstelarDialog(BuildContext context) {
+  return showGeneralDialog(
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Banco Estelar',
@@ -34,7 +44,7 @@ void showBancoEstelarDialog(BuildContext context) {
         child: FadeTransition(opacity: anim, child: child),
       );
     },
-    pageBuilder: (ctx, _, __) => const _BEDialogShell(isFullScreen: false),
+    pageBuilder: (ctx, _, __) => const BancoEstelarDialogShell(isFullScreen: false),
   );
 }
 
@@ -46,7 +56,7 @@ class BancoEstelarScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: GameTokens.bgDeep,
-      body: Center(child: _BEDialogShell(isFullScreen: true)),
+      body: Center(child: BancoEstelarDialogShell(isFullScreen: true)),
     );
   }
 }
@@ -54,15 +64,15 @@ class BancoEstelarScreen extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Shell — obtiene datos Supabase y decide qué vista mostrar
 // ─────────────────────────────────────────────────────────────────────────────
-class _BEDialogShell extends ConsumerWidget {
-  const _BEDialogShell({required this.isFullScreen});
+class BancoEstelarDialogShell extends ConsumerWidget {
+  const BancoEstelarDialogShell({required this.isFullScreen});
   final bool isFullScreen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final size = MediaQuery.of(context).size;
-    final goalAsync = ref.watch(currentGoalProvider);
     final catsAsync = ref.watch(walletCategoriesProvider);
+    final wallet = ref.watch(currentWalletProvider).valueOrNull;
 
     void onClose() {
       if (isFullScreen) {
@@ -72,61 +82,58 @@ class _BEDialogShell extends ConsumerWidget {
       }
     }
 
-    int savedCoins = 0;
-    if (catsAsync is AsyncData<List<WalletCategory>>) {
-      try {
-        savedCoins = catsAsync.value
-            .firstWhere((c) => c.category == WalletCategoryType.guardar)
-            .balance;
-      } catch (_) {}
-    }
-
-    return Center(
+    return Padding(
+      padding: const EdgeInsets.only(top: 60),
+      child: Center(
       child: Material(
         color: Colors.transparent,
         child: ScreenTutorial(
-          tutorialKey: 'banco_estelar_v2',
+          tutorialKey: 'banco_estelar_v4',
           steps: const [
             TutorialStep(
               title: '¡Bienvenido al Banco Estelar!',
               body:
-                  'Aquí guardamos las monedas que tienen una misión importante: cumplir tu meta.',
+                  'Aquí puedes ver cómo se mueve el dinero que repartiste en Mi Bolsa.',
             ),
             TutorialStep(
-              title: 'Elige tu meta',
+              title: 'Guardar vs. Invertir',
               body:
-                  'Elige un sueño del catálogo. Cada moneda que pongas en "Guardar" en Mi Bolsa te acerca a cumplirlo.',
+                  'Lo que guardas se queda seguro, tal cual. Lo que inviertes puede ir creciendo con el tiempo.',
             ),
             TutorialStep(
-              title: 'No es un banco de verdad',
+              title: 'Retira lo que ganaste',
               body:
-                  'Aquí no hay saldo ni intereses — solo tu sueño acercándose, poquito a poco.',
+                  'Puedes retirar las ganancias de tu inversión, o sacar monedas de lo guardado, cuando quieras.',
             ),
           ],
+          onReady: () => maybeShowDailyBuildingQuestion(
+            context,
+            ref,
+            buildingSlug: 'banco_estelar',
+            questionModuleSlug: 'banco_estelar_diario',
+            accentColor: const Color(0xFFFFB300),
+          ),
           child: SizedBox(
             width: size.width * (isFullScreen ? 0.85 : 0.90),
-            height: size.height * (isFullScreen ? 0.85 : 0.88),
-            child: goalAsync.when(
-              loading: () => const _BEFrame(
-                  child: Center(
-                      child:
-                          CircularProgressIndicator(color: Color(0xFFFFB300)))),
-              error: (_, __) => _BEFrame(
-                  child: _GoalPicker(savedCoins: savedCoins, onClose: onClose)),
-              data: (goal) => goal == null || goal.isCompleted
-                  ? _BEFrame(
-                      child: _GoalPicker(
-                          savedCoins: savedCoins,
-                          onClose: onClose,
-                          previousGoal: goal))
-                  : _BEFrame(
-                      child: _VaultView(
-                          goal: goal,
-                          savedCoins: savedCoins,
-                          onClose: onClose)),
+            height: size.height * (isFullScreen ? 0.80 : 0.83),
+            child: _BEFrame(
+              onClose: onClose,
+              child: catsAsync.when(
+                loading: () => const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFFFB300))),
+                error: (_, __) => const Center(
+                  child: Text('No se pudo cargar tu información.',
+                      style: TextStyle(
+                          color: GameTokens.textSecondary,
+                          fontFamily: 'Nunito')),
+                ),
+                data: (cats) =>
+                    _AccountDashboard(categories: cats, wallet: wallet),
+              ),
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -136,12 +143,16 @@ class _BEDialogShell extends ConsumerWidget {
 // Marco visual compartido
 // ─────────────────────────────────────────────────────────────────────────────
 class _BEFrame extends StatelessWidget {
-  const _BEFrame({required this.child});
+  const _BEFrame({required this.child, required this.onClose});
   final Widget child;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ModalCorners(
+      onClose: onClose,
+      title: 'Banco Estelar',
+      child: Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
@@ -156,352 +167,307 @@ class _BEFrame extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: ScreenBackground(child: child),
+        child: ScreenBackground(
+          child: Stack(
+            children: [
+              // Edificio del Banco Estelar de fondo, como en la referencia.
+              Positioned(
+                right: -30,
+                top: -20,
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: 0.16,
+                    child: Image.asset(
+                      'assets/worlds/space/building_bolsa.png',
+                      width: 260,
+                    ),
+                  ),
+                ),
+              ),
+              child,
+            ],
+          ),
+        ),
+      ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Header reutilizable con placa "BANCO ESTELAR"
+// Circulito numerado — "①", "②"
 // ─────────────────────────────────────────────────────────────────────────────
-class _BEHeaderBar extends StatelessWidget {
-  const _BEHeaderBar({required this.onClose});
-  final VoidCallback onClose;
+class _NumberBadge extends StatelessWidget {
+  const _NumberBadge(this.n);
+  final int n;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      width: 20,
+      height: 20,
+      alignment: Alignment.center,
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E))),
+        color: Color(0xFFFFB300),
+        shape: BoxShape.circle,
       ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onClose,
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.07),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withOpacity(0.18)),
-              ),
-              child: const Icon(Icons.close_rounded,
-                  color: Colors.white, size: 15),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            'Banco estelar'.toUpperCase(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
+      child: Text('$n',
+          style: const TextStyle(
+              color: Colors.black87,
               fontWeight: FontWeight.w900,
-              letterSpacing: 2,
-              fontFamily: 'Nunito',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-const _goalIcons = <String, IconData>{
-  'bici': Icons.directions_bike,
-  'consola': Icons.sports_esports,
-  'balon': Icons.sports_soccer,
-  'audifonos': Icons.headphones,
-  'patin': Icons.roller_skating,
-  'mascota': Icons.pets,
-  'libros': Icons.menu_book,
-  'mochila': Icons.backpack,
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Selector de meta — primera vez o tras cumplir una meta
-// ─────────────────────────────────────────────────────────────────────────────
-class _GoalPicker extends ConsumerWidget {
-  const _GoalPicker(
-      {required this.savedCoins, required this.onClose, this.previousGoal});
-  final int savedCoins;
-  final VoidCallback onClose;
-  final ChildGoal? previousGoal;
-
-  Future<void> _choose(
-      BuildContext context, WidgetRef ref, SavingsGoalOption goal) async {
-    await ref.read(childGoalRepositoryProvider).chooseGoal(goal);
-    ref.invalidate(currentGoalProvider);
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
-      children: [
-        _BEHeaderBar(onClose: onClose),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            child: Column(
-              children: [
-                if (previousGoal != null) ...[
-                  Text('${previousGoal!.goalEmoji} ¡Cumpliste tu meta!',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          color: Color(0xFFFFB300),
-                          fontWeight: FontWeight.w900,
-                          fontSize: 20,
-                          fontFamily: 'Nunito')),
-                  const SizedBox(height: 6),
-                  Text('Elige tu próximo sueño',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: GameTokens.textSecondary,
-                          fontFamily: 'Nunito',
-                          fontSize: 13)),
-                ] else ...[
-                  const Text('🔒', style: TextStyle(fontSize: 44))
-                      .animate()
-                      .scale(
-                          begin: const Offset(0.6, 0.6),
-                          duration: 500.ms,
-                          curve: Curves.elasticOut),
-                  const SizedBox(height: 10),
-                  Text('CLONK...',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: GameTokens.textMuted,
-                          fontFamily: 'Nunito',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          letterSpacing: 2)),
-                  const SizedBox(height: 8),
-                  Text(
-                      'Bienvenido al Banco Estelar.\nAquí guardamos las monedas que tienen una misión importante.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: GameTokens.textSecondary,
-                          fontFamily: 'Nunito',
-                          fontSize: 13,
-                          height: 1.4)),
-                  const SizedBox(height: 4),
-                  const Text('Elige tu sueño:',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Nunito',
-                          fontSize: 15)),
-                ],
-                const SizedBox(height: 16),
-                GridView.count(
-                  crossAxisCount: 4,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 0.85,
-                  children: [
-                    for (final g in savingsGoalCatalog)
-                      GameCard(
-                        onTap: () => _choose(context, ref, g),
-                        borderRadius: 14,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GameIcon(
-                              name: g.key,
-                              fallback: _goalIcons[g.key] ?? Icons.star_rounded,
-                              size: 30,
-                              color: GameTokens.cyan,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(g.name,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'Nunito',
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 11)),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
-          ),
-        ),
-      ],
+              fontSize: 12,
+              fontFamily: 'Nunito')),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bóveda — meta activa + progreso + actividad del día
+// Dashboard — información de lo que el niño repartió en Mi Bolsa
+// (Guardar / Invertir), con retiro de vuelta al pool libre:
+//  · "Invertir" crece +3.5% semanal (proyectado); "Retirar ganancias" cobra
+//    solo lo GENERADO (el capital invertido se queda intacto y sigue creciendo).
+//  · "Guardar" no crece; "Retirar" saca directamente del monto guardado.
+// Repartir monedas HACIA una categoría se sigue haciendo solo en Mi Bolsa.
 // ─────────────────────────────────────────────────────────────────────────────
-class _VaultView extends ConsumerStatefulWidget {
-  const _VaultView(
-      {required this.goal, required this.savedCoins, required this.onClose});
-  final ChildGoal goal;
-  final int savedCoins;
-  final VoidCallback onClose;
+class _AccountDashboard extends ConsumerStatefulWidget {
+  const _AccountDashboard({required this.categories, required this.wallet});
+  final List<WalletCategory> categories;
+  final Wallet? wallet;
 
   @override
-  ConsumerState<_VaultView> createState() => _VaultViewState();
+  ConsumerState<_AccountDashboard> createState() => _AccountDashboardState();
 }
 
-class _VaultViewState extends ConsumerState<_VaultView> {
-  bool _showActivities = false;
-  bool _celebrated = false;
-
-  @override
-  void didUpdateWidget(covariant _VaultView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _maybeCelebrate();
-  }
+class _AccountDashboardState extends ConsumerState<_AccountDashboard> {
+  Timer? _ticker;
+  bool _busy = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeCelebrate());
+    // Refresca cada segundo para que el valor invertido se vea "crecer".
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
-  void _maybeCelebrate() {
-    if (_celebrated) return;
-    if (widget.savedCoins >= widget.goal.goalCost) {
-      _celebrated = true;
-      ref.read(childGoalRepositoryProvider).markCompleted();
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          showDialog<void>(
-            context: context,
-            builder: (_) => _GoalCompletedDialog(goal: widget.goal),
-          ).then((_) => ref.invalidate(currentGoalProvider));
-        }
-      });
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  WalletCategory? _catFor(WalletCategoryType type) {
+    for (final c in widget.categories) {
+      if (c.category == type) return c;
+    }
+    return null;
+  }
+
+  Future<void> _withdraw({
+    required WalletCategory category,
+    required int amount,
+    required int newCategoryBalance,
+  }) async {
+    final wallet = widget.wallet;
+    if (wallet == null || amount <= 0 || _busy) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(walletRepositoryProvider).distributeCoins(
+            categoryId: category.id,
+            newCategoryBalance: newCategoryBalance,
+            walletId: wallet.id,
+            newWalletTotal: wallet.totalCoins + amount,
+          );
+      ref.invalidate(walletCategoriesProvider);
+      ref.invalidate(currentWalletProvider);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  // Cobra solo la GANANCIA generada por "Invertir" — el capital invertido
+  // (balance) no se toca, así que sigue creciendo desde ahí.
+  Future<void> _collectInvestmentGains(
+      WalletCategory invertir, int gain) async {
+    if (gain <= 0) return;
+    await _withdraw(
+      category: invertir,
+      amount: gain,
+      newCategoryBalance: invertir.balance, // capital intacto
+    );
+    if (mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => _WithdrawResultDialog(
+          title: '¡Ganancias cobradas! 🎉',
+          message: 'Cobraste +$gain monedas de intereses.',
+          color: const Color(0xFF69F0AE),
+        ),
+      );
+    }
+  }
+
+  Future<void> _withdrawFromGuardado(WalletCategory guardar) async {
+    if (guardar.balance <= 0 || _busy) return;
+    final amount = await showDialog<int>(
+      context: context,
+      builder: (_) => _WithdrawAmountDialog(category: guardar),
+    );
+    if (amount == null || amount <= 0) return;
+    await _withdraw(
+      category: guardar,
+      amount: amount,
+      newCategoryBalance: guardar.balance - amount,
+    );
+    if (mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => _WithdrawResultDialog(
+          title: '¡Retiraste tus monedas! 🪙',
+          message: 'Sacaste $amount monedas de Guardado.',
+          color: const Color(0xFF42A5F5),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_showActivities) {
-      return Column(
-        children: [
-          _BEHeaderBar(onClose: () => setState(() => _showActivities = false)),
-          Expanded(
-            child: Consumer(builder: (context, ref, __) {
-              final activitiesAsync =
-                  ref.watch(questionsForModuleProvider('banco_estelar'));
-              return activitiesAsync.when(
-                loading: () => const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFFFB300))),
-                error: (_, __) => Center(
-                    child: Text('No se pudieron cargar las actividades.',
-                        style: TextStyle(
-                            color: GameTokens.textSecondary,
-                            fontFamily: 'Nunito'))),
-                data: (activities) => ActivityPlayer(
-                  activities: activities,
-                  accentColor: const Color(0xFF4FC3F7),
-                ),
-              );
-            }),
-          ),
-        ],
-      );
-    }
+    final guardar = _catFor(WalletCategoryType.guardar);
+    final invertir = _catFor(WalletCategoryType.invertir);
+    final invertBalance = invertir?.balance ?? 0;
+    final invertCurrent =
+        invertir != null ? _investedCurrentValue(invertir) : 0.0;
+    final invertGain = (invertCurrent - invertBalance).floor();
 
-    final pct = (widget.savedCoins / widget.goal.goalCost).clamp(0.0, 1.0);
+    final daysSinceInvest = invertir != null
+        ? DateTime.now().difference(invertir.updatedAt).inMinutes / (60 * 24)
+        : 0.0;
+    final daysClamped = daysSinceInvest.clamp(0.0, 7.0);
+    final guardarBalance = guardar?.balance ?? 0;
 
     return Column(
       children: [
-        _BEHeaderBar(onClose: widget.onClose),
+        const SizedBox(height: 12),
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                GameIcon(
-                  name: widget.goal.goalKey,
-                  fallback:
-                      _goalIcons[widget.goal.goalKey] ?? Icons.star_rounded,
-                  size: 64,
-                  color: const Color(0xFFFFB300),
-                ).animate(onPlay: (c) => c.repeat(reverse: true)).scaleXY(
-                    begin: 1.0,
-                    end: 1.08,
-                    duration: 2000.ms,
-                    curve: Curves.easeInOut),
-                const SizedBox(height: 4),
-                Text(widget.goal.goalName,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 20,
-                        fontFamily: 'Nunito')),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: pct,
-                    minHeight: 18,
-                    backgroundColor: Colors.white.withOpacity(0.10),
-                    valueColor: const AlwaysStoppedAnimation(Color(0xFFFFB300)),
-                  ),
-                ),
-                const SizedBox(height: 6),
+                // ── ① Estado de Cuenta ─────────────────────────────
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('${widget.savedCoins} de ${widget.goal.goalCost}',
+                    const _NumberBadge(1),
+                    const SizedBox(width: 8),
+                    const Text('Estado de Cuenta',
                         style: TextStyle(
-                            color: GameTokens.textSecondary,
-                            fontFamily: 'Nunito',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(width: 5),
-                    const AnimatedCoin(size: 14),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            fontFamily: 'Nunito')),
+                    const SizedBox(width: 8),
+                    const _Tag('CRÉDITOS'),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                    'Cada moneda que pones en "Guardar" en Mi Bolsa te acerca aquí.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: GameTokens.textMuted,
-                        fontFamily: 'Nunito',
-                        fontSize: 11)),
-                const SizedBox(height: 20),
-                GestureDetector(
-                  onTap: () => setState(() => _showActivities = true),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF4FC3F7), Color(0xFF1976D2)]),
-                      borderRadius: BorderRadius.circular(16),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _InfoCard(
+                        icon: '🏆',
+                        iconColor: const Color(0xFFFFB300),
+                        label: 'Intereses Acumulados',
+                        value: '+$invertGain',
+                        subtitle: invertGain > 0
+                            ? 'Listos para retirar'
+                            : 'Empieza a invertir',
+                      ),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('⭐', style: TextStyle(fontSize: 18)),
-                        SizedBox(width: 8),
-                        Text('Actividad del día',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14)),
-                      ],
-                    ),
-                  ),
+                    const SizedBox(width: 12),
+                    const Expanded(flex: 2, child: _GrowthBadge()),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+
+                // ── ② Inversión Activa ─────────────────────────────
+                Row(
+                  children: [
+                    const _NumberBadge(2),
+                    const SizedBox(width: 8),
+                    const Text('Inversión Activa',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            fontFamily: 'Nunito')),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _InvestmentCard(
+                        balance: invertBalance,
+                        daysProgress: daysClamped,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Guardado: ',
+                                  style: TextStyle(
+                                      color: GameTokens.textSecondary,
+                                      fontSize: 11,
+                                      fontFamily: 'Nunito')),
+                              Text('$guardarBalance',
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 12,
+                                      fontFamily: 'Nunito')),
+                              const SizedBox(width: 3),
+                              const AnimatedCoin(size: 12),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _PillButton(
+                            label: 'Retirar Fondos',
+                            color: const Color(0xFF69F0AE),
+                            enabled: invertir != null &&
+                                invertGain > 0 &&
+                                !_busy,
+                            onTap: invertir == null
+                                ? null
+                                : () => _collectInvestmentGains(
+                                    invertir, invertGain),
+                          ),
+                          const SizedBox(height: 8),
+                          _PillButton(
+                            label: 'Retirar de Guardado',
+                            color: const Color(0xFF42A5F5),
+                            enabled: guardar != null &&
+                                guardarBalance > 0 &&
+                                !_busy,
+                            onTap: guardar == null
+                                ? null
+                                : () => _withdrawFromGuardado(guardar),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -511,65 +477,444 @@ class _VaultViewState extends ConsumerState<_VaultView> {
   }
 }
 
-class _GoalCompletedDialog extends StatelessWidget {
-  const _GoalCompletedDialog({required this.goal});
-  final ChildGoal goal;
+// ─────────────────────────────────────────────────────────────────────────────
+// Etiqueta pequeña tipo pill (ej. "CRÉDITOS")
+// ─────────────────────────────────────────────────────────────────────────────
+class _Tag extends StatelessWidget {
+  const _Tag(this.text);
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: const Color(0xFF07101F),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: const Color(0xFFFFB300).withOpacity(0.5))),
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.18)),
+      ),
+      child: Text(text,
+          style: TextStyle(
+              color: GameTokens.textSecondary,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              fontFamily: 'Nunito')),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tarjeta "Intereses Acumulados" — icono + valor + subtítulo
+// ─────────────────────────────────────────────────────────────────────────────
+class _InfoCard extends StatelessWidget {
+  const _InfoCard({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    required this.subtitle,
+  });
+  final String icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1B3E),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.10)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 30)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(
+                        color: GameTokens.textSecondary,
+                        fontSize: 11,
+                        fontFamily: 'Nunito')),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(value,
+                        style: TextStyle(
+                            color: iconColor,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 20,
+                            fontFamily: 'Nunito')),
+                    const SizedBox(width: 4),
+                    const AnimatedCoin(size: 15),
+                  ],
+                ),
+                Text(subtitle,
+                    style: TextStyle(
+                        color: GameTokens.textMuted,
+                        fontSize: 10,
+                        fontFamily: 'Nunito')),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Badge "+3.5% Semanal"
+// ─────────────────────────────────────────────────────────────────────────────
+class _GrowthBadge extends StatelessWidget {
+  const _GrowthBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFFFFB300).withOpacity(0.18),
+            const Color(0xFFFFB300).withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFFB300).withOpacity(0.45)),
+        boxShadow: [
+          BoxShadow(
+              color: const Color(0xFFFFB300).withOpacity(0.25), blurRadius: 14),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Text('🎁', style: TextStyle(fontSize: 26))
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .scaleXY(
+                  begin: 1.0, end: 1.15, duration: 1100.ms,
+                  curve: Curves.easeInOut),
+          const SizedBox(height: 4),
+          const Text('+3.5%',
+              style: TextStyle(
+                  color: Color(0xFFFFB300),
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  fontFamily: 'Nunito')),
+          const Text('Semanal',
+              style: TextStyle(
+                  color: Colors.white70, fontSize: 10, fontFamily: 'Nunito')),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tarjeta "Inversión Activa" — capital + progreso del ciclo semanal
+// ─────────────────────────────────────────────────────────────────────────────
+class _InvestmentCard extends StatelessWidget {
+  const _InvestmentCard({required this.balance, required this.daysProgress});
+  final int balance;
+  final double daysProgress; // 0..7
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1B3E),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.10)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Text('💎', style: TextStyle(fontSize: 30)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Capital invertido',
+                    style: TextStyle(
+                        color: GameTokens.textSecondary,
+                        fontSize: 11,
+                        fontFamily: 'Nunito')),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text('$balance',
+                        style: const TextStyle(
+                            color: Color(0xFF4FC3F7),
+                            fontWeight: FontWeight.w900,
+                            fontSize: 18,
+                            fontFamily: 'Nunito')),
+                    const SizedBox(width: 4),
+                    const AnimatedCoin(size: 15),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: (daysProgress / 7).clamp(0.0, 1.0),
+                    minHeight: 6,
+                    backgroundColor: Colors.white.withOpacity(0.10),
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFF4FC3F7)),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                    '${daysProgress.toStringAsFixed(1)} días / 7 días de crecimiento',
+                    style: TextStyle(
+                        color: GameTokens.textMuted,
+                        fontSize: 9,
+                        fontFamily: 'Nunito')),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Botón pill de acción (Retirar Fondos / Retirar de Guardado)
+// ─────────────────────────────────────────────────────────────────────────────
+class _PillButton extends StatelessWidget {
+  const _PillButton({
+    required this.label,
+    required this.color,
+    required this.enabled,
+    required this.onTap,
+  });
+  final String label;
+  final Color color;
+  final bool enabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final darker = Color.lerp(color, Colors.black, 0.35)!;
+
+    Widget button = GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+        decoration: BoxDecoration(
+          gradient: enabled
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [color, darker],
+                )
+              : null,
+          color: enabled ? null : Colors.white.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color:
+                  enabled ? Colors.white.withOpacity(0.35) : Colors.white12,
+              width: 1),
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.50),
+                    blurRadius: 14,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            GameIcon(
-              name: goal.goalKey,
-              fallback: _goalIcons[goal.goalKey] ?? Icons.star_rounded,
-              size: 56,
-              color: const Color(0xFFFFB300),
-            ).animate().scale(
-                begin: const Offset(0.5, 0.5),
-                duration: 400.ms,
-                curve: Curves.elasticOut),
-            const SizedBox(height: 12),
-            const Text('🎉 ¡Meta cumplida!',
-                style: TextStyle(
-                    color: Color(0xFFFFB300),
-                    fontFamily: 'Nunito',
-                    fontWeight: FontWeight.w900,
-                    fontSize: 22)),
-            const SizedBox(height: 8),
-            Text('Guardaste lo suficiente para ${goal.goalName}',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: GameTokens.textSecondary,
-                    fontFamily: 'Nunito',
-                    fontSize: 14)),
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
-                foregroundColor: Colors.black87,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              ),
-              child: const Text('¡Elegir nueva meta!',
+            Icon(Icons.arrow_circle_down_rounded,
+                size: 17, color: enabled ? Colors.white : Colors.white24),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(label,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15)),
+                      color: enabled ? Colors.white : Colors.white24,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11,
+                      fontFamily: 'Nunito')),
             ),
           ],
         ),
       ),
+    );
+
+    if (enabled) {
+      button = button
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .scaleXY(
+              begin: 1.0, end: 1.035, duration: 900.ms, curve: Curves.easeInOut);
+    }
+    return button;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Diálogo — elegir cuánto retirar de una categoría (slider, igual que Mi Bolsa)
+// ─────────────────────────────────────────────────────────────────────────────
+class _WithdrawAmountDialog extends StatefulWidget {
+  const _WithdrawAmountDialog({required this.category});
+  final WalletCategory category;
+
+  @override
+  State<_WithdrawAmountDialog> createState() => _WithdrawAmountDialogState();
+}
+
+class _WithdrawAmountDialogState extends State<_WithdrawAmountDialog> {
+  late double _amount;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = widget.category.balance.clamp(1, widget.category.balance).toDouble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFF42A5F5);
+    final amount = _amount.round();
+    return Dialog(
+      backgroundColor: const Color(0xFF0D1B3E),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: accent.withOpacity(0.45)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🛡', style: TextStyle(fontSize: 32)),
+            const SizedBox(height: 6),
+            const Text('Retirar de Guardado',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Nunito',
+                    fontSize: 16)),
+            const SizedBox(height: 4),
+            Text('Tienes ${widget.category.balance} guardadas',
+                style: TextStyle(
+                    color: GameTokens.textSecondary,
+                    fontFamily: 'Nunito',
+                    fontSize: 12)),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const AnimatedCoin(size: 22),
+                const SizedBox(width: 8),
+                Text('$amount',
+                    style: const TextStyle(
+                        color: accent,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 32,
+                        fontFamily: 'Nunito')),
+              ],
+            ),
+            Slider(
+              value: _amount,
+              min: 1,
+              max: widget.category.balance.toDouble(),
+              divisions:
+                  widget.category.balance > 1 ? widget.category.balance - 1 : 1,
+              activeColor: accent,
+              onChanged: (v) => setState(() => _amount = v),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(amount),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: accent, foregroundColor: Colors.black87),
+                    child: const Text('Retirar'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Diálogo — confirmación de retiro exitoso
+// ─────────────────────────────────────────────────────────────────────────────
+class _WithdrawResultDialog extends StatelessWidget {
+  const _WithdrawResultDialog(
+      {required this.title, required this.message, required this.color});
+  final String title;
+  final String message;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF07101F),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: color.withOpacity(0.5)),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Nunito',
+                  fontSize: 17)),
+          const SizedBox(height: 8),
+          Text(message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: GameTokens.textSecondary,
+                  fontFamily: 'Nunito',
+                  fontSize: 13)),
+        ],
+      ),
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(),
+          style: FilledButton.styleFrom(backgroundColor: color),
+          child: const Text('¡Genial!',
+              style: TextStyle(
+                  fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+        ),
+      ],
     );
   }
 }

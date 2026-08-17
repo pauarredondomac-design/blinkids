@@ -8,7 +8,7 @@ final childGoalRepositoryProvider = Provider<ChildGoalRepository>(
 );
 
 final currentGoalProvider = FutureProvider<ChildGoal?>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return null;
   return ref.read(childGoalRepositoryProvider).getCurrentGoal();
 });

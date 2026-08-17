@@ -17,6 +17,9 @@ class CraftingJob {
     required this.xpReward,
     this.itemReward,
     this.fuelReward = 0,
+    this.chapter,
+    this.chapterNumber,
+    this.orderInChapter,
   });
 
   final String id;
@@ -37,6 +40,11 @@ class CraftingJob {
 
   /// Combustible directo (0-100) que se suma a la barra al completar
   final int fuelReward;
+
+  // ── Campos de capítulo de historia (nuevos, null = trabajo sin capítulo) ──
+  final String? chapter;
+  final int? chapterNumber;
+  final int? orderInChapter;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

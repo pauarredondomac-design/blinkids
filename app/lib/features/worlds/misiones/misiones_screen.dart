@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/mission.dart';
 import '../../../data/repositories/mission_tracker.dart';
@@ -15,21 +14,25 @@ import '../../../shared/providers/character_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/activity_player.dart';
 import '../../../shared/widgets/rocket_launch_overlay.dart';
-import '../../../shared/widgets/badges_row.dart';
+import '../../../shared/widgets/badge_unlock_celebration.dart';
 import '../../../shared/widgets/game_popup.dart';
+import '../../../shared/widgets/season_finale_celebration.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../shared/theme/game_tokens.dart';
 import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/game_card.dart';
-import 'desafios_screen.dart';
+import '../../../shared/widgets/tab_icon.dart';
+import '../../../shared/widgets/modal_corners.dart';
+import 'quizzes_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MisionesScreen
 // ─────────────────────────────────────────────────────────────────────────────
-void showMisionesDialog(BuildContext context) {
+Future<void> showMisionesDialog(BuildContext context) {
   final size = MediaQuery.of(context).size;
-  showGeneralDialog(
+  return showGeneralDialog(
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Misiones',
@@ -44,13 +47,17 @@ void showMisionesDialog(BuildContext context) {
     },
     pageBuilder: (ctx, _, __) => Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          width: size.width * 0.94,
-          height: size.height * 0.90,
-          child: const MisionesScreen(),
+      insetPadding: const EdgeInsets.fromLTRB(12, 60, 12, 12),
+      child: ModalCorners(
+        onClose: () => Navigator.of(ctx).pop(),
+        title: 'Misiones',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
+            width: size.width * 0.94,
+            height: size.height * 0.85,
+            child: const MisionesScreen(),
+          ),
         ),
       ),
     ),
@@ -72,6 +79,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
   final Set<String> _claiming = {};
   bool _loadingProgress = true;
   _MissionCategory _category = _MissionCategory.historia;
+  int _unlockedChapter = 1;
+  int? _expandedChapter;
 
   @override
   void initState() {
@@ -81,19 +90,26 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
 
   Future<void> _loadProgress() async {
     final tracker = MissionTracker();
-    final progress = await tracker.allProgress();
-
     final missionsAsync = ref.read(activeMissionsProvider);
     final missions = missionsAsync.valueOrNull ?? [];
-    final claimed = <String>{};
-    for (final m in missions) {
-      if (await tracker.isClaimed(m.id)) claimed.add(m.id);
-    }
+
+    // Una sola consulta cada una, en paralelo — antes esto hacía una
+    // consulta de red POR misión (isClaimed en loop), lo que hacía que
+    // la pantalla tardara mucho en cargar con muchas misiones.
+    final results = await Future.wait([
+      tracker.allProgress(),
+      tracker.claimedMissionIds(),
+    ]);
+    final progress = results[0] as Map<MissionObjectiveType, int>;
+    final claimed = results[1] as Set<String>;
+    final unlockedChapter = tracker.unlockedChapterFrom(missions, claimed);
 
     if (mounted) {
       setState(() {
         _progress = progress;
         _claimed = claimed;
+        _unlockedChapter = unlockedChapter;
+        _expandedChapter ??= unlockedChapter;
         _loadingProgress = false;
       });
     }
@@ -109,12 +125,56 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
 
   Future<void> _handleClaim(Mission mission) async {
     if (_claiming.contains(mission.id)) return;
+
+    // Misiones de capítulo: hay que tener los ítems/monedas requeridos.
+    if (mission.hasClaimRequirements) {
+      final itemRepo = ref.read(itemRepositoryProvider);
+      final hasItems = await itemRepo.hasRequirements(mission.requiredItems);
+      final coins = DemoStore.isActive
+          ? ref.read(demoProgressProvider).coins
+          : (ref.read(currentWalletProvider).valueOrNull?.totalCoins ?? 0);
+      if (!hasItems || coins < mission.requiredCoins) {
+        if (mounted) {
+          showGamePopup(
+            context,
+            '¡Te falta lo necesario para completar esta misión! 🔍',
+            accentColor: Colors.orange.shade700,
+          );
+        }
+        return;
+      }
+    }
+
     setState(() => _claiming.add(mission.id));
     var reachedFullFuel = false;
     List<String> newBadges = [];
 
     try {
+      if (mission.hasClaimRequirements) {
+        final itemRepo = ref.read(itemRepositoryProvider);
+        await itemRepo.consumeRequirements(mission.requiredItems);
+        if (mission.requiredCoins > 0) {
+          if (DemoStore.isActive) {
+            ref.read(demoProgressProvider).spendCoins(mission.requiredCoins);
+          } else {
+            final userId = Supabase.instance.client.auth.currentUser?.id;
+            if (userId != null) {
+              await WalletRepository()
+                  .spendCoins(userId, mission.requiredCoins);
+            }
+          }
+          ref.invalidate(currentWalletProvider);
+        }
+        ref.invalidate(inventoryProvider);
+      }
+
       await MissionTracker().markClaimed(mission.id);
+
+      if (mission.fuelReward > 0) {
+        reachedFullFuel = await ref
+            .read(fuelNotifierProvider.notifier)
+            .addFuel('space', mission.fuelReward);
+      }
 
       if (DemoStore.isActive) {
         ref.read(demoProgressProvider).addCoins(mission.coinReward);
@@ -137,9 +197,10 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
             );
         ref.invalidate(inventoryProvider);
         if (mission.itemReward!.itemId == 'fuel_capsule') {
-          reachedFullFuel = await ref
-              .read(fuelNotifierProvider.notifier)
-              .addFuel('space', mission.itemReward!.qty * 10);
+          reachedFullFuel = reachedFullFuel ||
+              await ref
+                  .read(fuelNotifierProvider.notifier)
+                  .addFuel('space', mission.itemReward!.qty * 10);
         }
       }
 
@@ -147,11 +208,25 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
         setState(() {
           _claiming.remove(mission.id);
           _claimed.add(mission.id);
+          if (mission.isChapterMission) {
+            final missions = ref.read(activeMissionsProvider).valueOrNull ?? [];
+            final unlockedChapter =
+                MissionTracker().unlockedChapterFrom(missions, _claimed);
+            _unlockedChapter = unlockedChapter;
+            if (unlockedChapter > (_expandedChapter ?? 1)) {
+              _expandedChapter = unlockedChapter;
+            }
+          }
         });
-        await _showClaimDialog(mission);
-        if (mounted) showBadgeUnlockToasts(context, ref, newBadges);
-        if (reachedFullFuel && mounted)
+        if (mission.isSeasonFinale) {
+          await showSeasonFinaleCelebration(context);
+        } else {
+          await _showClaimDialog(mission);
+        }
+        if (mounted) showBadgeUnlockCelebrations(context, ref, newBadges);
+        if (reachedFullFuel && mounted) {
           await handleFuelReachedFull(context, ref);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -159,6 +234,79 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
         showGamePopup(context, 'Error: $e', accentColor: Colors.red.shade700);
       }
     }
+  }
+
+  // ── Agrupación por capítulo ───────────────────────────────────────────────
+  List<Widget> _buildChapterSections(List<Mission> missions) {
+    final byChapter = <int, List<Mission>>{};
+    for (final m in missions) {
+      if (m.chapterNumber == null) continue;
+      byChapter.putIfAbsent(m.chapterNumber!, () => []).add(m);
+    }
+    if (byChapter.isEmpty) return [];
+
+    final chapterNumbers = byChapter.keys.toList()..sort();
+    final widgets = <Widget>[];
+    for (final chNum in chapterNumbers) {
+      final chMissions = byChapter[chNum]!
+        ..sort((a, b) =>
+            (a.orderInChapter ?? 0).compareTo(b.orderInChapter ?? 0));
+      final chapterTitle = chMissions.first.chapter ?? 'Capítulo $chNum';
+      final chapterLocked = chNum > _unlockedChapter;
+      final expanded = _expandedChapter == chNum && !chapterLocked;
+      final claimedCount =
+          chMissions.where((m) => _claimed.contains(m.id)).length;
+
+      widgets.add(
+        _ChapterHeader(
+          title: chapterTitle,
+          locked: chapterLocked,
+          expanded: expanded,
+          progressLabel: '$claimedCount/${chMissions.length}',
+          onTap: chapterLocked
+              ? null
+              : () => setState(
+                  () => _expandedChapter = expanded ? null : chNum),
+        ),
+      );
+
+      if (expanded) {
+        for (var i = 0; i < chMissions.length; i++) {
+          final m = chMissions[i];
+          final prevClaimed =
+              i == 0 || _claimed.contains(chMissions[i - 1].id);
+          widgets.add(
+            _MissionCard(
+              mission: m,
+              progress: _progressFor(m.objectiveType),
+              complete: _isComplete(m),
+              claimed: _claimed.contains(m.id),
+              claiming: _claiming.contains(m.id),
+              locked: !prevClaimed,
+              onClaim: () => _handleClaim(m),
+            ).animate().fadeIn(duration: 250.ms),
+          );
+        }
+      }
+      widgets.add(const SizedBox(height: 6));
+    }
+    widgets.add(const SizedBox(height: 4));
+    return widgets;
+  }
+
+  List<Widget> _buildFlatMissions(List<Mission> missions) {
+    return [
+      for (final m in missions.where((m) => m.chapterNumber == null))
+        _MissionCard(
+          mission: m,
+          progress: _progressFor(m.objectiveType),
+          complete: _isComplete(m),
+          claimed: _claimed.contains(m.id),
+          claiming: _claiming.contains(m.id),
+          locked: false,
+          onClaim: () => _handleClaim(m),
+        ).animate().fadeIn(duration: 250.ms),
+    ];
   }
 
   Future<void> _showClaimDialog(Mission mission) {
@@ -195,14 +343,24 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                 '¡Tócalo para recibir tus monedas y objetos!',
           ),
         ],
+        onReady: () {
+          if (mounted) {
+            maybeShowDailyBuildingQuestion(
+              context,
+              ref,
+              buildingSlug: 'misiones',
+              accentColor: const Color(0xFF4FC3F7),
+              dailyGroupName: '🌞 Diaria',
+            );
+          }
+        },
         child: ScreenBackground(
             child: Row(
           children: [
             _MisionesSidebar(
               category: _category,
               onSelectCategory: (c) => setState(() => _category = c),
-              onOpenDesafios: () => showDesafiosDialog(context),
-              onBack: () => context.pop(),
+              onOpenQuizzes: () => showQuizzesDialog(context),
             ),
             Expanded(
               child: _loadingProgress
@@ -228,13 +386,12 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                               : m.endsAt == null;
                         }).toList();
                         if (missions.isEmpty) {
-                          return Center(
+                          return const Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('🌌',
-                                    style: TextStyle(fontSize: 64)),
-                                const SizedBox(height: 16),
+                                Text('🌌', style: TextStyle(fontSize: 64)),
+                                SizedBox(height: 16),
                                 Text(
                                   'No hay misiones activas\npor ahora. ¡Vuelve pronto!',
                                   textAlign: TextAlign.center,
@@ -247,32 +404,12 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                             ),
                           );
                         }
-                        return ListView.builder(
+                        return ListView(
                           padding: const EdgeInsets.all(AppSizes.md),
-                          itemCount: missions.length,
-                          itemBuilder: (ctx, i) {
-                            final m = missions[i];
-                            final progress = _progressFor(m.objectiveType);
-                            final complete = _isComplete(m);
-                            final claimed = _claimed.contains(m.id);
-                            final claiming = _claiming.contains(m.id);
-
-                            return _MissionCard(
-                              mission: m,
-                              progress: progress,
-                              complete: complete,
-                              claimed: claimed,
-                              claiming: claiming,
-                              onClaim: () => _handleClaim(m),
-                            )
-                                .animate(delay: (80 * i).ms)
-                                .fadeIn(duration: 350.ms)
-                                .slideY(
-                                  begin: 0.12,
-                                  end: 0,
-                                  curve: Curves.easeOut,
-                                );
-                          },
+                          children: [
+                            ..._buildChapterSections(missions),
+                            ..._buildFlatMissions(missions),
+                          ],
                         );
                       },
                     ),
@@ -291,13 +428,11 @@ class _MisionesSidebar extends StatelessWidget {
   const _MisionesSidebar({
     required this.category,
     required this.onSelectCategory,
-    required this.onOpenDesafios,
-    required this.onBack,
+    required this.onOpenQuizzes,
   });
   final _MissionCategory category;
   final ValueChanged<_MissionCategory> onSelectCategory;
-  final VoidCallback onOpenDesafios;
-  final VoidCallback onBack;
+  final VoidCallback onOpenQuizzes;
 
   @override
   Widget build(BuildContext context) {
@@ -316,97 +451,61 @@ class _MisionesSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header agrupado — mismo patrón que Tienda/Vestidor/Mi Bolsa/Banco Estelar
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E))),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: onBack,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.07),
-                        shape: BoxShape.circle,
-                        border:
-                            Border.all(color: Colors.white.withOpacity(0.18)),
-                      ),
-                      child: const Icon(Icons.arrow_back_rounded,
-                          color: Colors.white, size: 15),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Misiones'.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                ],
+          const SizedBox(height: GameTokens.spaceLg),
+
+          // Label de sección — mismo tratamiento plano que Tienda, sin líneas divisoras
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: GameTokens.spaceMd),
+            child: Text(
+              'Categorías'.toUpperCase(),
+              style: const TextStyle(
+                color: GameTokens.textMuted,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
               ),
             ),
+          ),
 
-            const SizedBox(height: GameTokens.spaceLg),
+          const SizedBox(height: GameTokens.spaceSm),
 
-            // Label de sección — mismo tratamiento plano que Tienda, sin líneas divisoras
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: GameTokens.spaceMd),
-              child: Text(
-                'Categorías'.toUpperCase(),
-                style: TextStyle(
-                  color: GameTokens.textMuted,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: GameTokens.spaceSm),
+            child: Column(
+              children: [
+                _CategoryItem(
+                  emoji: '📖',
+                  iconName: 'historia',
+                  label: 'Misiones historia',
+                  active: category == _MissionCategory.historia,
+                  onTap: () => onSelectCategory(_MissionCategory.historia),
                 ),
-              ),
+                const SizedBox(height: GameTokens.spaceSm),
+                _CategoryItem(
+                  emoji: '🔁',
+                  iconName: 'diarias',
+                  label: 'Misiones diarias',
+                  active: category == _MissionCategory.diarias,
+                  onTap: () => onSelectCategory(_MissionCategory.diarias),
+                ),
+                const SizedBox(height: GameTokens.spaceSm),
+                _CategoryItem(
+                  emoji: '🧠',
+                  iconName: 'quizzes_tab',
+                  label: 'Quizzes',
+                  active: false,
+                  onTap: onOpenQuizzes,
+                  trailing: true,
+                ),
+              ],
             ),
-
-            const SizedBox(height: GameTokens.spaceSm),
-
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: GameTokens.spaceSm),
-              child: Column(
-                children: [
-                  _CategoryItem(
-                    emoji: '📖',
-                    label: 'Misiones historia',
-                    active: category == _MissionCategory.historia,
-                    onTap: () => onSelectCategory(_MissionCategory.historia),
-                  ),
-                  const SizedBox(height: GameTokens.spaceSm),
-                  _CategoryItem(
-                    emoji: '🔁',
-                    label: 'Misiones diarias',
-                    active: category == _MissionCategory.diarias,
-                    onTap: () => onSelectCategory(_MissionCategory.diarias),
-                  ),
-                  const SizedBox(height: GameTokens.spaceSm),
-                  _CategoryItem(
-                    emoji: '🎮',
-                    label: 'Desafíos',
-                    active: false,
-                    onTap: onOpenDesafios,
-                    trailing: true,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
 }
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Item de categoría en el sidebar
 // ─────────────────────────────────────────────────────────────────────────────
@@ -414,12 +513,14 @@ class _MisionesSidebar extends StatelessWidget {
 class _CategoryItem extends StatelessWidget {
   const _CategoryItem({
     required this.emoji,
+    required this.iconName,
     required this.label,
     required this.active,
     required this.onTap,
     this.trailing = false,
   });
   final String emoji;
+  final String iconName;
   final String label;
   final bool active;
   final VoidCallback onTap;
@@ -447,7 +548,7 @@ class _CategoryItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 14)),
+            TabIcon(name: iconName, emoji: emoji, size: 32),
             const SizedBox(width: 7),
             Expanded(
               child: Text(
@@ -474,9 +575,85 @@ class _CategoryItem extends StatelessWidget {
 // Estado vacío: aún no hay misiones de papás
 // ─────────────────────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
+// Encabezado desplegable de capítulo — agrupa las misiones de historia
+// ─────────────────────────────────────────────────────────────────────────────
+class _ChapterHeader extends StatelessWidget {
+  const _ChapterHeader({
+    required this.title,
+    required this.locked,
+    required this.expanded,
+    required this.progressLabel,
+    required this.onTap,
+  });
+
+  final String title;
+  final bool locked;
+  final bool expanded;
+  final String progressLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: locked
+                ? Colors.white.withOpacity(0.03)
+                : const Color(0xFF3D1E8F).withOpacity(0.22),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: locked
+                  ? Colors.white.withOpacity(0.08)
+                  : const Color(0xFF7C4DFF).withOpacity(0.45),
+            ),
+          ),
+          child: Row(
+            children: [
+              Text(locked ? '🔒' : '🪐', style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: locked ? GameTokens.textSecondary : Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (!locked) ...[
+                Text(
+                  progressLabel,
+                  style: const TextStyle(
+                    color: GameTokens.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: Colors.white.withOpacity(0.60),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Tarjeta de misión — layout 2 columnas para landscape
 // ─────────────────────────────────────────────────────────────────────────────
-class _MissionCard extends StatelessWidget {
+class _MissionCard extends ConsumerWidget {
   const _MissionCard({
     required this.mission,
     required this.progress,
@@ -484,6 +661,7 @@ class _MissionCard extends StatelessWidget {
     required this.claimed,
     required this.claiming,
     required this.onClaim,
+    this.locked = false,
   });
 
   final Mission mission;
@@ -492,6 +670,7 @@ class _MissionCard extends StatelessWidget {
   final bool claimed;
   final bool claiming;
   final VoidCallback onClaim;
+  final bool locked;
 
   String get _objectiveLabel {
     if (mission.objectiveType == null) return '';
@@ -526,7 +705,7 @@ class _MissionCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final clampedProgress = claimed
         ? mission.objectiveTarget
         : progress.clamp(0, mission.objectiveTarget);
@@ -535,7 +714,7 @@ class _MissionCard extends StatelessWidget {
         : (clampedProgress / mission.objectiveTarget).clamp(0.0, 1.0);
 
     return Opacity(
-      opacity: claimed ? 0.65 : 1.0,
+      opacity: claimed ? 0.65 : (locked ? 0.55 : 1.0),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: GameCard(
@@ -595,7 +774,7 @@ class _MissionCard extends StatelessWidget {
                         '"${mission.storyText}"',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: GameTokens.textSecondary,
                           fontSize: 11,
                           fontStyle: FontStyle.italic,
@@ -614,6 +793,9 @@ class _MissionCard extends StatelessWidget {
                         _Pill('+${mission.coinReward}', const Color(0xFFFFD600),
                             showCoin: true),
                         _Pill('⭐ +${mission.xpReward}', Colors.white54),
+                        if (mission.fuelReward > 0)
+                          _Pill('🚀 +${mission.fuelReward}%',
+                              const Color(0xFFFF9800)),
                         if (mission.itemReward != null)
                           _Pill(
                             '${mission.itemReward!.item?.emoji ?? '🎁'} ×${mission.itemReward!.qty}',
@@ -774,7 +956,7 @@ class _MissionCard extends StatelessWidget {
                                   color: Colors.white.withOpacity(0.10),
                                 ),
                               ),
-                              child: Text(
+                              child: const Text(
                                 'En progreso…',
                                 style: TextStyle(
                                   color: GameTokens.textSecondary,
@@ -785,10 +967,189 @@ class _MissionCard extends StatelessWidget {
                             ),
                         ],
                       )
-                    : const SizedBox.shrink(),
+                    : (mission.isChapterMission
+                        ? _buildChapterClaimPanel(ref)
+                        : const SizedBox.shrink()),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // Panel derecho para misiones de capítulo (sin objectiveType): requisitos
+  // de ítems/monedas + botón de reclamar, o estado bloqueado/completado.
+  Widget _buildChapterClaimPanel(WidgetRef ref) {
+    if (locked) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withOpacity(0.10)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('🔒', style: TextStyle(fontSize: 14)),
+            SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Completa la misión anterior',
+                style: TextStyle(
+                  color: GameTokens.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (claimed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.greenAccent.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.greenAccent.withOpacity(0.30)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('✅', style: TextStyle(fontSize: 14)),
+            SizedBox(width: 5),
+            Text(
+              'Completada',
+              style: TextStyle(
+                color: Colors.greenAccent,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final inventory = ref.watch(inventoryProvider).valueOrNull ?? [];
+    final have = {for (final s in inventory) s.item.id: s.qty};
+    final coins = DemoStore.isActive
+        ? ref.watch(demoProgressProvider).coins
+        : (ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0);
+
+    final itemsOk =
+        mission.requiredItems.every((r) => (have[r.itemId] ?? 0) >= r.qty);
+    final coinsOk = coins >= mission.requiredCoins;
+    final canClaim = itemsOk && coinsOk;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (mission.hasClaimRequirements) ...[
+          const Text(
+            'Necesitas:',
+            style: TextStyle(
+              color: GameTokens.textSecondary,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 5,
+            runSpacing: 4,
+            children: [
+              if (mission.requiredCoins > 0)
+                _ReqChip('🪙 ${mission.requiredCoins}', coinsOk),
+              for (final r in mission.requiredItems)
+                _ReqChip(
+                  '${r.item?.emoji ?? '❓'} ${r.item?.name ?? r.itemId} ×${r.qty}',
+                  (have[r.itemId] ?? 0) >= r.qty,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        GestureDetector(
+          onTap: (canClaim && !claiming) ? onClaim : null,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              gradient: canClaim && !claiming
+                  ? const LinearGradient(
+                      colors: [Color(0xFF2E7D32), Color(0xFF43A047)])
+                  : null,
+              color:
+                  canClaim && !claiming ? null : Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: claiming
+                ? const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white60,
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(canClaim ? '🎁' : '🛒',
+                          style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 6),
+                      Text(
+                        canClaim ? '¡Reclamar!' : 'Te falta lo necesario',
+                        style: TextStyle(
+                          color: canClaim
+                              ? Colors.white
+                              : GameTokens.textSecondary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chip de requisito (verde si se cumple, rojo si falta)
+// ─────────────────────────────────────────────────────────────────────────────
+class _ReqChip extends StatelessWidget {
+  const _ReqChip(this.label, this.ok);
+  final String label;
+  final bool ok;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: (ok ? Colors.greenAccent : Colors.redAccent).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: (ok ? Colors.greenAccent : Colors.redAccent).withOpacity(0.38),
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: ok ? Colors.greenAccent : Colors.redAccent,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -885,7 +1246,7 @@ class _ClaimDialog extends StatelessWidget {
           Text(
             mission.name,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: GameTokens.textSecondary,
               fontSize: 14,
             ),
@@ -902,6 +1263,9 @@ class _ClaimDialog extends StatelessWidget {
                   '+${mission.coinReward} monedas', const Color(0xFFFFD600),
                   showCoin: true),
               _ClaimBadge('⭐ +${mission.xpReward} XP', Colors.white70),
+              if (mission.fuelReward > 0)
+                _ClaimBadge(
+                    '🚀 +${mission.fuelReward}%', const Color(0xFFFF9800)),
               if (mission.itemReward != null)
                 _ClaimBadge(
                   '${mission.itemReward!.item?.emoji ?? '🎁'} '
@@ -998,7 +1362,7 @@ class _ErrorView extends StatelessWidget {
         children: [
           const Text('😕', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 12),
-          Text(
+          const Text(
             'No se pudieron cargar las misiones',
             style: TextStyle(color: GameTokens.textSecondary),
           ),

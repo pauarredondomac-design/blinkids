@@ -7,9 +7,9 @@ import '../../shared/providers/wallet_provider.dart';
 import '../../shared/providers/world_provider.dart';
 import '../../shared/widgets/coin_display.dart';
 import '../../shared/widgets/game_popup.dart';
+import '../../shared/widgets/modal_corners.dart';
 
 void showWorldSelectorDialog(BuildContext context, String currentWorldId) {
-  final size = MediaQuery.of(context).size;
   showGeneralDialog(
     context: context,
     barrierDismissible: true,
@@ -26,14 +26,7 @@ void showWorldSelectorDialog(BuildContext context, String currentWorldId) {
     pageBuilder: (ctx, _, __) => Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: SizedBox(
-          width: size.width * 0.92,
-          height: size.height * 0.82,
-          child: WorldSelectorScreen(currentWorldId: currentWorldId),
-        ),
-      ),
+      child: WorldSelectorScreen(currentWorldId: currentWorldId),
     ),
   );
 }
@@ -126,14 +119,17 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
     final unlocked = unlockedAsync.valueOrNull ?? ['space'];
     final unlockedCount =
         allWorlds.where((w) => w.isFree || unlocked.contains(w.id)).length;
-    final current = allWorlds.firstWhere(
-      (w) => w.id == widget.currentWorldId,
-      orElse: () => allWorlds.first,
-    );
 
     return Scaffold(
-      body: Container(
+      backgroundColor: Colors.transparent,
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 60, 12, 12),
+        child: ModalCorners(
+        onClose: () => context.pop(),
+        title: 'Selector de Mundos',
+        child: Container(
         decoration: const BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -145,58 +141,20 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
             children: [
               // ── Header ──────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 26, 20, 0),
                 child: Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: _WorldImage(world: current, isUnlocked: true),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'Selector de Mundos',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Nunito',
-                            ),
-                          ),
-                          Text(
-                            '$unlockedCount / ${allWorlds.length} desbloqueados',
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
-                              fontFamily: 'Nunito',
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        '$unlockedCount / ${allWorlds.length} desbloqueados',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                          fontFamily: 'Nunito',
+                        ),
                       ),
                     ),
                     CoinDisplay(coins: coins),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () => context.pop(),
-                      child: Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: BoxDecoration(
-                          color: Colors.white10,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: const Icon(Icons.close_rounded,
-                            color: Colors.white60, size: 20),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -227,11 +185,12 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 4),
+                      child: ClipRect(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           for (final world in group) ...[
-                            if (world != group.first) const SizedBox(width: 10),
+                            if (world != group.first) const SizedBox(width: 8),
                             Expanded(
                               child: _WorldCard(
                                 world: world,
@@ -246,6 +205,7 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                             ),
                           ],
                         ],
+                      ),
                       ),
                     );
                   },
@@ -263,6 +223,8 @@ class _WorldSelectorScreenState extends ConsumerState<WorldSelectorScreen> {
                 ),
             ],
           ),
+        ),
+        ),
         ),
       ),
     );

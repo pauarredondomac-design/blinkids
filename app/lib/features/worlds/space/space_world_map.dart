@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/providers/profile_provider.dart';
 import '../../../data/models/profile.dart';
+import '../../../data/repositories/building_question_repository.dart';
+import '../../../data/repositories/wallet_repository.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/fuel_provider.dart';
 import '../../../shared/providers/salary_provider.dart';
@@ -21,6 +23,9 @@ import '../tienda/tienda_screen.dart';
 import '../../wallet/screens/wallet_screen.dart';
 import '../../../shared/widgets/world_side_panels.dart';
 import '../../../shared/widgets/game_popup.dart';
+import '../../../shared/providers/badge_provider.dart';
+import '../../../shared/widgets/badge_unlock_celebration.dart';
+import '../../../shared/widgets/modal_corners.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SpaceWorldMap — Mundo único por ahora
@@ -40,6 +45,46 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
   bool _worldNameChecked = false;
   String? _localWorldName;
 
+  // ── Mover la estructura + edificios como un solo bloque ───────────────────
+  // Cámbialos y guarda para mover TODO junto (la imagen estructuras.png y
+  // los 5 edificios), sin perder la alineación entre ellos.
+  // Positivo en X = mueve a la derecha. Positivo en Y = mueve hacia abajo.
+  static const double structureOffsetX =
+      -35.0; // -1.0 = mueve 1px a la izquierda
+  static const double structureOffsetY = 0;
+
+  // ── Guía interactiva de bienvenida (solo primera vez, sesión real) ────────
+  static const _guideOrder = [
+    'alcancia',
+    'trabajos',
+    'misiones',
+    'banco',
+    'tienda',
+  ];
+  static const _guideMessages = {
+    'alcancia': (
+      'Mi Bolsa',
+      '¡Explora Mi Bolsa! Aquí puedes repartir y mover todas tus monedas.',
+    ),
+    'trabajos': (
+      'Trabajos',
+      'Aquí ganas monedas ayudando a los personajes con pequeños trabajos.',
+    ),
+    'misiones': (
+      'Misiones',
+      'Aquí encuentras tu historia y retos para ganar recompensas.',
+    ),
+    'banco': (
+      'Banco Estelar',
+      'Aquí eliges una meta y ves crecer lo que ahorras e inviertes.',
+    ),
+    'tienda': (
+      'Tienda',
+      'Aquí gastas tus monedas en cosas divertidas para Blink.',
+    ),
+  };
+  int? _guideStep;
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +97,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
       ref.read(currentWorldProvider.notifier).state = 'space';
       NotificationHelper.checkEngagement();
       BlinkAmbientHelper.maybeGreet(ref);
+      _checkOnboarding();
       ref.listenManual<AsyncValue<Profile?>>(
         currentProfileProvider,
         (prev, next) {
@@ -88,6 +134,67 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
   void dispose() {
     _orbitCtrl.dispose();
     super.dispose();
+  }
+
+  // Cuentas reales: la guía solo sale la primera vez (se recuerda en
+  // profiles.tutorials_seen). Demo (sin sesión o anónima): no hay cuenta
+  // real que recuerde nada, así que sale siempre que se abra el juego sin
+  // haber iniciado sesión — se "reinicia" sola en cada apertura.
+  Future<void> _checkOnboarding() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    final isDemo = user == null || user.isAnonymous;
+    if (isDemo) {
+      if (mounted) setState(() => _guideStep = 0);
+      return;
+    }
+    try {
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select('tutorials_seen')
+          .eq('id', user.id)
+          .maybeSingle();
+      final map = (data?['tutorials_seen'] as Map<String, dynamic>?) ?? {};
+      final seen = map['map_guide'] == true;
+      if (!seen && mounted) setState(() => _guideStep = 0);
+    } catch (_) {}
+  }
+
+  void _advanceGuide() {
+    if (_guideStep == null) return;
+    final next = _guideStep! + 1;
+    if (next >= _guideOrder.length) {
+      _completeGuide();
+    } else if (mounted) {
+      setState(() => _guideStep = next);
+    }
+  }
+
+  Future<void> _completeGuide() async {
+    if (mounted) setState(() => _guideStep = null);
+    final user = Supabase.instance.client.auth.currentUser;
+    final isDemo = user == null || user.isAnonymous;
+
+    // El día en que se termina el recorrido guiado no debe tener preguntas
+    // diarias todavía — empiezan al día siguiente. Damos por "mostradas hoy"
+    // las de todos los edificios ahora mismo.
+    await BuildingQuestionRepository().markAllShownToday();
+
+    if (isDemo) {
+      // Demo: recompensa local nada más — cero conexión a Supabase.
+      DemoStore.instance.introComplete = true;
+      ref.read(demoProgressProvider).addCoins(200);
+      return;
+    }
+    try {
+      await Supabase.instance.client
+          .rpc('mark_tutorial_seen', params: {'p_key': 'map_guide'});
+    } catch (_) {}
+    try {
+      await WalletRepository().awardStarterCoins(user.id, 200);
+      ref.invalidate(currentWalletProvider);
+    } catch (_) {}
+    final newBadges = await ref.read(badgeCheckerProvider.notifier).check();
+    if (mounted) showBadgeUnlockCelebrations(context, ref, newBadges);
   }
 
   void _showWorldNameDialog() {
@@ -171,6 +278,20 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
           final h = constraints.maxHeight;
           final panelW = w * 0.16;
 
+          // ── Rect de estructuras.png en coordenadas de pantalla ────────────
+          // TODO MOVER AQUÍ: structureOffsetX / structureOffsetY (arriba de
+          // esta clase) mueven la estructura Y los edificios juntos, como
+          // un solo bloque, porque ambos usan este mismo imgLeft/imgTop.
+          const double natW = 3954, natH = 1767;
+          final imgH = h * 0.90;
+          final imgW = imgH * natW / natH;
+          final imgLeft = (w - imgW) / 2 + structureOffsetX;
+          final imgTop = (h - imgH) / 2 + structureOffsetY;
+
+          final (buildingWidgets, guideRect) =
+              _buildBuildings(imgLeft, imgTop, imgW, imgH, demoMode: isDemo);
+          final guideActive = _guideStep != null;
+
           return Stack(
             children: [
               // ── Fondo estático (RepaintBoundary = no se repinta en rebuilds) ──
@@ -184,19 +305,21 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
               const Positioned.fill(child: _ShootingStars()),
 
               // ── Plataforma base (edificios se renderizan encima) ──────────
-              Positioned.fill(
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Image.asset(
-                    'assets/worlds/space/estructuras.png',
-                    height: h * 0.90,
-                    fit: BoxFit.fitHeight,
-                  ),
+              Positioned(
+                left: imgLeft,
+                top: imgTop,
+                width: imgW,
+                height: imgH,
+                child: Image.asset(
+                  'assets/worlds/space/estructuras.png',
+                  width: imgW,
+                  height: imgH,
+                  fit: BoxFit.fill,
                 ),
               ),
 
               // ── Edificios ─────────────────────────────────────────────────
-              ..._buildBuildings(w, h, demoMode: isDemo),
+              ...buildingWidgets,
 
               // ── Sombra/glow bajo Blink ────────────────────────────────────
               Positioned(
@@ -220,7 +343,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
               // ── Blink ─────────────────────────────────────────────────────
               Positioned(
-                left: w * 0.5 - (h * 0.20) / 3.2,
+                left: w * 0.5 - (h * 0.20) / 1.35,
                 top: h * 0.29,
                 child: BlinkCharacterWidget(
                   width: h * 0.15,
@@ -266,7 +389,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
                 top: 0,
                 bottom: 0,
                 width: panelW,
-                child: WorldLeftPanel(profile: profile),
+                child: IgnorePointer(
+                  ignoring: guideActive,
+                  child: WorldLeftPanel(profile: profile),
+                ),
               ),
 
               // ── Panel derecho ─────────────────────────────────────────────
@@ -275,16 +401,35 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
                 top: 0,
                 bottom: 0,
                 width: panelW,
-                child: WorldRightPanel(
-                  fuel: fuelLevel,
-                  hasSalary: hasSalary,
-                  onSalaryClaim:
-                      hasSalary ? () => handleSalaryClaim(context, ref) : null,
+                child: IgnorePointer(
+                  ignoring: guideActive,
+                  child: WorldRightPanel(
+                    fuel: fuelLevel,
+                    hasSalary: hasSalary,
+                    onSalaryClaim: hasSalary
+                        ? () => handleSalaryClaim(context, ref)
+                        : null,
+                  ),
                 ),
               ),
 
               // ── HUD central superior ──────────────────────────────────────
+              // buildWorldCenterHud() ya devuelve un Positioned — debe ser
+              // hijo DIRECTO del Stack (envolverlo en IgnorePointer rompía
+              // el layout: "Positioned must be direct child of Stack",
+              // causaba pantalla en blanco al abrir el juego).
               buildWorldCenterHud(context, ref, coins, panelW),
+
+              // ── Guía interactiva de bienvenida ─────────────────────────────
+              if (guideActive && guideRect != null)
+                _MapGuideOverlay(
+                  targetRect: guideRect,
+                  screenSize: Size(w, h),
+                  title: _guideMessages[_guideOrder[_guideStep!]]!.$1,
+                  body: _guideMessages[_guideOrder[_guideStep!]]!.$2,
+                  stepIndex: _guideStep!,
+                  totalSteps: _guideOrder.length,
+                ),
             ],
           );
         },
@@ -304,14 +449,11 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
   //
   // Para mover un edificio: cambia islandFx / islandFy.
   // Para cambiar tamaño:    cambia el campo size (fracción de imgW).
-  List<Widget> _buildBuildings(double w, double h, {bool demoMode = false}) {
-    // Rect de la imagen estructuras.png en coordenadas de pantalla
-    const double natW = 3954, natH = 1767;
-    final imgH = h * 0.90;
-    final imgW = imgH * natW / natH; // ancho derivado del alto
-    final imgLeft = (w - imgW) / 2; // centrada horizontalmente
-    final imgTop = (h - imgH) / 2; // centrada verticalmente
-
+  // Para mover TODO el bloque (imagen + edificios) junto: usa
+  // structureOffsetX / structureOffsetY arriba de esta clase.
+  (List<Widget>, Rect?) _buildBuildings(
+      double imgLeft, double imgTop, double imgW, double imgH,
+      {bool demoMode = false}) {
     // Tamaño base de edificios como fracción del ancho de la imagen
     final bSize = imgW * 0.20; // ~20% del ancho de la imagen
 
@@ -332,8 +474,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
     };
     double sizeFor(String id) => bSize * (fillCompensation[id] ?? 1.0);
 
-    final demoState = ref.read(demoProgressProvider);
-    bool locked(String id) => demoMode && !demoState.isUnlocked(id);
+    // La guía interactiva (map_guide) ya obliga a entrar a cada edificio en
+    // orden — el candado/desbloqueo progresivo del demo quedaría redundante
+    // (y podía desincronizarse con el orden de la guía), así que todos los
+    // edificios están disponibles desde el inicio.
 
     // islandFx/islandFy: posición del centro de la isla en estructuras.png (0..1)
     // El edificio se centra horizontalmente y su base toca el centro de la isla.
@@ -345,10 +489,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showBancoEstelarDialog,
         demoRoute: '/demo/banco',
-        size: imgW * 0.22,
-        locked: locked('banco'),
-        islandFx: 0.31,
-        islandFy: 0.59,
+        size: imgW * 0.20,
+        locked: false,
+        islandFx: 0.36,
+        islandFy: 1.04,
         topPad: 0.111,
         rightPad: 0.227,
         bottomPad: 0.432,
@@ -360,11 +504,11 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showTrabajosDialog,
         demoRoute: '/demo/trabajos',
-        size: imgW * 0.25,
+        size: imgW * 0.22,
         badgeCount: 1,
-        locked: locked('trabajos'),
-        islandFx: 0.66,
-        islandFy: 0.54,
+        locked: false,
+        islandFx: 0.80,
+        islandFy: 0.70,
         topPad: 0.058,
         rightPad: 0.309,
         bottomPad: 0.370,
@@ -376,11 +520,11 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showMisionesDialog,
         demoRoute: '/demo/misiones',
-        size: imgW * 0.25,
+        size: imgW * 0.22,
         badgeCount: 3,
-        locked: locked('misiones'),
-        islandFx: 0.35,
-        islandFy: 1.05,
+        locked: false,
+        islandFx: 0.67,
+        islandFy: 1.02,
         topPad: 0.080,
         rightPad: 0.203,
         bottomPad: 0.364,
@@ -392,10 +536,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showTiendaDialog,
         demoRoute: '/demo/tienda',
-        size: imgW * 0.25,
-        locked: locked('tienda'),
-        islandFx: 0.79,
-        islandFy: 0.80,
+        size: imgW * 0.22,
+        locked: false,
+        islandFx: 0.67,
+        islandFy: 0.54,
         topPad: 0.155,
         rightPad: 0.230,
         bottomPad: 0.327,
@@ -407,10 +551,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         openAsDialog: true,
         dialogBuilder: showWalletDialog,
         demoRoute: '/demo/bolsa',
-        size: imgW * 0.23,
-        locked: locked('alcancia'),
-        islandFx: 0.65,
-        islandFy: 1.03,
+        size: imgW * 0.20,
+        locked: false,
+        islandFx: 0.31,
+        islandFy: 0.52,
         topPad: 0.065,
         rightPad: 0.266,
         bottomPad: 0.378,
@@ -418,19 +562,43 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
       // _BuildingData(id: 'mercado', ..., islandFx: 0.72, islandFy: 0.48),
     ];
 
-    return buildings.map((b) {
+    Rect? guideRect;
+    final widgets = buildings.map((b) {
       // Centro de la isla en coordenadas de pantalla
       final cx = imgLeft + b.islandFx! * imgW;
       final cy = imgTop + b.islandFy! * imgH;
       // Edificio centrado horizontalmente; base del edificio en el centro de la isla
       final bx = cx - b.size / 2;
       final by = cy - b.size;
+      final isGuideTarget =
+          _guideStep != null && _guideOrder[_guideStep!] == b.id;
+      if (isGuideTarget) {
+        // Mismo recorte que el hit-box real del edificio (ver
+        // _BuildingButton más abajo): el 50% central del lienzo, centrado
+        // verticalmente sobre el dibujo real vía topPad/bottomPad — así el
+        // resaltado calza con el edificio/botón, no con todo el lienzo
+        // transparente que lo rodea.
+        final hitSize = b.size * 0.5;
+        final hitTop =
+            b.size * ((b.topPad + 1 - b.bottomPad) / 2) - hitSize / 2;
+        final hitLeft = (b.size - hitSize) / 2;
+        guideRect =
+            Rect.fromLTWH(bx + hitLeft, by + hitTop, hitSize, hitSize);
+      }
+      final guideDim = _guideStep != null && !isGuideTarget;
       return Positioned(
         left: bx,
         top: by,
-        child: _BuildingButton(data: b, demoMode: demoMode),
+        child: _BuildingButton(
+          data: b,
+          demoMode: demoMode,
+          guideDim: guideDim,
+          guideTarget: isGuideTarget,
+          onGuideAdvance: isGuideTarget ? _advanceGuide : null,
+        ),
       );
     }).toList();
+    return (widgets, guideRect);
   }
 }
 
@@ -539,38 +707,32 @@ class _StaticBackground extends StatelessWidget {
 }
 
 // Abre la pantalla demo (banco) como diálogo avanzando el stage al cerrar
-void _showDemoDialog(BuildContext context, WidgetRef ref, String demoRoute) {
-  // Mapeo demoRoute → widget
-  final configs = <String, (Widget, int, String)>{
-    '/demo/bolsa': (
-      const WalletScreen(),
-      0,
-      '🔓 ¡Desbloqueaste Banco Estelar!'
-    ),
-    '/demo/banco': (
-      const BancoEstelarScreen(),
-      1,
-      '🔓 ¡Desbloqueaste Misiones!'
-    ),
-    '/demo/misiones': (
-      const MisionesScreen(),
-      2,
-      '🔓 ¡Desbloqueaste Trabajos!'
-    ),
-    '/demo/trabajos': (
-      const TrabajosScreen(),
-      3,
-      '🔓 ¡Desbloqueaste la Tienda!'
-    ),
-    '/demo/tienda': (const TiendaScreen(), 4, '🎉 ¡Has completado la demo!'),
+Future<void> _showDemoDialog(
+    BuildContext context, WidgetRef ref, String demoRoute) {
+  // Mapeo demoRoute → widget. El mensaje/etapa de "desbloqueo" que había
+  // aquí antes ya no aplica: map_guide es quien ahora explica cada edificio.
+  final configs = <String, (Widget, String)>{
+    '/demo/bolsa': (const WalletScreen(), 'Mi Bolsa'),
+    '/demo/banco': (const BancoEstelarScreen(), 'Banco Estelar'),
+    '/demo/misiones': (const MisionesScreen(), 'Misiones'),
+    '/demo/trabajos': (const TrabajosScreen(), 'Trabajos'),
+    '/demo/tienda': (const TiendaScreen(), 'Tienda'),
+  };
+  // Mismas medidas exactas que cada showXDialog() de la sesión real —
+  // así el modal se ve idéntico en demo (radio, ancho, alto, margen).
+  final geoms = <String, (double radius, double w, double h, double insetH)>{
+    '/demo/bolsa': (24, 0.92, 0.84, 12),
+    '/demo/misiones': (20, 0.94, 0.85, 12),
+    '/demo/trabajos': (20, 0.94, 0.85, 12),
+    '/demo/tienda': (20, 0.94, 0.85, 10),
   };
   final cfg = configs[demoRoute] ?? configs['/demo/bolsa']!;
   final screen = cfg.$1;
-  final atStage = cfg.$2;
-  final unlockMsg = cfg.$3;
+  final title = cfg.$2;
+  final geom = geoms[demoRoute] ?? geoms['/demo/bolsa']!;
 
   final size = MediaQuery.of(context).size;
-  showGeneralDialog(
+  return showGeneralDialog(
     context: context,
     barrierDismissible: true,
     barrierLabel: demoRoute,
@@ -584,28 +746,31 @@ void _showDemoDialog(BuildContext context, WidgetRef ref, String demoRoute) {
       );
     },
     pageBuilder: (ctx, _, __) {
-      final store = ref.read(demoProgressProvider);
+      // Banco Estelar ya trae su propio marco completo incrustado
+      // (BancoEstelarDialogShell → _BEFrame, con sus esquinas, tiras,
+      // placa de título y botón de cerrar) y se muestra exactamente
+      // igual que en la sesión real: SIN Dialog/ClipRRect/SizedBox
+      // extra por fuera, porque esos recortan la placa/botón que
+      // sobresalen del marco y dejan ver un fondo sólido alrededor.
+      if (demoRoute == '/demo/banco') {
+        return const BancoEstelarDialogShell(isFullScreen: false);
+      }
+
+      final content = ClipRRect(
+        borderRadius: BorderRadius.circular(geom.$1),
+        child: SizedBox(
+          width: size.width * geom.$2,
+          height: size.height * geom.$3,
+          child: screen,
+        ),
+      );
       return Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(12),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: SizedBox(
-            width: size.width * 0.92,
-            height: size.height * 0.88,
-            child: PopScope(
-              canPop: true,
-              onPopInvokedWithResult: (didPop, _) {
-                if (!didPop) return;
-                if (store.stage == atStage) {
-                  store.addXp(50);
-                  store.advanceStage();
-                  store.setPendingMessage(unlockMsg);
-                }
-              },
-              child: screen,
-            ),
-          ),
+        insetPadding: EdgeInsets.fromLTRB(geom.$4, 60, geom.$4, geom.$4),
+        child: ModalCorners(
+          onClose: () => Navigator.of(ctx).pop(),
+          title: title,
+          child: content,
         ),
       );
     },
@@ -616,9 +781,18 @@ void _showDemoDialog(BuildContext context, WidgetRef ref, String demoRoute) {
 // Botón de edificio — con glow base, animación flotante, label, badge, candado
 // ─────────────────────────────────────────────────────────────────────────────
 class _BuildingButton extends ConsumerWidget {
-  const _BuildingButton({required this.data, this.demoMode = false});
+  const _BuildingButton({
+    required this.data,
+    this.demoMode = false,
+    this.guideDim = false,
+    this.guideTarget = false,
+    this.onGuideAdvance,
+  });
   final _BuildingData data;
   final bool demoMode;
+  final bool guideDim;
+  final bool guideTarget;
+  final VoidCallback? onGuideAdvance;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -778,31 +952,76 @@ class _BuildingButton extends ConsumerWidget {
       ),
     );
 
-    return GestureDetector(
-      onTap: data.locked
-          ? null
-          : () {
-              if (demoMode && data.demoRoute.isNotEmpty) {
-                // Demo: abrir como diálogo con DemoStageGate envolviendo la pantalla
-                _showDemoDialog(context, ref, data.demoRoute);
-                return;
-              }
-              data.dialogBuilder?.call(context);
-            },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          building,
-          // El label se sube para pegarse a la base visual del dibujo
-          // (descontando el margen transparente inferior del PNG) en vez
-          // de quedar lejos, pegado a la base del lienzo completo.
-          Transform.translate(
-            offset: Offset(0, -(data.size * data.bottomPad) + 8),
-            child: label,
+    if (guideTarget) {
+      building = building
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .scaleXY(
+              begin: 1.0, end: 1.08, duration: 650.ms, curve: Curves.easeInOut);
+    }
+
+    Future<void> handleTap() async {
+      if (demoMode && data.demoRoute.isNotEmpty) {
+        // Demo: abrir como diálogo con DemoStageGate envolviendo la pantalla
+        await _showDemoDialog(context, ref, data.demoRoute);
+        if (guideTarget) onGuideAdvance?.call();
+        return;
+      }
+      final future = data.dialogBuilder?.call(context);
+      if (guideTarget) {
+        if (future != null) await future;
+        onGuideAdvance?.call();
+      }
+    }
+
+    final tapEnabled = !(data.locked || guideDim);
+
+    // Zona de toque centrada y más chica que el lienzo completo del PNG
+    // (que tiene bastante margen transparente alrededor del dibujo real).
+    // Bug reportado: tocar la esquina de Trabajos abría Tienda, porque sus
+    // lienzos de 3000×3000 se superponen ahí — al usar solo el 50% central
+    // (centrado verticalmente sobre el dibujo real vía topPad/bottomPad) los
+    // edificios vecinos dejan de "robarse" el tap en esa esquina.
+    final hitSize = data.size * 0.5;
+    final hitTop =
+        data.size * ((data.topPad + 1 - data.bottomPad) / 2) - hitSize / 2;
+    final hitLeft = (data.size - hitSize) / 2;
+
+    Widget result = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IgnorePointer(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              building,
+              // El label se sube para pegarse a la base visual del dibujo
+              // (descontando el margen transparente inferior del PNG) en vez
+              // de quedar lejos, pegado a la base del lienzo completo.
+              Transform.translate(
+                offset: Offset(0, -(data.size * data.bottomPad) + 8),
+                child: label,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          left: hitLeft,
+          top: hitTop,
+          width: hitSize,
+          height: hitSize,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: tapEnabled ? handleTap : null,
+          ),
+        ),
+      ],
     );
+
+    if (guideDim) {
+      result = IgnorePointer(child: Opacity(opacity: 0.30, child: result));
+    }
+
+    return result;
   }
 }
 
@@ -815,7 +1034,7 @@ class _BuildingData {
   final String label;
   final String demoRoute;
   final bool openAsDialog;
-  final void Function(BuildContext)? dialogBuilder;
+  final Future<void> Function(BuildContext)? dialogBuilder;
   final double size;
   final int badgeCount;
   final bool locked;
@@ -1242,5 +1461,174 @@ class _WorldNameButtonState extends State<_WorldNameButton> {
         ),
       ],
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Guía interactiva de bienvenida — resalta el edificio objetivo con un
+// "spotlight" y bloquea todo lo demás. Es puramente visual (IgnorePointer):
+// el edificio real de abajo sigue recibiendo el tap normalmente; los demás
+// quedan deshabilitados por su propio `guideDim` en _BuildingButton.
+// ─────────────────────────────────────────────────────────────────────────────
+class _MapGuideOverlay extends StatelessWidget {
+  const _MapGuideOverlay({
+    required this.targetRect,
+    required this.screenSize,
+    required this.title,
+    required this.body,
+    required this.stepIndex,
+    required this.totalSteps,
+  });
+
+  final Rect targetRect;
+  final Size screenSize;
+  final String title;
+  final String body;
+  final int stepIndex;
+  final int totalSteps;
+
+  @override
+  Widget build(BuildContext context) {
+    // Un poco de aire alrededor del edificio/botón real para que el
+    // resaltado no quede pegado al dibujo.
+    final holeRect = targetRect.inflate(targetRect.shortestSide * 0.16);
+    const bubbleW = 280.0;
+    const estBubbleH = 175.0;
+    final anchor = targetRect.center;
+
+    double top;
+    if (anchor.dy < screenSize.height * 0.55) {
+      top = holeRect.bottom + 16;
+    } else {
+      top = holeRect.top - 16 - estBubbleH;
+    }
+    top = top.clamp(8.0, screenSize.height - estBubbleH - 8);
+    final left =
+        (anchor.dx - bubbleW / 2).clamp(12.0, screenSize.width - bubbleW - 12);
+
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _SpotlightPainter(rect: holeRect),
+            ),
+          ),
+          Positioned(
+            left: left,
+            top: top,
+            width: bubbleW,
+            child: _GuideBubble(
+              title: title,
+              body: body,
+              stepIndex: stepIndex,
+              totalSteps: totalSteps,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SpotlightPainter extends CustomPainter {
+  const _SpotlightPainter({required this.rect});
+  final Rect rect;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final radius = Radius.circular(rect.shortestSide * 0.22);
+    final full = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final hole = Path()..addRRect(RRect.fromRectAndRadius(rect, radius));
+    final scrim = Path.combine(PathOperation.difference, full, hole);
+    canvas.drawPath(scrim, Paint()..color = Colors.black.withOpacity(0.68));
+  }
+
+  @override
+  bool shouldRepaint(_SpotlightPainter old) => old.rect != rect;
+}
+
+class _GuideBubble extends StatelessWidget {
+  const _GuideBubble({
+    required this.title,
+    required this.body,
+    required this.stepIndex,
+    required this.totalSteps,
+  });
+  final String title;
+  final String body;
+  final int stepIndex;
+  final int totalSteps;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+              color: Colors.black45, blurRadius: 20, offset: Offset(0, 6)),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (totalSteps > 1)
+            Row(
+              children: List.generate(totalSteps, (i) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.only(right: 5),
+                  width: i == stepIndex ? 22 : 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: i == stepIndex
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                );
+              }),
+            ),
+          if (totalSteps > 1) const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+              color: Color(0xFF1A1A2E),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            body,
+            style: const TextStyle(
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              color: Color(0xFF334155),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            '👆 Tócalo para continuar',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+              color: Color(0xFF2563EB),
+            ),
+          ),
+        ],
+      ),
+    )
+        .animate(key: ValueKey(stepIndex))
+        .fadeIn(duration: 250.ms)
+        .slideY(begin: 0.08, end: 0, duration: 250.ms, curve: Curves.easeOut);
   }
 }

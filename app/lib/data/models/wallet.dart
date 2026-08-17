@@ -2,10 +2,11 @@
 // WalletCategoryType
 //
 // Las 4 misiones del dinero de Blinkids (documento maestro del cliente):
-//   guardar   → 🛡 ¿lo necesitaré pronto? (barra de progreso en Banco Estelar)
-//   invertir  → 🚀 ¿puede crecer?
+//   guardar   → 🛡 ¿lo necesitaré pronto? — saldo simple, se ve en Banco Estelar
+//   invertir  → 🚀 ¿puede crecer? — crece +3.5% semanal (proyectado), se ve en Banco Estelar
 //   donar     → ❤️ ¿puedo ayudar?
-//   gastar    → 🎉 ¿lo quiero hoy? (se muestra como "Disfrutar")
+//   gastar    → 🎉 ¿cuál es mi sueño? (se muestra como "Disfrutar") — financia
+//               la meta elegida en Mis Sueños (ver goal_dream_flow.dart)
 //
 // 'banco_estelar' se conserva en el enum solo por compatibilidad con filas
 // viejas — ya no se usa como categoría asignable (ver [[reconstruir_banco_estelar]]).
@@ -59,7 +60,7 @@ extension WalletCategoryTypeX on WalletCategoryType {
       case WalletCategoryType.banco_estelar:
         return 'Gana interés cada semana';
       case WalletCategoryType.gastar:
-        return '¿Lo quiero hoy?';
+        return '¿Cuál es mi sueño?';
       case WalletCategoryType.invertir:
         return '¿Puede crecer?';
       case WalletCategoryType.donar:

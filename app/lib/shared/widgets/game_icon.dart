@@ -28,7 +28,8 @@ class GameIcon extends StatelessWidget {
       'assets/icons/icon_$name.png',
       width: size,
       height: size,
-      color: color,
+      // `color` solo tiñe el ícono Material de respaldo (fallback) —
+      // el PNG ilustrado se muestra a color completo, sin aplanar.
       errorBuilder: (_, __, ___) => Icon(fallback, size: size, color: color),
     );
   }

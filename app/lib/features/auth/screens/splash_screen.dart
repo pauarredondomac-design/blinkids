@@ -2,7 +2,6 @@
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -48,11 +47,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
 
-    // Sin sesión → modo demo: mostrar tutorial la primera vez
+    // Sin sesión → modo demo
     if (user == null) {
-      final prefs = await SharedPreferences.getInstance();
-      final tutorialSeen = prefs.getBool('tutorial_seen') ?? false;
-      if (mounted) context.go(tutorialSeen ? '/world' : '/tutorial');
+      if (mounted) context.go('/world');
       return;
     }
 
@@ -79,15 +76,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         return;
       }
 
-      // Niño con sesión → revisar tutorial
-      final tutorialRecord = await client
-          .from('tutorial_progress')
-          .select('is_completed')
-          .eq('user_id', user.id)
-          .maybeSingle();
-      if (!mounted) return;
-      final tutorialDone = tutorialRecord?['is_completed'] == true;
-      context.go(tutorialDone ? '/world' : '/tutorial');
+      context.go('/world');
     } catch (_) {
       if (mounted) context.go('/world');
     }

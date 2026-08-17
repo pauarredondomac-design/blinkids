@@ -10,6 +10,8 @@ import 'data/services/analytics_service.dart';
 import 'data/services/crash_reporting_service.dart';
 import 'data/services/push_notification_service.dart';
 import 'shared/providers/music_provider.dart';
+import 'shared/services/backend_status.dart';
+import 'shared/widgets/backend_status_banner.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +30,7 @@ Future<void> main() async {
       Supabase.initialize(
         url: AppStrings.supabaseUrl,
         anonKey: AppStrings.supabaseAnonKey,
+        httpClient: MonitoredHttpClient(),
       ),
     ]).timeout(const Duration(seconds: 8));
   } catch (_) {
@@ -67,6 +70,12 @@ class BlinkidsApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) => Stack(
+        children: [
+          if (child != null) child,
+          const BackendStatusBanner(),
+        ],
+      ),
     );
   }
 }

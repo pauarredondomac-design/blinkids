@@ -30,6 +30,26 @@ class Mission {
   /// Ítem de recompensa opcional (además de monedas).
   final ItemReward? itemReward;
 
+  // ── Campos de capítulo de historia (nuevos) ──────────────────────────────
+  /// Nombre del capítulo (ej. "1 - Marte"). Null = misión sin capítulo (legado).
+  final String? chapter;
+  final int? chapterNumber;
+  final int? orderInChapter;
+  final int? stars;
+  final int fuelReward;
+
+  /// Ítems que hay que tener (y se consumen) para poder reclamar la misión.
+  final List<ItemRequirement> requiredItems;
+
+  /// Monedas que hay que tener (y se descuentan) para poder reclamar la misión.
+  final int requiredCoins;
+
+  /// Si se reclama esta misión, desbloquea este número de capítulo.
+  final int? unlocksChapter;
+
+  /// Última misión de la temporada — dispara la celebración final.
+  final bool isSeasonFinale;
+
   const Mission({
     required this.id,
     required this.name,
@@ -45,6 +65,15 @@ class Mission {
     this.objectiveType,
     this.objectiveTarget = 1,
     this.itemReward,
+    this.chapter,
+    this.chapterNumber,
+    this.orderInChapter,
+    this.stars,
+    this.fuelReward = 0,
+    this.requiredItems = const [],
+    this.requiredCoins = 0,
+    this.unlocksChapter,
+    this.isSeasonFinale = false,
   });
 
   factory Mission.fromJson(Map<String, dynamic> json) {
@@ -63,6 +92,13 @@ class Mission {
     if (rewardItemId != null) {
       reward = ItemReward(itemId: rewardItemId, qty: rewardQty);
     }
+
+    final requiredItems = (json['required_items'] as List? ?? [])
+        .map((e) => ItemRequirement(
+              itemId: e['item_id'] as String,
+              qty: (e['qty'] as num).toInt(),
+            ))
+        .toList();
 
     return Mission(
       id: json['id'] as String,
@@ -84,6 +120,15 @@ class Mission {
       objectiveType: objType,
       objectiveTarget: json['objective_target'] as int? ?? 1,
       itemReward: reward,
+      chapter: json['chapter'] as String?,
+      chapterNumber: json['chapter_number'] as int?,
+      orderInChapter: json['order_in_chapter'] as int?,
+      stars: json['stars'] as int?,
+      fuelReward: json['fuel_reward'] as int? ?? 0,
+      requiredItems: requiredItems,
+      requiredCoins: json['required_coins'] as int? ?? 0,
+      unlocksChapter: json['unlocks_chapter'] as int?,
+      isSeasonFinale: json['is_season_finale'] as bool? ?? false,
     );
   }
 
@@ -96,4 +141,10 @@ class Mission {
 
   /// ¿Tiene sistema de objetivo local (auto-tracking)?
   bool get hasObjective => objectiveType != null;
+
+  /// ¿Es parte de la historia por capítulos?
+  bool get isChapterMission => chapterNumber != null;
+
+  /// ¿Necesita ítems y/o monedas para poder reclamarse?
+  bool get hasClaimRequirements => requiredItems.isNotEmpty || requiredCoins > 0;
 }

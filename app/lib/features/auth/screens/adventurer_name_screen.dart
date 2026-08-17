@@ -64,11 +64,12 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
         });
       }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _checking = false;
           _nameAvailable = false;
         });
+      }
     }
   }
 
@@ -125,28 +126,31 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
         'total_coins': 0,
       });
 
-      if (mounted) context.go('/tutorial');
+      if (mounted) context.go('/world');
     } on PostgrestException catch (e) {
       final msg = e.code == '23505'
           ? '¡Ese nombre ya está ocupado! 😅 Prueba con otro.'
           : _friendlyError(e.message);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorMessage = msg;
           _loading = false;
         });
+      }
     } on AuthException catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorMessage = _friendlyError(e.message);
           _loading = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorMessage = _friendlyError(e.toString());
           _loading = false;
         });
+      }
     }
   }
 

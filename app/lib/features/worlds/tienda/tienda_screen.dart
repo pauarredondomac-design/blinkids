@@ -1,31 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/cosmetic.dart';
 import '../../../data/models/item.dart';
 import '../../../data/repositories/item_definitions_repository.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
+import '../../../shared/providers/badge_provider.dart';
 import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/providers/demo_progress_provider.dart';
 import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/activity_player.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_popup.dart';
 import '../../../shared/widgets/blink_avatar.dart';
 import '../../../shared/widgets/blink_reaction.dart';
+import '../../../shared/widgets/tab_icon.dart';
+import '../../../shared/widgets/modal_corners.dart';
+import '../../../shared/widgets/badge_unlock_celebration.dart';
 import '../../../shared/theme/game_tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-void showTiendaDialog(BuildContext context) {
+Future<void> showTiendaDialog(BuildContext context) {
   final size = MediaQuery.of(context).size;
-  showGeneralDialog(
+  return showGeneralDialog(
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Tienda',
@@ -40,13 +44,17 @@ void showTiendaDialog(BuildContext context) {
     },
     pageBuilder: (ctx, _, __) => Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(10),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          width: size.width * 0.94,
-          height: size.height * 0.90,
-          child: const TiendaScreen(),
+      insetPadding: const EdgeInsets.fromLTRB(10, 60, 10, 10),
+      child: ModalCorners(
+        onClose: () => Navigator.of(ctx).pop(),
+        title: 'Tienda',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
+            width: size.width * 0.94,
+            height: size.height * 0.85,
+            child: const TiendaScreen(),
+          ),
         ),
       ),
     ),
@@ -189,9 +197,11 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
     try {
       await ref.read(cosmeticShopProvider.notifier).buy(c.id);
       ref.invalidate(currentWalletProvider);
+      final newBadges = await ref.read(badgeCheckerProvider.notifier).check();
       if (mounted) {
         _snack('¡Compraste ${c.name}!', const Color(0xFF2E7D32));
         _blinkReaction.react(BlinkMood.celebrando);
+        showBadgeUnlockCelebrations(context, ref, newBadges);
       }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
@@ -232,6 +242,16 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
               'Cosméticos = ropa y accesorios para Blink.',
         ),
       ],
+      onReady: () {
+        if (mounted) {
+          maybeShowDailyBuildingQuestion(
+            context,
+            ref,
+            buildingSlug: 'tienda',
+            accentColor: const Color(0xFFAB47BC),
+          );
+        }
+      },
       child: ScreenBackground(
           child: Row(
         children: [
@@ -239,7 +259,6 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
           _Sidebar(
             coins: coins,
             category: _category,
-            onBack: () => context.pop(),
             onSelect: (c) => setState(() => _category = c),
           ),
 
@@ -250,7 +269,7 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
                 Container(
                   color: Colors.transparent,
                   child: entries.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Text(
                             '😔 No hay artículos disponibles.',
                             style: TextStyle(
@@ -333,12 +352,10 @@ class _Sidebar extends StatelessWidget {
   const _Sidebar({
     required this.coins,
     required this.category,
-    required this.onBack,
     required this.onSelect,
   });
   final int coins;
   final _TiendaCategory category;
-  final VoidCallback onBack;
   final ValueChanged<_TiendaCategory> onSelect;
 
   @override
@@ -356,45 +373,9 @@ class _Sidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: back + title
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E))),
-            ),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: onBack,
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.07),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.18)),
-                    ),
-                    child: const Icon(Icons.arrow_back_rounded,
-                        color: Colors.white, size: 15),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Tienda'.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
           // Monedas
           Container(
-            margin: const EdgeInsets.fromLTRB(12, 14, 12, 6),
+            margin: const EdgeInsets.fromLTRB(12, 16, 12, 6),
             child: CoinChip(coins: coins),
           ),
 
@@ -403,7 +384,7 @@ class _Sidebar extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               'Categorías'.toUpperCase(),
-              style: TextStyle(
+              style: const TextStyle(
                 color: GameTokens.textMuted,
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
@@ -416,18 +397,21 @@ class _Sidebar extends StatelessWidget {
           // Categorías
           _SidebarItem(
             icon: '🏪',
+            iconName: 'tienda_todos',
             label: 'Todos',
             active: category == _TiendaCategory.todos,
             onTap: () => onSelect(_TiendaCategory.todos),
           ),
           _SidebarItem(
             icon: '⚙️',
+            iconName: 'tienda_items',
             label: 'Ítems',
             active: category == _TiendaCategory.items,
             onTap: () => onSelect(_TiendaCategory.items),
           ),
           _SidebarItem(
             icon: '✨',
+            iconName: 'tienda_cosmeticos',
             label: 'Cosméticos',
             active: category == _TiendaCategory.cosmeticos,
             onTap: () => onSelect(_TiendaCategory.cosmeticos),
@@ -441,11 +425,13 @@ class _Sidebar extends StatelessWidget {
 class _SidebarItem extends StatelessWidget {
   const _SidebarItem({
     required this.icon,
+    required this.iconName,
     required this.label,
     required this.active,
     required this.onTap,
   });
   final String icon;
+  final String iconName;
   final String label;
   final bool active;
   final VoidCallback onTap;
@@ -472,7 +458,7 @@ class _SidebarItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Text(icon, style: const TextStyle(fontSize: 14)),
+            TabIcon(name: iconName, emoji: icon, size: 32),
             const SizedBox(width: 8),
             Text(
               label.toUpperCase(),
@@ -857,14 +843,14 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
               children: [
                 Text(
                   'Total: $total ',
-                  style:
-                      TextStyle(color: GameTokens.textSecondary, fontSize: 11),
+                  style: const TextStyle(
+                      color: GameTokens.textSecondary, fontSize: 11),
                 ),
                 const AnimatedCoin(size: 11),
                 Text(
                   ' (${widget.price} × $_qty)',
-                  style:
-                      TextStyle(color: GameTokens.textSecondary, fontSize: 11),
+                  style: const TextStyle(
+                      color: GameTokens.textSecondary, fontSize: 11),
                 ),
               ],
             ),
@@ -874,14 +860,14 @@ class _ConfirmDialogState extends State<_ConfirmDialog> {
             widget.assetPath != null && widget.assetPath!.contains('cosmeticos')
                 ? 'Se añadirá a tu guardarropa.'
                 : 'Se guardará en tu inventario.',
-            style: TextStyle(color: GameTokens.textMuted, fontSize: 11),
+            style: const TextStyle(color: GameTokens.textMuted, fontSize: 11),
           ),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, null),
-          child: Text('Cancelar',
+          child: const Text('Cancelar',
               style: TextStyle(color: GameTokens.textSecondary)),
         ),
         GestureDetector(

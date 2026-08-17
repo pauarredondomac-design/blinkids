@@ -1249,10 +1249,10 @@ class _ResetPinDialogState extends State<_ResetPinDialog> {
                   height: 16,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: filled ? const Color(0xFF4FC3F7) : Colors.transparent,
+                    color:
+                        filled ? const Color(0xFF4FC3F7) : Colors.transparent,
                     border: Border.all(
-                      color:
-                          filled ? const Color(0xFF4FC3F7) : Colors.white38,
+                      color: filled ? const Color(0xFF4FC3F7) : Colors.white38,
                       width: 2,
                     ),
                   ),
@@ -1265,7 +1265,8 @@ class _ResetPinDialogState extends State<_ResetPinDialog> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
+                  style:
+                      TextStyle(color: Colors.white38, fontFamily: 'Nunito')),
             ),
           ],
         ),
@@ -1499,11 +1500,12 @@ class _SalaryDialogState extends State<SalaryDialog> {
         childId: widget.childId,
         amount: _amount,
       );
-      if (mounted)
+      if (mounted) {
         setState(() {
           _loading = false;
           _saved = true;
         });
+      }
     } catch (e) {
       if (mounted) {
         setState(() {

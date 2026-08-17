@@ -7,7 +7,7 @@ final _repo = BadgeRepository();
 
 // ── Medallas del jugador actual ───────────────────────────────────────────────
 final playerBadgesProvider = FutureProvider<List<PlayerBadge>>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return [];
   return _repo.getBadges();
 });

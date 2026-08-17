@@ -62,17 +62,19 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
       );
       if (mounted) context.go('/parent');
     } on AuthException catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorLogin = _mapAuthError(e.message);
           _loadingLogin = false;
         });
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorLogin = 'Error de conexión.';
           _loadingLogin = false;
         });
+      }
     }
   }
 
@@ -117,24 +119,27 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
 
       if (mounted) context.go('/parent');
     } on AuthException catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorReg = _mapAuthError(e.message);
           _loadingReg = false;
         });
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _errorReg = 'Error inesperado. Inténtalo de nuevo.';
           _loadingReg = false;
         });
+      }
     }
   }
 
   Future<void> _forgotPassword() async {
     final email = _emailCtrl.text.trim();
     if (email.isEmpty) {
-      setState(() => _errorLogin = 'Escribe tu correo arriba para poder enviarte el link.');
+      setState(() => _errorLogin =
+          'Escribe tu correo arriba para poder enviarte el link.');
       return;
     }
     setState(() {
@@ -147,7 +152,8 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
         setState(() => _loadingLogin = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Te enviamos un correo a $email con un link para restablecer tu contraseña.'),
+            content: Text(
+                'Te enviamos un correo a $email con un link para restablecer tu contraseña.'),
             backgroundColor: const Color(0xFF388E3C),
           ),
         );
@@ -163,8 +169,9 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
   }
 
   String _mapAuthError(String msg) {
-    if (msg.contains('Invalid login'))
+    if (msg.contains('Invalid login')) {
       return 'Correo o contraseña incorrectos.';
+    }
     if (msg.contains('Email already')) return 'Este correo ya está registrado.';
     if (msg.contains('Password should')) return 'La contraseña es muy corta.';
     // Errores de red/conexión (SocketException, ClientException, timeouts,

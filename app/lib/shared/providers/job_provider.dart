@@ -8,7 +8,7 @@ final jobRepositoryProvider = Provider<JobRepository>(
 );
 
 final activeJobsProvider = FutureProvider<List<Job>>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return [];
   return ref.read(jobRepositoryProvider).getActiveJobs();
 });

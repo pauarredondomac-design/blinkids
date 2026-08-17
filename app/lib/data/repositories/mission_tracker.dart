@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/mission.dart' show MissionObjectiveType;
+import '../models/mission.dart' show Mission, MissionObjectiveType;
 import '../../shared/providers/demo_progress_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -87,8 +87,9 @@ class MissionTracker {
 
   /// Devuelve true si la misión ya fue reclamada por el usuario actual.
   Future<bool> isClaimed(String missionId) async {
-    if (DemoStore.isActive)
+    if (DemoStore.isActive) {
       return DemoStore.instance.isMissionClaimed(missionId);
+    }
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return false;
@@ -129,5 +130,50 @@ class MissionTracker {
       // Si falla, el jugador no podrá reclamar el premio en esta sesión
       // pero tampoco podrá reclamarlo dos veces si la DB lo bloqueó antes.
     }
+  }
+
+  /// Todos los IDs de misión ya reclamados por el usuario actual, en UNA
+  /// sola consulta — usar esto en vez de llamar [isClaimed] en un loop por
+  /// cada misión (eso hacía una consulta de red por misión y era la causa
+  /// de la carga lenta en Misiones/Trabajos).
+  Future<Set<String>> claimedMissionIds() async {
+    if (DemoStore.isActive) {
+      return Set<String>.from(DemoStore.instance.claimedMissions);
+    }
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) return {};
+      final rows = await _client
+          .from('mission_claims')
+          .select('mission_id')
+          .eq('user_id', userId);
+      return (rows as List).map((r) => r['mission_id'] as String).toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  // ── Capítulos de historia ────────────────────────────────────────────────
+
+  /// Capítulo desbloqueado (1 = siempre disponible). Un capítulo N>1 se
+  /// desbloquea cuando ya se reclamó la última misión (order_in_chapter=4)
+  /// del capítulo N-1. Usado por Misiones y Trabajos para mostrar el
+  /// mismo estado de bloqueo en ambas pantallas. No hace red — recibe el
+  /// conjunto de reclamados ya obtenido con [claimedMissionIds].
+  int unlockedChapterFrom(List<Mission> chapterMissions, Set<String> claimedIds) {
+    final finales = chapterMissions
+        .where((m) => m.chapterNumber != null && m.orderInChapter == 4)
+        .toList()
+      ..sort((a, b) => a.chapterNumber!.compareTo(b.chapterNumber!));
+
+    var unlocked = 1;
+    for (final finale in finales) {
+      if (claimedIds.contains(finale.id)) {
+        unlocked = finale.chapterNumber! + 1;
+      } else {
+        break;
+      }
+    }
+    return unlocked;
   }
 }

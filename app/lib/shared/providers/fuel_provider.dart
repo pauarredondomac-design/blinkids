@@ -14,7 +14,7 @@ final fuelRepositoryProvider = Provider<FuelRepository>(
 // Fuel del mundo espacio (el que usa la barra de combustible en el HUD)
 // ─────────────────────────────────────────────────────────────────────────────
 final spaceFuelProvider = FutureProvider<WorldFuel?>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return null;
   return ref.read(fuelRepositoryProvider).getFuel('space');
 });

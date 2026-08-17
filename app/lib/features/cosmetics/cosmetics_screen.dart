@@ -4,8 +4,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../data/models/cosmetic.dart';
+import '../../shared/providers/badge_provider.dart';
 import '../../shared/providers/cosmetic_provider.dart';
 import '../../shared/providers/wallet_provider.dart';
+import '../../shared/widgets/badge_unlock_celebration.dart';
 import '../../shared/widgets/coin_display.dart';
 import '../../shared/widgets/game_popup.dart';
 
@@ -60,9 +62,11 @@ class _CosmeticsScreenState extends ConsumerState<CosmeticsScreen>
     try {
       await ref.read(cosmeticShopProvider.notifier).buy(cosmetic.id);
       ref.invalidate(currentWalletProvider);
+      final newBadges = await ref.read(badgeCheckerProvider.notifier).check();
       if (mounted) {
         _snack('¡Compraste ${cosmetic.emoji} ${cosmetic.name}!',
             const Color(0xFF2E7D32));
+        showBadgeUnlockCelebrations(context, ref, newBadges);
       }
     } catch (e) {
       if (mounted) _snack(_friendlyError(e), Colors.red.shade700);

@@ -69,14 +69,17 @@ final activeHomeChoresProvider =
 });
 
 // ── Notificaciones (en vivo, vía Supabase Realtime) ─────────────────────────
+// Usan currentRealUserProvider (no currentUserProvider): la campana de
+// notificaciones también se muestra en el mapa del niño en modo demo, y una
+// sesión demo (anónima) no debe abrir un stream de Realtime ni escribir nada.
 final unreadCountProvider = StreamProvider<int>((ref) {
-  final userId = ref.watch(currentUserProvider)?.id;
+  final userId = ref.watch(currentRealUserProvider)?.id;
   if (userId == null) return Stream.value(0);
   return ref.read(notificationRepositoryProvider).watchUnreadCount(userId);
 });
 
 final notificationsListProvider = StreamProvider<List<AppNotification>>((ref) {
-  final userId = ref.watch(currentUserProvider)?.id;
+  final userId = ref.watch(currentRealUserProvider)?.id;
   if (userId == null) return Stream.value(<AppNotification>[]);
   return ref.read(notificationRepositoryProvider).watchNotifications(userId);
 });

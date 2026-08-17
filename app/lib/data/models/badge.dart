@@ -8,6 +8,7 @@ class BadgeDefinition {
   final String description;
   final String emoji;
   final int sortOrder;
+  final String? imageAsset;
 
   const BadgeDefinition({
     required this.id,
@@ -15,6 +16,7 @@ class BadgeDefinition {
     required this.description,
     required this.emoji,
     required this.sortOrder,
+    this.imageAsset,
   });
 
   factory BadgeDefinition.fromJson(Map<String, dynamic> j) => BadgeDefinition(
@@ -23,6 +25,7 @@ class BadgeDefinition {
         description: j['description'] as String,
         emoji: j['emoji'] as String? ?? '🏆',
         sortOrder: j['sort_order'] as int? ?? 0,
+        imageAsset: j['image_asset'] as String?,
       );
 }
 
@@ -34,6 +37,7 @@ class PlayerBadge {
   final String? name;
   final String? description;
   final String? emoji;
+  final String? imageAsset;
 
   const PlayerBadge({
     required this.badgeId,
@@ -41,6 +45,7 @@ class PlayerBadge {
     this.name,
     this.description,
     this.emoji,
+    this.imageAsset,
   });
 
   factory PlayerBadge.fromJson(Map<String, dynamic> j) => PlayerBadge(
@@ -49,6 +54,7 @@ class PlayerBadge {
         name: j['name'] as String?,
         description: j['description'] as String?,
         emoji: j['emoji'] as String?,
+        imageAsset: j['image_asset'] as String?,
       );
 
   String get displayEmoji => emoji ?? '🏆';

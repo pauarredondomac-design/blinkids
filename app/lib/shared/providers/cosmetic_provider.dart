@@ -21,21 +21,21 @@ final cosmeticsInShopProvider =
 // ── Cosméticos que el jugador posee ───────────────────────────────────────────
 final ownedCosmeticsProvider =
     FutureProvider<List<CosmeticDefinition>>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return [];
   return _repo.getOwned();
 });
 
 // ── IDs de cosméticos poseídos (para chequeo rápido) ──────────────────────────
 final ownedCosmeticIdsProvider = FutureProvider<Set<String>>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return {};
   return _repo.getOwnedIds();
 });
 
 // ── Equipamiento actual del jugador ───────────────────────────────────────────
 final equippedLoadoutProvider = FutureProvider<EquippedLoadout>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return EquippedLoadout.empty;
   return _repo.getEquipped();
 });

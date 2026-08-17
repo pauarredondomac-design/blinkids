@@ -14,7 +14,7 @@ import '../../../shared/providers/character_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/coin_display.dart';
-import '../../../shared/widgets/badges_row.dart';
+import '../../../shared/widgets/badge_unlock_celebration.dart';
 import '../../../core/constants/app_sizes.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,7 +199,7 @@ class _PreguntasScreenState extends ConsumerState<PreguntasScreen> {
       ]);
       final newBadges = await xpFuture;
       if (userId != null) ref.invalidate(currentWalletProvider);
-      if (mounted) showBadgeUnlockToasts(context, ref, newBadges);
+      if (mounted) showBadgeUnlockCelebrations(context, ref, newBadges);
     }
 
     // Registrar en historial

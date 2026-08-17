@@ -13,7 +13,7 @@ final characterRepositoryProvider = Provider<CharacterRepository>(
 
 /// Personaje (Juan) del usuario actual.
 final currentCharacterProvider = FutureProvider<Character?>((ref) async {
-  final user = ref.watch(currentUserProvider);
+  final user = ref.watch(currentRealUserProvider);
   if (user == null) return null;
   return ref.read(characterRepositoryProvider).getCharacter(user.id);
 });

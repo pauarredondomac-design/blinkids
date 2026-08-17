@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/crafting_job.dart';
-import '../../../data/models/item.dart';
 import '../../../data/repositories/crafting_job_repository.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
@@ -12,26 +10,30 @@ import '../../../shared/providers/character_provider.dart';
 import '../../../shared/providers/demo_progress_provider.dart';
 import '../../../shared/providers/fuel_provider.dart';
 import '../../../shared/providers/item_provider.dart';
+import '../../../shared/providers/mission_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/activity_player.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/rocket_launch_overlay.dart';
-import '../../../shared/widgets/badges_row.dart';
+import '../../../shared/widgets/badge_unlock_celebration.dart';
 import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_popup.dart';
-import '../../../shared/widgets/activity_player.dart';
+import '../../../shared/widgets/tab_icon.dart';
+import '../../../shared/widgets/modal_corners.dart';
 import '../../../shared/theme/game_tokens.dart';
-import '../../../shared/providers/question_provider.dart';
 import 'trabajos_en_casa_panel.dart';
+
+enum _TrabajosSection { taller, enCasa }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TrabajosScreen
 // ─────────────────────────────────────────────────────────────────────────────
-void showTrabajosDialog(BuildContext context) {
+Future<void> showTrabajosDialog(BuildContext context) {
   final size = MediaQuery.of(context).size;
-  showGeneralDialog(
+  return showGeneralDialog(
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Trabajos',
@@ -46,13 +48,17 @@ void showTrabajosDialog(BuildContext context) {
     },
     pageBuilder: (ctx, _, __) => Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: SizedBox(
-          width: size.width * 0.94,
-          height: size.height * 0.90,
-          child: const TrabajosScreen(),
+      insetPadding: const EdgeInsets.fromLTRB(12, 60, 12, 12),
+      child: ModalCorners(
+        onClose: () => Navigator.of(ctx).pop(),
+        title: 'Trabajos',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: SizedBox(
+            width: size.width * 0.94,
+            height: size.height * 0.85,
+            child: const TrabajosScreen(),
+          ),
         ),
       ),
     ),
@@ -66,25 +72,20 @@ class TrabajosScreen extends ConsumerStatefulWidget {
   ConsumerState<TrabajosScreen> createState() => _TrabajosScreenState();
 }
 
-class _TrabajosScreenState extends ConsumerState<TrabajosScreen>
-    with SingleTickerProviderStateMixin {
+class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
   Map<String, int> _inventory = {};
   List<CraftingJob>? _remoteJobs; // null = usando hardcoded
   bool _loadingInv = true;
-  late final TabController _tabCtrl;
+  _TrabajosSection _section = _TrabajosSection.taller;
+  int _unlockedChapter = 1;
+  int? _expandedChapter;
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
     _loadInventory();
     _loadJobs();
-  }
-
-  @override
-  void dispose() {
-    _tabCtrl.dispose();
-    super.dispose();
+    _loadChapterUnlock();
   }
 
   Future<void> _loadJobs() async {
@@ -93,18 +94,28 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen>
     if (mounted) setState(() => _remoteJobs = jobs);
   }
 
+  Future<void> _loadChapterUnlock() async {
+    final missions = await ref.read(activeMissionsProvider.future);
+    final claimed = await MissionTracker().claimedMissionIds();
+    final unlocked = MissionTracker().unlockedChapterFrom(missions, claimed);
+    if (mounted) {
+      setState(() {
+        _unlockedChapter = unlocked;
+        _expandedChapter ??= unlocked;
+      });
+    }
+  }
+
   Future<void> _loadInventory() async {
     final repo = ref.read(itemRepositoryProvider);
-    final map = <String, int>{};
-    for (final item in allItems) {
-      final qty = await repo.countOf(item.id);
-      if (qty > 0) map[item.id] = qty;
-    }
-    if (mounted)
+    final stacks = await repo.getInventory();
+    final map = {for (final s in stacks) s.item.id: s.qty};
+    if (mounted) {
       setState(() {
         _inventory = map;
         _loadingInv = false;
       });
+    }
   }
 
   bool _hasAllMaterials(CraftingJob job) {
@@ -168,9 +179,10 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen>
 
       if (mounted) {
         await _showRewardDialog(job);
-        if (mounted) showBadgeUnlockToasts(context, ref, newBadges);
-        if (reachedFullFuel && mounted)
+        if (mounted) showBadgeUnlockCelebrations(context, ref, newBadges);
+        if (reachedFullFuel && mounted) {
           await handleFuelReachedFull(context, ref);
+        }
       }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
@@ -183,6 +195,67 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen>
   Future<void> _showRewardDialog(CraftingJob job) {
     return showDialog<void>(
         context: context, builder: (_) => _RewardDialog(job: job));
+  }
+
+  // ── Agrupación por capítulo (mismo criterio que Misiones) ────────────────
+  List<Widget> _buildChapterSections(List<CraftingJob> jobs) {
+    final byChapter = <int, List<CraftingJob>>{};
+    for (final j in jobs) {
+      if (j.chapterNumber == null) continue;
+      byChapter.putIfAbsent(j.chapterNumber!, () => []).add(j);
+    }
+    if (byChapter.isEmpty) return [];
+
+    final chapterNumbers = byChapter.keys.toList()..sort();
+    final widgets = <Widget>[];
+    for (final chNum in chapterNumbers) {
+      final chJobs = byChapter[chNum]!
+        ..sort((a, b) =>
+            (a.orderInChapter ?? 0).compareTo(b.orderInChapter ?? 0));
+      final chapterTitle = chJobs.first.chapter ?? 'Capítulo $chNum';
+      final chapterLocked = chNum > _unlockedChapter;
+      final expanded = _expandedChapter == chNum && !chapterLocked;
+
+      widgets.add(
+        _ChapterHeader(
+          title: chapterTitle,
+          locked: chapterLocked,
+          expanded: expanded,
+          onTap: chapterLocked
+              ? null
+              : () => setState(
+                  () => _expandedChapter = expanded ? null : chNum),
+        ),
+      );
+
+      if (expanded) {
+        for (final job in chJobs) {
+          widgets.add(
+            _JobCard(
+              job: job,
+              inventory: _inventory,
+              canDo: _hasAllMaterials(job),
+              onTap: () => _doJob(job),
+            ).animate().fadeIn(duration: 250.ms),
+          );
+        }
+      }
+      widgets.add(const SizedBox(height: 6));
+    }
+    widgets.add(const SizedBox(height: 4));
+    return widgets;
+  }
+
+  List<Widget> _buildFlatJobs(List<CraftingJob> jobs) {
+    return [
+      for (final job in jobs.where((j) => j.chapterNumber == null))
+        _JobCard(
+          job: job,
+          inventory: _inventory,
+          canDo: _hasAllMaterials(job),
+          onTap: () => _doJob(job),
+        ).animate().fadeIn(duration: 250.ms),
+    ];
   }
 
   @override
@@ -210,6 +283,16 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen>
               '¡Cómpralos en la Tienda y vuelve aquí!',
         ),
       ],
+      onReady: () {
+        if (mounted) {
+          maybeShowDailyBuildingQuestion(
+            context,
+            ref,
+            buildingSlug: 'trabajos',
+            accentColor: const Color(0xFF4FC3F7),
+          );
+        }
+      },
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: ScreenBackground(
@@ -220,87 +303,25 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen>
               worldId: worldId,
               jobCount: jobs.length,
               completable: completable,
-              onBack: () => context.pop(),
+              section: _section,
+              onSelectSection: (s) => setState(() => _section = s),
             ),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    color: const Color(0xFF0D0A2A),
-                    child: TabBar(
-                      controller: _tabCtrl,
-                      indicatorColor: const Color(0xFF4FC3F7),
-                      labelColor: Colors.white,
-                      unselectedLabelColor: GameTokens.textMuted,
-                      labelStyle: const TextStyle(
-                          fontFamily: 'Nunito',
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13),
-                      tabs: const [
-                        Tab(text: '📜 Encargos'),
-                        Tab(text: '🔨 Taller'),
-                        Tab(text: '🏠 En Casa'),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabCtrl,
-                      children: [
-                        Consumer(builder: (context, ref, __) {
-                          final activitiesAsync =
-                              ref.watch(questionsForModuleProvider('trabajos'));
-                          return activitiesAsync.when(
-                            loading: () => const Center(
-                                child: CircularProgressIndicator(
-                                    color: Color(0xFF4FC3F7))),
-                            error: (_, __) => Center(
-                              child: Text('No se pudieron cargar los encargos.',
-                                  style: TextStyle(
-                                      color: GameTokens.textSecondary,
-                                      fontFamily: 'Nunito')),
-                            ),
-                            data: (activities) => ActivityPlayer(
-                              activities: activities,
-                              accentColor: const Color(0xFF4FC3F7),
-                              worldIdForFuel: worldId,
-                            ),
-                          );
-                        }),
-                        _loadingInv
-                            ? const Center(
-                                child: CircularProgressIndicator(
-                                    color: Color(0xFF4FC3F7)),
-                              )
-                            : ListView.builder(
-                                padding:
-                                    const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                                itemCount: jobs.length,
-                                itemBuilder: (ctx, i) {
-                                  final job = jobs[i];
-                                  final canDo = _hasAllMaterials(job);
-                                  return _JobCard(
-                                    job: job,
-                                    inventory: _inventory,
-                                    canDo: canDo,
-                                    onTap: () => _doJob(job),
-                                  )
-                                      .animate(delay: (80 * i).ms)
-                                      .fadeIn(duration: 350.ms)
-                                      .slideY(
-                                        begin: 0.12,
-                                        end: 0,
-                                        curve: Curves.easeOut,
-                                      );
-                                },
-                              ),
-                        const TrabajosEnCasaPanel(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              child: switch (_section) {
+                _TrabajosSection.taller => _loadingInv
+                    ? const Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xFF4FC3F7)),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                        children: [
+                          ..._buildChapterSections(jobs),
+                          ..._buildFlatJobs(jobs),
+                        ],
+                      ),
+                _TrabajosSection.enCasa => const TrabajosEnCasaPanel(),
+              },
             ),
           ],
         )),
@@ -318,14 +339,16 @@ class _JobsSidebar extends StatelessWidget {
     required this.worldId,
     required this.jobCount,
     required this.completable,
-    required this.onBack,
+    required this.section,
+    required this.onSelectSection,
   });
 
   final int coins;
   final String worldId;
   final int jobCount;
   final int completable;
-  final VoidCallback onBack;
+  final _TrabajosSection section;
+  final ValueChanged<_TrabajosSection> onSelectSection;
 
   @override
   Widget build(BuildContext context) {
@@ -344,64 +367,56 @@ class _JobsSidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header agrupado — mismo patrón que Tienda/Vestidor/Mi Bolsa/
-          // Banco Estelar/Misiones.
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E))),
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: onBack,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.07),
-                        shape: BoxShape.circle,
-                        border:
-                            Border.all(color: Colors.white.withOpacity(0.18)),
-                      ),
-                      child: const Icon(Icons.arrow_back_rounded,
-                          color: Colors.white, size: 15),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Trabajos'.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                ],
+          const SizedBox(height: 20),
+
+          // Pill de monedas
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: CoinChip(coins: coins, size: CoinChipSize.sm),
+          ),
+
+          const SizedBox(height: 16),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text(
+              'Secciones'.toUpperCase(),
+              style: const TextStyle(
+                color: GameTokens.textMuted,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
               ),
             ),
+          ),
+          const SizedBox(height: 6),
+          _TrabajosSidebarItem(
+            icon: '🔨',
+            iconName: 'taller',
+            label: 'Taller',
+            active: section == _TrabajosSection.taller,
+            onTap: () => onSelectSection(_TrabajosSection.taller),
+          ),
+          _TrabajosSidebarItem(
+            icon: '🏠',
+            iconName: 'en_casa',
+            label: 'En Casa',
+            active: section == _TrabajosSection.enCasa,
+            onTap: () => onSelectSection(_TrabajosSection.enCasa),
+          ),
 
-            const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-            // Pill de monedas
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: CoinChip(coins: coins, size: CoinChipSize.sm),
-            ),
+          Divider(
+            color: const Color(0xFF2A1A5E).withOpacity(0.80),
+            indent: 14,
+            endIndent: 14,
+          ),
 
-            const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
-            Divider(
-              color: const Color(0xFF2A1A5E).withOpacity(0.80),
-              indent: 14,
-              endIndent: 14,
-            ),
-
-            const SizedBox(height: 14),
-
-            // Stats
+          // Stats — solo aplican al Taller
+          if (section == _TrabajosSection.taller)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Column(
@@ -409,7 +424,7 @@ class _JobsSidebar extends StatelessWidget {
                 children: [
                   Text(
                     '$jobCount trabajos\ndisponibles',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: GameTokens.textSecondary,
                       fontSize: 12,
                       height: 1.4,
@@ -428,9 +443,129 @@ class _JobsSidebar extends StatelessWidget {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ítem de sección en el sidebar — mismo estilo que la Tienda
+// ─────────────────────────────────────────────────────────────────────────────
+class _TrabajosSidebarItem extends StatelessWidget {
+  const _TrabajosSidebarItem({
+    required this.icon,
+    required this.iconName,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+  final String icon;
+  final String iconName;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: active
+              ? const Color(0xFF4FC3F7).withOpacity(0.20)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(
+            left: BorderSide(
+              color: active ? const Color(0xFF4FC3F7) : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            TabIcon(name: iconName, emoji: icon, size: 32),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? Colors.white : GameTokens.textSecondary,
+                fontSize: 12,
+                fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
           ],
         ),
-      );
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Encabezado desplegable de capítulo — agrupa los trabajos del Taller
+// ─────────────────────────────────────────────────────────────────────────────
+class _ChapterHeader extends StatelessWidget {
+  const _ChapterHeader({
+    required this.title,
+    required this.locked,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  final String title;
+  final bool locked;
+  final bool expanded;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: locked
+                ? Colors.white.withOpacity(0.03)
+                : const Color(0xFF3D1E8F).withOpacity(0.22),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: locked
+                  ? Colors.white.withOpacity(0.08)
+                  : const Color(0xFF7C4DFF).withOpacity(0.45),
+            ),
+          ),
+          child: Row(
+            children: [
+              Text(locked ? '🔒' : '🪐', style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: locked ? GameTokens.textSecondary : Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (!locked)
+                Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: Colors.white.withOpacity(0.60),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -494,7 +629,7 @@ class _JobCard extends StatelessWidget {
                           children: [
                             Text(
                               job.npcName,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: GameTokens.textSecondary,
                                 fontSize: 10,
                               ),
@@ -519,7 +654,7 @@ class _JobCard extends StatelessWidget {
                     '"${job.story}"',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: GameTokens.textSecondary,
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
@@ -560,7 +695,7 @@ class _JobCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  const Text(
                     'Materiales necesarios:',
                     style: TextStyle(
                       color: GameTokens.textSecondary,
@@ -678,7 +813,7 @@ class _JobCard extends StatelessWidget {
                                     color: Colors.white.withOpacity(0.50),
                                     size: 15),
                                 const SizedBox(width: 6),
-                                Text(
+                                const Text(
                                   'Ve a la Tienda',
                                   style: TextStyle(
                                     color: GameTokens.textSecondary,
@@ -777,7 +912,7 @@ class _ConfirmJobDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Se consumirán estos materiales:',
             style: TextStyle(
               color: GameTokens.textSecondary,
@@ -822,7 +957,7 @@ class _ConfirmJobDialog extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 '⭐ +${job.xpReward} XP',
-                style: TextStyle(
+                style: const TextStyle(
                   color: GameTokens.textSecondary,
                   fontSize: 13,
                 ),
@@ -869,7 +1004,7 @@ class _ConfirmJobDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: Text(
+          child: const Text(
             'Cancelar',
             style: TextStyle(color: GameTokens.textSecondary),
           ),
@@ -950,7 +1085,7 @@ class _RewardDialog extends StatelessWidget {
           Text(
             '${job.npcEmoji} ${job.npcName} te agradece mucho.',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: GameTokens.textSecondary,
               fontSize: 13,
             ),
