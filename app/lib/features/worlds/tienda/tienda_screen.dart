@@ -14,7 +14,9 @@ import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/world_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../../../shared/widgets/return_to_mission_banner.dart';
 import '../../../shared/widgets/activity_player.dart';
+import '../misiones/misiones_screen.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/game_card.dart';
@@ -158,8 +160,9 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
       await MissionTracker().recordPurchase();
       ref.invalidate(inventoryProvider);
       if (mounted) {
-        _snack('¡Compraste ${qty}x ${item.name}!', const Color(0xFF2E7D32));
         _blinkReaction.react(BlinkMood.celebrando);
+        _snack('¡Compraste ${qty}x ${item.name}!', const Color(0xFF2E7D32),
+            leading: BlinkAvatar(size: 60, reaction: _blinkReaction));
       }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
@@ -199,8 +202,9 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
       ref.invalidate(currentWalletProvider);
       final newBadges = await ref.read(badgeCheckerProvider.notifier).check();
       if (mounted) {
-        _snack('¡Compraste ${c.name}!', const Color(0xFF2E7D32));
         _blinkReaction.react(BlinkMood.celebrando);
+        _snack('¡Compraste ${c.name}!', const Color(0xFF2E7D32),
+            leading: BlinkAvatar(size: 60, reaction: _blinkReaction));
         showBadgeUnlockCelebrations(context, ref, newBadges);
       }
     } catch (e) {
@@ -210,8 +214,8 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
     }
   }
 
-  void _snack(String msg, Color bg) =>
-      showGamePopup(context, msg, accentColor: bg);
+  void _snack(String msg, Color bg, {Widget? leading}) =>
+      showGamePopup(context, msg, accentColor: bg, leading: leading);
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +256,8 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
           );
         }
       },
-      child: ScreenBackground(
+      child: Stack(children: [
+        ScreenBackground(
           child: Row(
         children: [
           // ── Sidebar ────────────────────────────────────────────────────────
@@ -327,20 +332,18 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
                           },
                         ),
                 ),
-                // ── Presencia de Blink en la esquina ──────────────────────────
-                Positioned(
-                  left: 4,
-                  bottom: 0,
-                  child: IgnorePointer(
-                    child: BlinkAvatar(
-                        size: 100, bounce: true, reaction: _blinkReaction),
-                  ),
-                ),
               ],
             ),
           ),
         ],
       )),
+        ReturnToMissionBanner(
+          onReturn: () {
+            Navigator.of(context).pop();
+            showMisionesDialog(context);
+          },
+        ),
+      ]),
     );
   }
 }

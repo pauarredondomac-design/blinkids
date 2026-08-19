@@ -10,9 +10,11 @@ import '../../../shared/providers/badge_provider.dart';
 import '../../../data/models/badge.dart';
 import '../../../shared/widgets/blink_avatar.dart';
 import '../../../shared/widgets/blink_reaction.dart';
+import '../../../shared/widgets/blink_face_popup.dart';
 import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_popup.dart';
+import '../../../shared/widgets/item_icon.dart';
 import '../../../shared/widgets/tab_icon.dart';
 import '../../../shared/widgets/modal_corners.dart';
 import '../../../shared/theme/game_tokens.dart';
@@ -164,8 +166,16 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
       ref.invalidate(equippedLoadoutProvider);
       if (changed) ref.read(justChangedOutfitProvider.notifier).state = true;
       if (mounted) {
-        _snack('¡Cambios guardados! ✨', const Color(0xFF2E7D32));
-        _blinkReaction.react(BlinkMood.contento);
+        if (changed) {
+          await showBlinkFacePopup(
+            context,
+            helmetAssetPath: _previewSlots[CosmeticSlot.helmet.id]
+                ?.equippedAssetPath,
+            mood: BlinkMood.contento,
+          );
+        } else {
+          _snack('Sin cambios que guardar.', const Color(0xFF2E7D32));
+        }
       }
     } catch (e) {
       if (mounted) _snack('Error: $e', Colors.red.shade700);
@@ -564,14 +574,7 @@ class _InventoryCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 28),
             child: Center(
-              child: item.imagePath != null
-                  ? Image.asset(
-                      'assets/items/${item.imagePath}',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Text(item.emoji,
-                          style: const TextStyle(fontSize: 40)),
-                    )
-                  : Text(item.emoji, style: const TextStyle(fontSize: 40)),
+              child: ItemIcon(item: item, size: 48),
             ),
           ),
           Positioned(

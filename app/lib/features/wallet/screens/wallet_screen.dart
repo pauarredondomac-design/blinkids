@@ -17,7 +17,9 @@ import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/game_icon.dart';
 import '../../../shared/widgets/goal_dream_flow.dart';
 import '../../../shared/widgets/modal_corners.dart';
+import '../../../shared/widgets/return_to_mission_banner.dart';
 import '../../../shared/theme/game_tokens.dart';
+import '../../worlds/misiones/misiones_screen.dart';
 
 // Valor especial que _AddCoinsDialog devuelve cuando el niño toca "Ver Mis
 // Sueños" en vez de repartir monedas — así el diálogo se cierra primero y
@@ -97,7 +99,8 @@ class WalletScreen extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: ScreenBackground(
+        body: Stack(children: [
+          ScreenBackground(
             child: SafeArea(
           child: Column(
             children: [
@@ -137,6 +140,13 @@ class WalletScreen extends ConsumerWidget {
             ],
           ),
         )),
+          ReturnToMissionBanner(
+            onReturn: () {
+              Navigator.of(context).pop();
+              showMisionesDialog(context);
+            },
+          ),
+        ]),
       ),
     );
   }

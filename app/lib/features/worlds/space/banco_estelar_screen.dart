@@ -11,12 +11,14 @@ import '../../../shared/widgets/activity_player.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/modal_corners.dart';
+import '../../../shared/widgets/return_to_mission_banner.dart';
 import '../../../shared/theme/game_tokens.dart';
+import '../misiones/misiones_screen.dart';
 
-// Tasa de crecimiento semanal de "Invertir" — visible como "+3.5% Semanal".
+// Tasa de crecimiento semanal de "Invertir" — visible como "+3% Semanal".
 // Nota: es un valor INFORMATIVO/proyectado. El saldo real (el que se mueve
 // en Mi Bolsa) no cambia solo — aquí solo se VE cómo iría creciendo.
-const double _weeklyInvestRate = 0.035;
+const double _weeklyInvestRate = 0.03;
 
 double _investedCurrentValue(WalletCategory cat) {
   final elapsedSeconds = DateTime.now().difference(cat.updatedAt).inSeconds;
@@ -93,17 +95,16 @@ class BancoEstelarDialogShell extends ConsumerWidget {
             TutorialStep(
               title: '¡Bienvenido al Banco Estelar!',
               body:
-                  'Aquí puedes ver cómo se mueve el dinero que repartiste en Mi Bolsa.',
+                  'Aquí ves las monedas que mandaste a Invertir desde Mi Bolsa.',
             ),
             TutorialStep(
-              title: 'Guardar vs. Invertir',
+              title: 'Dales tiempo',
               body:
-                  'Lo que guardas se queda seguro, tal cual. Lo que inviertes puede ir creciendo con el tiempo.',
+                  'Lo que inviertes puede ir creciendo con el tiempo. Entre más esperes, más crece.',
             ),
             TutorialStep(
               title: 'Retira lo que ganaste',
-              body:
-                  'Puedes retirar las ganancias de tu inversión, o sacar monedas de lo guardado, cuando quieras.',
+              body: 'Puedes retirar las ganancias de tu inversión cuando quieras.',
             ),
           ],
           onReady: () => maybeShowDailyBuildingQuestion(
@@ -116,7 +117,8 @@ class BancoEstelarDialogShell extends ConsumerWidget {
           child: SizedBox(
             width: size.width * (isFullScreen ? 0.85 : 0.90),
             height: size.height * (isFullScreen ? 0.80 : 0.83),
-            child: _BEFrame(
+            child: Stack(children: [
+              _BEFrame(
               onClose: onClose,
               child: catsAsync.when(
                 loading: () => const Center(
@@ -130,7 +132,14 @@ class BancoEstelarDialogShell extends ConsumerWidget {
                 data: (cats) =>
                     _AccountDashboard(categories: cats, wallet: wallet),
               ),
-            ),
+              ),
+              ReturnToMissionBanner(
+                onReturn: () {
+                  onClose();
+                  showMisionesDialog(context);
+                },
+              ),
+            ]),
           ),
         ),
       ),
@@ -222,11 +231,11 @@ class _NumberBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Dashboard — información de lo que el niño repartió en Mi Bolsa
-// (Guardar / Invertir), con retiro de vuelta al pool libre:
-//  · "Invertir" crece +3.5% semanal (proyectado); "Retirar ganancias" cobra
-//    solo lo GENERADO (el capital invertido se queda intacto y sigue creciendo).
-//  · "Guardar" no crece; "Retirar" saca directamente del monto guardado.
+// Dashboard — Banco Estelar es EXCLUSIVO de "Invertir" (lo que el niño
+// mandó a invertir desde Mi Bolsa). "Guardar" vive solo en Mi Bolsa: son
+// monedas reservadas para después/una meta, no una inversión.
+// "Invertir" crece +3% semanal (proyectado); "Retirar Fondos" cobra solo lo
+// GENERADO (el capital invertido se queda intacto y sigue creciendo).
 // Repartir monedas HACIA una categoría se sigue haciendo solo en Mi Bolsa.
 // ─────────────────────────────────────────────────────────────────────────────
 class _AccountDashboard extends ConsumerStatefulWidget {
@@ -308,33 +317,8 @@ class _AccountDashboardState extends ConsumerState<_AccountDashboard> {
     }
   }
 
-  Future<void> _withdrawFromGuardado(WalletCategory guardar) async {
-    if (guardar.balance <= 0 || _busy) return;
-    final amount = await showDialog<int>(
-      context: context,
-      builder: (_) => _WithdrawAmountDialog(category: guardar),
-    );
-    if (amount == null || amount <= 0) return;
-    await _withdraw(
-      category: guardar,
-      amount: amount,
-      newCategoryBalance: guardar.balance - amount,
-    );
-    if (mounted) {
-      await showDialog<void>(
-        context: context,
-        builder: (_) => _WithdrawResultDialog(
-          title: '¡Retiraste tus monedas! 🪙',
-          message: 'Sacaste $amount monedas de Guardado.',
-          color: const Color(0xFF42A5F5),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final guardar = _catFor(WalletCategoryType.guardar);
     final invertir = _catFor(WalletCategoryType.invertir);
     final invertBalance = invertir?.balance ?? 0;
     final invertCurrent =
@@ -345,7 +329,6 @@ class _AccountDashboardState extends ConsumerState<_AccountDashboard> {
         ? DateTime.now().difference(invertir.updatedAt).inMinutes / (60 * 24)
         : 0.0;
     final daysClamped = daysSinceInvest.clamp(0.0, 7.0);
-    final guardarBalance = guardar?.balance ?? 0;
 
     return Column(
       children: [
@@ -380,7 +363,7 @@ class _AccountDashboardState extends ConsumerState<_AccountDashboard> {
                       child: _InfoCard(
                         icon: '🏆',
                         iconColor: const Color(0xFFFFB300),
-                        label: 'Intereses Acumulados',
+                        label: 'Cuánto crecieron',
                         value: '+$invertGain',
                         subtitle: invertGain > 0
                             ? 'Listos para retirar'
@@ -392,21 +375,6 @@ class _AccountDashboardState extends ConsumerState<_AccountDashboard> {
                   ],
                 ),
                 const SizedBox(height: 12),
-
-                // ── ② Inversión Activa ─────────────────────────────
-                Row(
-                  children: [
-                    const _NumberBadge(2),
-                    const SizedBox(width: 8),
-                    const Text('Inversión Activa',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                            fontFamily: 'Nunito')),
-                  ],
-                ),
-                const SizedBox(height: 10),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -414,56 +382,22 @@ class _AccountDashboardState extends ConsumerState<_AccountDashboard> {
                       flex: 3,
                       child: _InvestmentCard(
                         balance: invertBalance,
+                        gain: invertGain,
                         daysProgress: daysClamped,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       flex: 2,
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Guardado: ',
-                                  style: TextStyle(
-                                      color: GameTokens.textSecondary,
-                                      fontSize: 11,
-                                      fontFamily: 'Nunito')),
-                              Text('$guardarBalance',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12,
-                                      fontFamily: 'Nunito')),
-                              const SizedBox(width: 3),
-                              const AnimatedCoin(size: 12),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _PillButton(
-                            label: 'Retirar Fondos',
-                            color: const Color(0xFF69F0AE),
-                            enabled: invertir != null &&
-                                invertGain > 0 &&
-                                !_busy,
-                            onTap: invertir == null
-                                ? null
-                                : () => _collectInvestmentGains(
-                                    invertir, invertGain),
-                          ),
-                          const SizedBox(height: 8),
-                          _PillButton(
-                            label: 'Retirar de Guardado',
-                            color: const Color(0xFF42A5F5),
-                            enabled: guardar != null &&
-                                guardarBalance > 0 &&
-                                !_busy,
-                            onTap: guardar == null
-                                ? null
-                                : () => _withdrawFromGuardado(guardar),
-                          ),
-                        ],
+                      child: _PillButton(
+                        label: 'Retirar Fondos',
+                        color: const Color(0xFF69F0AE),
+                        enabled:
+                            invertir != null && invertGain > 0 && !_busy,
+                        onTap: invertir == null
+                            ? null
+                            : () =>
+                                _collectInvestmentGains(invertir, invertGain),
                       ),
                     ),
                   ],
@@ -572,7 +506,7 @@ class _InfoCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Badge "+3.5% Semanal"
+// Badge "+3% Semanal"
 // ─────────────────────────────────────────────────────────────────────────────
 class _GrowthBadge extends StatelessWidget {
   const _GrowthBadge();
@@ -605,7 +539,7 @@ class _GrowthBadge extends StatelessWidget {
                   begin: 1.0, end: 1.15, duration: 1100.ms,
                   curve: Curves.easeInOut),
           const SizedBox(height: 4),
-          const Text('+3.5%',
+          const Text('+3%',
               style: TextStyle(
                   color: Color(0xFFFFB300),
                   fontWeight: FontWeight.w900,
@@ -624,8 +558,10 @@ class _GrowthBadge extends StatelessWidget {
 // Tarjeta "Inversión Activa" — capital + progreso del ciclo semanal
 // ─────────────────────────────────────────────────────────────────────────────
 class _InvestmentCard extends StatelessWidget {
-  const _InvestmentCard({required this.balance, required this.daysProgress});
+  const _InvestmentCard(
+      {required this.balance, required this.gain, required this.daysProgress});
   final int balance;
+  final int gain;
   final double daysProgress; // 0..7
 
   @override
@@ -646,7 +582,7 @@ class _InvestmentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Capital invertido',
+                Text('Monedas que invertiste',
                     style: TextStyle(
                         color: GameTokens.textSecondary,
                         fontSize: 11,
@@ -664,6 +600,22 @@ class _InvestmentCard extends StatelessWidget {
                     const AnimatedCoin(size: 15),
                   ],
                 ),
+                if (gain > 0) ...[
+                  const SizedBox(height: 3),
+                  Text('$balance × 3% = $gain',
+                      style: TextStyle(
+                          color: const Color(0xFFFFB300).withOpacity(0.90),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                          fontFamily: 'Nunito')),
+                  const SizedBox(height: 1),
+                  Text('$balance + $gain = ${balance + gain}',
+                      style: TextStyle(
+                          color: const Color(0xFF69F0AE).withOpacity(0.90),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                          fontFamily: 'Nunito')),
+                ],
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
@@ -691,7 +643,7 @@ class _InvestmentCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Botón pill de acción (Retirar Fondos / Retirar de Guardado)
+// Botón pill de acción (Retirar Fondos)
 // ─────────────────────────────────────────────────────────────────────────────
 class _PillButton extends StatelessWidget {
   const _PillButton({
@@ -766,105 +718,6 @@ class _PillButton extends StatelessWidget {
               begin: 1.0, end: 1.035, duration: 900.ms, curve: Curves.easeInOut);
     }
     return button;
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Diálogo — elegir cuánto retirar de una categoría (slider, igual que Mi Bolsa)
-// ─────────────────────────────────────────────────────────────────────────────
-class _WithdrawAmountDialog extends StatefulWidget {
-  const _WithdrawAmountDialog({required this.category});
-  final WalletCategory category;
-
-  @override
-  State<_WithdrawAmountDialog> createState() => _WithdrawAmountDialogState();
-}
-
-class _WithdrawAmountDialogState extends State<_WithdrawAmountDialog> {
-  late double _amount;
-
-  @override
-  void initState() {
-    super.initState();
-    _amount = widget.category.balance.clamp(1, widget.category.balance).toDouble();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    const accent = Color(0xFF42A5F5);
-    final amount = _amount.round();
-    return Dialog(
-      backgroundColor: const Color(0xFF0D1B3E),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: accent.withOpacity(0.45)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('🛡', style: TextStyle(fontSize: 32)),
-            const SizedBox(height: 6),
-            const Text('Retirar de Guardado',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Nunito',
-                    fontSize: 16)),
-            const SizedBox(height: 4),
-            Text('Tienes ${widget.category.balance} guardadas',
-                style: TextStyle(
-                    color: GameTokens.textSecondary,
-                    fontFamily: 'Nunito',
-                    fontSize: 12)),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const AnimatedCoin(size: 22),
-                const SizedBox(width: 8),
-                Text('$amount',
-                    style: const TextStyle(
-                        color: accent,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 32,
-                        fontFamily: 'Nunito')),
-              ],
-            ),
-            Slider(
-              value: _amount,
-              min: 1,
-              max: widget.category.balance.toDouble(),
-              divisions:
-                  widget.category.balance > 1 ? widget.category.balance - 1 : 1,
-              activeColor: accent,
-              onChanged: (v) => setState(() => _amount = v),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancelar'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(amount),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: accent, foregroundColor: Colors.black87),
-                    child: const Text('Retirar'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

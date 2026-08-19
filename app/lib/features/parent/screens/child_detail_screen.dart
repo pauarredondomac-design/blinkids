@@ -920,6 +920,8 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
   final _descCtrl = TextEditingController();
   final _steps = [10, 20, 50, 100];
   int _reward = 20;
+  int _step = 0; // asistente de 3 pasos: título → instrucciones → recompensa
+  static const _totalSteps = 3;
 
   @override
   void dispose() {
@@ -958,6 +960,145 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
     );
   }
 
+  bool _canAdvance(bool titleOk, bool canAfford) {
+    return switch (_step) {
+      0 => titleOk,
+      1 => true,
+      _ => canAfford,
+    };
+  }
+
+  Widget _titleStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('¿Cuál es la misión?',
+            style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w700,
+                fontSize: 13)),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _titleCtrl,
+          autofocus: true,
+          maxLength: 60,
+          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+          decoration: _fieldDecoration(
+            label: 'Título de la misión',
+            hint: 'Ej: Tender la cama',
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+      ],
+    );
+  }
+
+  Widget _descriptionStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('¿Alguna instrucción para tu hijo? (opcional)',
+            style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w700,
+                fontSize: 13)),
+        const SizedBox(height: 10),
+        TextField(
+          controller: _descCtrl,
+          autofocus: true,
+          maxLines: 3,
+          maxLength: 140,
+          style: const TextStyle(
+              color: Colors.white, fontFamily: 'Nunito', fontSize: 13),
+          decoration: _fieldDecoration(
+            label: 'Instrucciones (opcional)',
+            hint: 'Ej: Todos los días antes de las 9am',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _rewardStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Tu saldo: ${widget.parentBalance}',
+              style: const TextStyle(
+                  color: Colors.white54, fontFamily: 'Nunito', fontSize: 13),
+            ),
+            const SizedBox(width: 4),
+            const AnimatedCoin(size: 13),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text('¿Cuántas monedas de recompensa?',
+            style: TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w700,
+                fontSize: 13)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _steps.map((s) {
+            final selected = s == _reward;
+            final affordable = s <= widget.parentBalance;
+            return GestureDetector(
+              onTap: affordable ? () => setState(() => _reward = s) : null,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? const Color(0xFFFFD600)
+                      : affordable
+                          ? Colors.white10
+                          : Colors.white.withAlpha(10),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color:
+                        selected ? const Color(0xFFFFD600) : Colors.white24,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$s',
+                      style: TextStyle(
+                        color: selected
+                            ? Colors.black87
+                            : affordable
+                                ? Colors.white
+                                : Colors.white24,
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(width: 3),
+                    const AnimatedCoin(size: 13),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final titleOk = _titleCtrl.text.trim().isNotEmpty;
@@ -966,6 +1107,8 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
     // Dialog propio (en vez de AlertDialog): tamaño y posición fijos, sin
     // reaccionar al teclado — el niño... digo, el padre, sigue viendo el
     // popup completo en vez de que se achique o se corra al escribir.
+    // Asistente de 3 pasos (título → instrucciones → recompensa) en vez de
+    // un solo formulario con todo junto.
     return MediaQuery.removeViewInsets(
       context: context,
       removeBottom: true,
@@ -977,8 +1120,8 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
           side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
         ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 340),
-          child: SingleChildScrollView(
+          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 360),
+          child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -999,126 +1142,64 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
                     ),
                   ),
                 ]),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _titleCtrl,
-                  maxLength: 60,
-                  style: const TextStyle(
-                      color: Colors.white, fontFamily: 'Nunito'),
-                  decoration: _fieldDecoration(
-                    label: 'Título de la misión',
-                    hint: 'Ej: Tender la cama',
-                  ),
-                  onChanged: (_) => setState(() {}),
-                ),
-                const SizedBox(height: 4),
-                TextField(
-                  controller: _descCtrl,
-                  maxLines: 2,
-                  maxLength: 140,
-                  style: const TextStyle(
-                      color: Colors.white, fontFamily: 'Nunito', fontSize: 13),
-                  decoration: _fieldDecoration(
-                    label: 'Instrucciones para tu hijo (opcional)',
-                    hint: 'Ej: Todos los días antes de las 9am',
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tu saldo: ${widget.parentBalance}',
-                      style: const TextStyle(
-                          color: Colors.white54,
-                          fontFamily: 'Nunito',
-                          fontSize: 13),
-                    ),
-                    const SizedBox(width: 4),
-                    const AnimatedCoin(size: 13),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Recompensa',
-                  style: TextStyle(
-                      color: Colors.white38,
-                      fontFamily: 'Nunito',
-                      fontSize: 12),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _steps.map((s) {
-                    final selected = s == _reward;
-                    final affordable = s <= widget.parentBalance;
-                    return GestureDetector(
-                      onTap:
-                          affordable ? () => setState(() => _reward = s) : null,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? const Color(0xFFFFD600)
-                              : affordable
-                                  ? Colors.white10
-                                  : Colors.white.withAlpha(10),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: selected
-                                ? const Color(0xFFFFD600)
-                                : Colors.white24,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '$s',
-                              style: TextStyle(
-                                color: selected
-                                    ? Colors.black87
-                                    : affordable
-                                        ? Colors.white
-                                        : Colors.white24,
-                                fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(width: 3),
-                            const AnimatedCoin(size: 13),
-                          ],
-                        ),
+                  children: List.generate(_totalSteps, (i) {
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.only(right: 6),
+                      width: i == _step ? 22 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: i <= _step
+                            ? const Color(0xFF7C3AED)
+                            : Colors.white24,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     );
-                  }).toList(),
+                  }),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  height: 160,
+                  child: SingleChildScrollView(
+                    child: switch (_step) {
+                      0 => _titleStep(),
+                      1 => _descriptionStep(),
+                      _ => _rewardStep(),
+                    },
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar',
-                          style: TextStyle(
+                      onPressed: _step == 0
+                          ? () => Navigator.pop(context)
+                          : () => setState(() => _step--),
+                      child: Text(_step == 0 ? 'Cancelar' : 'Atrás',
+                          style: const TextStyle(
                               color: Colors.white54, fontFamily: 'Nunito')),
                     ),
-                    const SizedBox(width: 8),
                     FilledButton(
-                      onPressed: (titleOk && canAfford)
-                          ? () => Navigator.pop(
-                                context,
-                                _NewMissionData(
-                                  title: _titleCtrl.text.trim(),
-                                  description: _descCtrl.text.trim().isEmpty
-                                      ? null
-                                      : _descCtrl.text.trim(),
-                                  coinReward: _reward,
-                                ),
-                              )
+                      onPressed: _canAdvance(titleOk, canAfford)
+                          ? () {
+                              if (_step < _totalSteps - 1) {
+                                setState(() => _step++);
+                              } else {
+                                Navigator.pop(
+                                  context,
+                                  _NewMissionData(
+                                    title: _titleCtrl.text.trim(),
+                                    description: _descCtrl.text.trim().isEmpty
+                                        ? null
+                                        : _descCtrl.text.trim(),
+                                    coinReward: _reward,
+                                  ),
+                                );
+                              }
+                            }
                           : null,
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF7C3AED),
@@ -1126,8 +1207,9 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('Crear misión',
-                          style: TextStyle(
+                      child: Text(
+                          _step < _totalSteps - 1 ? 'Siguiente' : 'Crear misión',
+                          style: const TextStyle(
                               fontFamily: 'Nunito',
                               fontWeight: FontWeight.w800)),
                     ),

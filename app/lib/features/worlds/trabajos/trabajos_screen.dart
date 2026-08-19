@@ -13,7 +13,10 @@ import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/mission_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/world_provider.dart';
+import '../../../shared/widgets/item_icon.dart';
+import '../../../shared/widgets/return_to_mission_banner.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
+import '../misiones/misiones_screen.dart';
 import '../../../shared/widgets/activity_player.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/rocket_launch_overlay.dart';
@@ -79,6 +82,7 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
   _TrabajosSection _section = _TrabajosSection.taller;
   int _unlockedChapter = 1;
   int? _expandedChapter;
+  Set<String> _completedJobIds = {};
 
   @override
   void initState() {
@@ -86,6 +90,12 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
     _loadInventory();
     _loadJobs();
     _loadChapterUnlock();
+    _loadCompletedJobs();
+  }
+
+  Future<void> _loadCompletedJobs() async {
+    final ids = await CraftingJobRepository.completedJobIds();
+    if (mounted) setState(() => _completedJobIds = ids);
   }
 
   Future<void> _loadJobs() async {
@@ -176,6 +186,7 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
       await MissionTracker().recordJob();
       ref.invalidate(inventoryProvider);
       await _loadInventory();
+      await _loadCompletedJobs();
 
       if (mounted) {
         await _showRewardDialog(job);
@@ -229,12 +240,17 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
       );
 
       if (expanded) {
-        for (final job in chJobs) {
+        for (var i = 0; i < chJobs.length; i++) {
+          final job = chJobs[i];
+          final prevCompleted =
+              i == 0 || _completedJobIds.contains(chJobs[i - 1].id);
           widgets.add(
             _JobCard(
               job: job,
               inventory: _inventory,
               canDo: _hasAllMaterials(job),
+              locked: !prevCompleted,
+              completed: _completedJobIds.contains(job.id),
               onTap: () => _doJob(job),
             ).animate().fadeIn(duration: 250.ms),
           );
@@ -253,6 +269,7 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
           job: job,
           inventory: _inventory,
           canDo: _hasAllMaterials(job),
+          completed: _completedJobIds.contains(job.id),
           onTap: () => _doJob(job),
         ).animate().fadeIn(duration: 250.ms),
     ];
@@ -295,8 +312,9 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: ScreenBackground(
-            child: Row(
+        body: Stack(children: [
+          ScreenBackground(
+              child: Row(
           children: [
             _JobsSidebar(
               coins: coins,
@@ -325,6 +343,13 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
             ),
           ],
         )),
+          ReturnToMissionBanner(
+            onReturn: () {
+              Navigator.of(context).pop();
+              showMisionesDialog(context);
+            },
+          ),
+        ]),
       ),
     );
   }
@@ -578,15 +603,123 @@ class _JobCard extends StatelessWidget {
     required this.inventory,
     required this.canDo,
     required this.onTap,
+    this.locked = false,
+    this.completed = false,
   });
 
   final CraftingJob job;
   final Map<String, int> inventory;
   final bool canDo;
   final VoidCallback onTap;
+  final bool locked;
+  final bool completed;
 
   @override
   Widget build(BuildContext context) {
+    if (completed) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Opacity(
+          opacity: 0.70,
+          child: GameCard(
+            accentColor: Colors.greenAccent,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                const Text('✅', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${job.emoji} ${job.name}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      const Text(
+                        'Completado — ya recibiste tu recompensa.',
+                        style: TextStyle(
+                          color: Colors.greenAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    if (locked) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Opacity(
+          opacity: 0.55,
+          child: GameCard(
+            accentColor: const Color(0xFF4FC3F7),
+            locked: true,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                const Text('🔒', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${job.emoji} ${job.name}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      const Text(
+                        'Completa el trabajo anterior para abrir este.',
+                        style: TextStyle(
+                          color: GameTokens.textSecondary,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 4,
+                        children: [
+                          _RewardChip('+${job.coinReward}',
+                              const Color(0xFFFFD600), showCoin: true),
+                          _RewardChip('⭐ +${job.xpReward}', Colors.white54),
+                          if (job.fuelReward > 0)
+                            _RewardChip('🚀 +${job.fuelReward}%',
+                                const Color(0xFFFF9800)),
+                          if (job.itemReward != null)
+                            _RewardChip(
+                              '×${job.itemReward!.qty}',
+                              const Color(0xFFCE93D8),
+                              icon: ItemIcon(
+                                  item: job.itemReward!.item, size: 14),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: GameCard(
@@ -676,8 +809,10 @@ class _JobCard extends StatelessWidget {
                             '🚀 +${job.fuelReward}%', const Color(0xFFFF9800)),
                       if (job.itemReward != null)
                         _RewardChip(
-                          '${job.itemReward!.item?.emoji ?? '🎁'} ×${job.itemReward!.qty}',
+                          '×${job.itemReward!.qty}',
                           const Color(0xFFCE93D8),
+                          icon:
+                              ItemIcon(item: job.itemReward!.item, size: 14),
                         ),
                     ],
                   ),
@@ -695,15 +830,17 @@ class _JobCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Materiales necesarios:',
-                    style: TextStyle(
-                      color: GameTokens.textSecondary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 11,
+                  if (job.requirements.isNotEmpty) ...[
+                    const Text(
+                      'Materiales necesarios:',
+                      style: TextStyle(
+                        color: GameTokens.textSecondary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
+                    const SizedBox(height: 6),
+                  ],
                   Wrap(
                     spacing: 6,
                     runSpacing: 5,
@@ -728,8 +865,7 @@ class _JobCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(item?.emoji ?? '❓',
-                                style: const TextStyle(fontSize: 13)),
+                            ItemIcon(item: item, size: 16),
                             const SizedBox(width: 4),
                             Text(
                               '${item?.name ?? req.itemId} ×${req.qty}',
@@ -809,12 +945,12 @@ class _JobCard extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.shopping_cart_rounded,
+                                Icon(Icons.lock_clock_rounded,
                                     color: Colors.white.withOpacity(0.50),
                                     size: 15),
                                 const SizedBox(width: 6),
                                 const Text(
-                                  'Ve a la Tienda',
+                                  'Te faltan materiales',
                                   style: TextStyle(
                                     color: GameTokens.textSecondary,
                                     fontWeight: FontWeight.w700,
@@ -839,10 +975,12 @@ class _JobCard extends StatelessWidget {
 // Chip de recompensa
 // ─────────────────────────────────────────────────────────────────────────────
 class _RewardChip extends StatelessWidget {
-  const _RewardChip(this.label, this.color, {this.showCoin = false});
+  const _RewardChip(this.label, this.color,
+      {this.showCoin = false, this.icon});
   final String label;
   final Color color;
   final bool showCoin;
+  final Widget? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -858,6 +996,10 @@ class _RewardChip extends StatelessWidget {
         children: [
           if (showCoin) ...[
             const AnimatedCoin(size: 12),
+            const SizedBox(width: 3),
+          ],
+          if (icon != null) ...[
+            icon!,
             const SizedBox(width: 3),
           ],
           Text(
@@ -913,7 +1055,7 @@ class _ConfirmJobDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Se consumirán estos materiales:',
+            'Vas a usar:',
             style: TextStyle(
               color: GameTokens.textSecondary,
               fontSize: 13,
@@ -922,18 +1064,29 @@ class _ConfirmJobDialog extends StatelessWidget {
           const SizedBox(height: 10),
           ...job.requirements.map((req) {
             final item = req.item;
+            final reusable = item?.isReusable == true;
             return Padding(
               padding: const EdgeInsets.only(bottom: 5),
               child: Row(
                 children: [
-                  Text(item?.emoji ?? '❓',
-                      style: const TextStyle(fontSize: 18)),
+                  ItemIcon(item: item, size: 22),
                   const SizedBox(width: 8),
                   Text(
                     '${item?.name ?? req.itemId} × ${req.qty}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    reusable ? '(se queda contigo)' : '(se gasta)',
+                    style: TextStyle(
+                      color: reusable
+                          ? Colors.greenAccent.withOpacity(0.85)
+                          : GameTokens.textSecondary,
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
@@ -985,8 +1138,7 @@ class _ConfirmJobDialog extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                Text(job.itemReward!.item?.emoji ?? '🎁',
-                    style: const TextStyle(fontSize: 18)),
+                ItemIcon(item: job.itemReward!.item, size: 22),
                 const SizedBox(width: 6),
                 Text(
                   '+${job.itemReward!.qty} ${job.itemReward!.item?.name ?? ''}',
@@ -1107,8 +1259,9 @@ class _RewardDialog extends StatelessWidget {
               if (job.itemReward != null) ...[
                 const SizedBox(width: 8),
                 _RewardBadge(
-                  '${job.itemReward!.item?.emoji ?? '🎁'} ×${job.itemReward!.qty}',
+                  '×${job.itemReward!.qty}',
                   const Color(0xFFCE93D8),
+                  icon: ItemIcon(item: job.itemReward!.item, size: 18),
                 ),
               ],
             ],
@@ -1153,10 +1306,12 @@ class _RewardDialog extends StatelessWidget {
 // Badge de recompensa en diálogo
 // ─────────────────────────────────────────────────────────────────────────────
 class _RewardBadge extends StatelessWidget {
-  const _RewardBadge(this.label, this.color, {this.showCoin = false});
+  const _RewardBadge(this.label, this.color,
+      {this.showCoin = false, this.icon});
   final String label;
   final Color color;
   final bool showCoin;
+  final Widget? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1172,6 +1327,10 @@ class _RewardBadge extends StatelessWidget {
         children: [
           if (showCoin) ...[
             const AnimatedCoin(size: 14),
+            const SizedBox(width: 4),
+          ],
+          if (icon != null) ...[
+            icon!,
             const SizedBox(width: 4),
           ],
           Text(

@@ -1,10 +1,14 @@
-﻿import 'dart:math';
+﻿import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/providers/profile_provider.dart';
 import '../../../data/models/profile.dart';
+import '../../../shared/widgets/blink_avatar.dart';
+import '../../../shared/widgets/blink_reaction.dart';
+import '../../../shared/theme/game_tokens.dart';
 import '../../../data/repositories/building_question_repository.dart';
 import '../../../data/repositories/wallet_repository.dart';
 import '../../../shared/providers/wallet_provider.dart';
@@ -24,6 +28,7 @@ import '../../wallet/screens/wallet_screen.dart';
 import '../../../shared/widgets/world_side_panels.dart';
 import '../../../shared/widgets/game_popup.dart';
 import '../../../shared/providers/badge_provider.dart';
+import '../../../shared/providers/map_badge_provider.dart';
 import '../../../shared/widgets/badge_unlock_celebration.dart';
 import '../../../shared/widgets/modal_corners.dart';
 
@@ -44,6 +49,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
   late AnimationController _orbitCtrl;
   bool _worldNameChecked = false;
   String? _localWorldName;
+  Timer? _linkReminderTimer;
 
   // ── Mover la estructura + edificios como un solo bloque ───────────────────
   // Cámbialos y guarda para mover TODO junto (la imagen estructuras.png y
@@ -54,13 +60,19 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
   static const double structureOffsetY = 0;
 
   // ── Guía interactiva de bienvenida (solo primera vez, sesión real) ────────
-  static const _guideOrder = [
+  // Demo: recorrido corto (solo Mi Bolsa + Banco Estelar, el ciclo
+  // "reparto → veo crecer") para una demo rápida. Cuenta real: los 5 edificios.
+  static const _kFullGuideOrder = [
     'alcancia',
     'trabajos',
     'misiones',
     'banco',
     'tienda',
   ];
+  static const _kDemoGuideOrder = ['alcancia', 'banco'];
+  bool _isDemoGuide = false;
+  List<String> get _guideOrder =>
+      _isDemoGuide ? _kDemoGuideOrder : _kFullGuideOrder;
   static const _guideMessages = {
     'alcancia': (
       'Mi Bolsa',
@@ -127,13 +139,133 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
           }
         },
       );
+
+      // Cuenta real sin vincular (account_type = 'limited'): aviso al entrar
+      // y luego cada minuto para que pida a papá/mamá que lo vincule.
+      // Ojo: no usar una bandera "ya evaluado" de una sola vez — el perfil
+      // puede resolver null/"full" primero (mientras la sesión termina de
+      // cargar) y luego llegar el valor real; hay que revisar CADA emisión.
+      ref.listenManual<AsyncValue<Profile?>>(
+        currentProfileProvider,
+        (prev, next) {
+          next.whenData((profile) {
+            final shouldRemind = profile?.accountType == AccountType.limited;
+            if (shouldRemind && _linkReminderTimer == null) {
+              if (mounted) _showLinkParentReminder();
+              _linkReminderTimer =
+                  Timer.periodic(const Duration(minutes: 1), (_) {
+                if (mounted) _showLinkParentReminder();
+              });
+            } else if (!shouldRemind) {
+              _linkReminderTimer?.cancel();
+              _linkReminderTimer = null;
+            }
+          });
+        },
+        fireImmediately: true,
+      );
     });
   }
 
   @override
   void dispose() {
     _orbitCtrl.dispose();
+    _linkReminderTimer?.cancel();
     super.dispose();
+  }
+
+  void _showLinkParentReminder() {
+    // No mostrarlo encimado con el recorrido guiado — reintenta al minuto
+    // siguiente (el Timer sigue corriendo, esta llamada solo se salta).
+    if (_guideStep != null) return;
+    final reaction = BlinkReactionController();
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        reaction.react(BlinkMood.sorprendido,
+            hold: const Duration(minutes: 5));
+        return Dialog(
+          backgroundColor: const Color(0xFF0D1B3E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: BorderSide(color: Colors.amberAccent.withOpacity(0.55)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                BlinkAvatar(size: 110, reaction: reaction),
+                const SizedBox(height: 14),
+                const Text(
+                  '¡Todavía no estás vinculado! 👀',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 20,
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Pídele a tu papá o mamá que te vinculen para guardar tu progreso y no perder nada.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: GameTokens.textSecondary,
+                    fontSize: 14,
+                    fontFamily: 'Nunito',
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      showDialog<void>(
+                        context: context,
+                        builder: (_) => const RedeemCodeDialog(),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(colors: [
+                          Color(0xFFFFB300),
+                          Color(0xFFFF8C00),
+                        ]),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Text(
+                        'Vincular ahora',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Después',
+                      style: TextStyle(
+                          color: GameTokens.textSecondary,
+                          fontFamily: 'Nunito')),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   // Cuentas reales: la guía solo sale la primera vez (se recuerda en
@@ -144,7 +276,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
     final user = Supabase.instance.client.auth.currentUser;
     final isDemo = user == null || user.isAnonymous;
     if (isDemo) {
-      if (mounted) setState(() => _guideStep = 0);
+      if (mounted) setState(() {
+        _isDemoGuide = true;
+        _guideStep = 0;
+      });
       return;
     }
     try {
@@ -421,7 +556,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
               buildWorldCenterHud(context, ref, coins, panelW),
 
               // ── Guía interactiva de bienvenida ─────────────────────────────
-              if (guideActive && guideRect != null)
+              if (guideActive && guideRect != null) ...[
                 _MapGuideOverlay(
                   targetRect: guideRect,
                   screenSize: Size(w, h),
@@ -430,6 +565,35 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
                   stepIndex: _guideStep!,
                   totalSteps: _guideOrder.length,
                 ),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: SafeArea(
+                    child: GestureDetector(
+                      onTap: _completeGuide,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.55),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.35)),
+                        ),
+                        child: const Text(
+                          'Saltar intro ✕',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           );
         },
@@ -505,7 +669,6 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         dialogBuilder: showTrabajosDialog,
         demoRoute: '/demo/trabajos',
         size: imgW * 0.22,
-        badgeCount: 1,
         locked: false,
         islandFx: 0.80,
         islandFy: 0.70,
@@ -521,7 +684,6 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         dialogBuilder: showMisionesDialog,
         demoRoute: '/demo/misiones',
         size: imgW * 0.22,
-        badgeCount: 3,
         locked: false,
         islandFx: 0.67,
         islandFy: 1.02,
@@ -796,6 +958,15 @@ class _BuildingButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Trabajos y Misiones muestran cuántos trabajos/misiones se pueden
+    // completar AHORA MISMO (desbloqueados + con todo lo necesario), en vez
+    // de un número fijo — se recalcula cada vez que se cierra un edificio.
+    final badgeCount = switch (data.id) {
+      'trabajos' => ref.watch(trabajosPendingCountProvider).valueOrNull ?? 0,
+      'misiones' => ref.watch(misionesPendingCountProvider).valueOrNull ?? 0,
+      _ => data.badgeCount,
+    };
+
     // ── Imagen base (grises si bloqueado) ──────────────────────────────────
     Widget image = Image.asset(data.asset, width: data.size);
     if (data.locked) {
@@ -878,7 +1049,7 @@ class _BuildingButton extends ConsumerWidget {
     }
 
     // ── Overlay: badge de notificación ─────────────────────────────────────
-    if (data.badgeCount > 0) {
+    if (badgeCount > 0) {
       building = Stack(
         clipBehavior: Clip.none,
         children: [
@@ -905,7 +1076,7 @@ class _BuildingButton extends ConsumerWidget {
                 ],
               ),
               child: Text(
-                data.badgeCount > 9 ? '9+' : '${data.badgeCount}',
+                badgeCount > 9 ? '9+' : '$badgeCount',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
@@ -964,13 +1135,17 @@ class _BuildingButton extends ConsumerWidget {
         // Demo: abrir como diálogo con DemoStageGate envolviendo la pantalla
         await _showDemoDialog(context, ref, data.demoRoute);
         if (guideTarget) onGuideAdvance?.call();
+        ref.invalidate(trabajosPendingCountProvider);
+        ref.invalidate(misionesPendingCountProvider);
         return;
       }
-      final future = data.dialogBuilder?.call(context);
-      if (guideTarget) {
-        if (future != null) await future;
-        onGuideAdvance?.call();
-      }
+      await data.dialogBuilder?.call(context);
+      if (guideTarget) onGuideAdvance?.call();
+      // Cualquier edificio puede cambiar si un trabajo o misión ya se puede
+      // completar (comprar materiales en Tienda, mover monedas en Mi
+      // Bolsa...), así que se refresca siempre, no solo al salir de esos dos.
+      ref.invalidate(trabajosPendingCountProvider);
+      ref.invalidate(misionesPendingCountProvider);
     }
 
     final tapEnabled = !(data.locked || guideDim);

@@ -35,12 +35,34 @@ class ActivityPlayer extends ConsumerStatefulWidget {
     required this.accentColor,
     this.worldIdForFuel = 'space',
     this.onAllComplete,
+    this.allOrNothing = false,
+    this.rewardsEnabled = true,
+    this.onSessionComplete,
+    this.coinOverride,
   });
 
   final List<Question> activities;
   final Color accentColor;
   final String worldIdForFuel;
   final VoidCallback? onAllComplete;
+
+  /// Si se da, reemplaza el coin_reward guardado en cada pregunta (uso:
+  /// Quizzes da 10 monedas fijas por pregunta, sin importar que el banco
+  /// original de esa pregunta esté configurado en 0 para su uso normal).
+  final int? coinOverride;
+
+  /// Si es true (uso: Quizzes), la recompensa NO se entrega pregunta por
+  /// pregunta — se acumula y solo se entrega al final, y solo si el niño no
+  /// falló ninguna. Si falla una sola, no recibe nada de esa sesión.
+  final bool allOrNothing;
+
+  /// Si es false, ni siquiera se acumula/entrega recompensa aunque salga
+  /// todo correcto (uso: Quizzes ya alcanzó el máximo de veces con premio).
+  final bool rewardsEnabled;
+
+  /// Se llama al terminar la sesión completa (todas las preguntas
+  /// respondidas), con `true` si el niño no falló ninguna.
+  final void Function(bool allCorrect)? onSessionComplete;
 
   @override
   ConsumerState<ActivityPlayer> createState() => _ActivityPlayerState();
@@ -52,6 +74,7 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
   int _coinsEarned = 0;
   int _correctCount = 0;
   bool _showSummary = false;
+  bool _hadWrong = false;
 
   Question get _current => widget.activities[_index];
 
@@ -69,17 +92,63 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
       );
     }
 
-    if (!isCorrect) return;
-
+    if (!isCorrect) {
+      _hadWrong = true;
+      if (mounted) await _showResultPopup(false);
+      return;
+    }
     _correctCount++;
-    _coinsEarned += _current.coinReward;
 
-    final xpFuture = awardXp(ref, _current.xpReward);
+    // Modo todo-o-nada (Quizzes): no se entrega nada pregunta por pregunta,
+    // se acumula todo y se entrega al final solo si no hubo ningún fallo.
+    if (widget.allOrNothing) {
+      if (mounted) await _showResultPopup(true);
+      return;
+    }
+
+    await _grantReward(_current);
+    if (mounted) await _showResultPopup(true);
+  }
+
+  /// Popup con el resultado (correcto/incorrecto + comentario) — reemplaza
+  /// el banner + botón "Siguiente" de abajo de pantalla. Al cerrarse (tap
+  /// afuera o el botón), avanza sola a la siguiente pregunta.
+  Future<void> _showResultPopup(bool isCorrect) async {
+    final q = _current;
+    final isLast = _index >= widget.activities.length - 1;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => _AnswerResultDialog(
+        isCorrect: isCorrect,
+        text: isCorrect
+            ? (q.explanation ?? '¡Muy bien!')
+            : (q.retroWrong ??
+                '¡Estuvo cerca! Pensemos juntos qué nos acerca más a Marte.'),
+        accentColor: widget.accentColor,
+        isLast: isLast,
+      ),
+    );
+    if (mounted) await _handleNext();
+  }
+
+  /// Entrega la recompensa de una pregunta (monedas + XP + combustible +
+  /// medalla/hito). Compartido por el modo normal (pregunta por pregunta) y
+  /// por el cierre del modo todo-o-nada (una vez, al final, por cada
+  /// pregunta de la sesión).
+  Future<void> _grantReward(Question q) async {
+    final coins = widget.coinOverride ?? q.coinReward;
+    _coinsEarned += coins;
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+
+    final xpFuture = awardXp(ref, q.xpReward);
     final futures = <Future>[];
-    if (userId != null) {
+    if (DemoStore.isActive) {
+      if (coins > 0) ref.read(demoProgressProvider).addCoins(coins);
+    } else if (userId != null && coins > 0) {
       futures.add(
         WalletRepository()
-            .awardStarterCoins(userId, _current.coinReward)
+            .awardStarterCoins(userId, coins)
             .catchError((_) => null),
       );
     }
@@ -88,32 +157,44 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
     if (userId != null) ref.invalidate(currentWalletProvider);
 
     var reachedFullFuel = false;
-    if (_current.fuelReward > 0) {
+    if (q.fuelReward > 0) {
       reachedFullFuel = await ref
           .read(fuelNotifierProvider.notifier)
-          .addFuel(widget.worldIdForFuel, _current.fuelReward);
+          .addFuel(widget.worldIdForFuel, q.fuelReward);
     }
 
     if (!mounted) return;
-    if (_current.isHito && _current.badgeName != null) {
-      BadgeUnlockToast.show(context, 'hito-${_current.id}',
-          name: _current.badgeName, emoji: '⭐');
+    if (q.isHito && q.badgeName != null) {
+      BadgeUnlockToast.show(context, 'hito-${q.id}',
+          name: q.badgeName, emoji: '⭐');
     } else {
       showBadgeUnlockCelebrations(context, ref, newBadges);
     }
     if (reachedFullFuel) await handleFuelReachedFull(context, ref);
   }
 
-  void _handleNext() {
+  Future<void> _handleNext() async {
     if (_index < widget.activities.length - 1) {
       setState(() {
         _index++;
         _answerState = _AnswerState.unanswered;
       });
-    } else {
-      setState(() => _showSummary = true);
-      widget.onAllComplete?.call();
+      return;
     }
+
+    if (widget.allOrNothing) {
+      final allCorrect = !_hadWrong;
+      if (allCorrect && widget.rewardsEnabled) {
+        for (final q in widget.activities) {
+          await _grantReward(q);
+        }
+      }
+      widget.onSessionComplete?.call(allCorrect);
+    }
+
+    if (!mounted) return;
+    setState(() => _showSummary = true);
+    widget.onAllComplete?.call();
   }
 
   @override
@@ -132,12 +213,16 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
           _answerState = _AnswerState.unanswered;
           _coinsEarned = 0;
           _correctCount = 0;
+          _hadWrong = false;
           _showSummary = false;
         }),
       );
     }
 
-    return SingleChildScrollView(
+    // Sin scroll: todo debe caber en pantalla. El cuerpo de la mecánica
+    // (Expanded) es lo único con altura variable — si sus opciones no caben,
+    // se apretuja él solo en vez de forzar scroll a toda la pantalla.
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,55 +233,108 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
             total: widget.activities.length,
             accentColor: widget.accentColor,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           if (_current.gancho != null) ...[
             BlinkDialogueBox(
                 text: _current.gancho!, accentColor: widget.accentColor),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
           ],
           _ActivityCard(question: _current, accentColor: widget.accentColor),
-          const SizedBox(height: 16),
-          _MechanicBody(
-            key: ValueKey('mech-${_current.id}'),
-            question: _current,
-            accentColor: widget.accentColor,
-            answered: _answerState != _AnswerState.unanswered,
-            onSubmit: _handleSubmit,
-          ),
-          if (_answerState != _AnswerState.unanswered) ...[
-            const SizedBox(height: 14),
-            _RetroBanner(
-              isCorrect: _answerState == _AnswerState.correct,
-              text: _answerState == _AnswerState.correct
-                  ? (_current.explanation ?? '¡Muy bien!')
-                  : (_current.retroWrong ??
-                      '¡Estuvo cerca! Pensemos juntos qué nos acerca más a Marte.'),
-              accentColor: widget.accentColor,
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: _handleNext,
-                style: FilledButton.styleFrom(
-                  backgroundColor: widget.accentColor,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-                child: Text(
-                  _index < widget.activities.length - 1
-                      ? 'Siguiente'
-                      : 'Terminar',
-                  style: const TextStyle(
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15),
-                ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: SingleChildScrollView(
+              child: _MechanicBody(
+                key: ValueKey('mech-${_current.id}'),
+                question: _current,
+                accentColor: widget.accentColor,
+                answered: _answerState != _AnswerState.unanswered,
+                onSubmit: _handleSubmit,
               ),
             ),
-          ],
+          ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Popup de resultado — reemplaza el banner inline + botón "Siguiente".
+// ─────────────────────────────────────────────────────────────────────────────
+class _AnswerResultDialog extends StatelessWidget {
+  const _AnswerResultDialog({
+    required this.isCorrect,
+    required this.text,
+    required this.accentColor,
+    required this.isLast,
+  });
+  final bool isCorrect;
+  final String text;
+  final Color accentColor;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isCorrect ? const Color(0xFF4ADE80) : accentColor;
+    return Dialog(
+      backgroundColor: const Color(0xFF0D1230),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: color.withOpacity(0.6), width: 1.5),
+      ),
+      child: GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(isCorrect ? '✅' : '💭', style: const TextStyle(fontSize: 40)),
+              const SizedBox(height: 12),
+              Text(
+                isCorrect ? '¡Correcto!' : 'Casi...',
+                style: TextStyle(
+                  color: color,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                  fontSize: 14,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: accentColor,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: Text(
+                    isLast ? 'Terminar' : 'Siguiente',
+                    style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -271,41 +409,6 @@ class _ActivityCard extends StatelessWidget {
   }
 }
 
-class _RetroBanner extends StatelessWidget {
-  const _RetroBanner(
-      {required this.isCorrect, required this.text, required this.accentColor});
-  final bool isCorrect;
-  final String text;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isCorrect ? const Color(0xFF4ADE80) : accentColor;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.5)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(isCorrect ? '✅' : '💭', style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(text,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Nunito',
-                    fontSize: 13,
-                    height: 1.35)),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _ActivitySummary extends StatelessWidget {
   const _ActivitySummary({

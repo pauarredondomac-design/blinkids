@@ -103,7 +103,12 @@ class WalletRepository {
   /// Suma monedas al wallet del usuario actual de forma atómica (recompensa).
   /// Llama al RPC award_coins (SECURITY DEFINER). El parámetro userId se
   /// mantiene por compatibilidad pero el RPC siempre usa auth.uid().
+  /// No-op si amount <= 0: el RPC exige un monto positivo y lanza excepción
+  /// si no — varias recompensas (misiones de historia, preguntas diarias)
+  /// legítimamente dan 0 monedas por diseño, así que no debe intentar la
+  /// llamada en ese caso.
   Future<void> awardStarterCoins(String userId, int amount) async {
+    if (amount <= 0) return;
     await supabase.rpc('award_coins', params: {'p_amount': amount});
   }
 

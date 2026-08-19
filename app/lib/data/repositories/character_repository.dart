@@ -25,8 +25,10 @@ class CharacterRepository {
   }
 
   Future<Character> addXp(String userId, int xpToAdd) async {
-    final current = await getCharacter(userId);
-    if (current == null) throw Exception('Personaje no encontrado');
+    // Autoreparación: si por algún motivo la cuenta no tiene fila en
+    // `characters` (ej. se creó antes de que el signup empezara a crearla),
+    // no perder el XP en silencio — crearla ahora mismo con xp=0.
+    final current = await getCharacter(userId) ?? await createCharacter(userId);
 
     final newXp = current.xp + xpToAdd;
     final newLevel = levelFromXp(newXp);

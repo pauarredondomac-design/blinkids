@@ -14,6 +14,7 @@ class Item {
     required this.source,
     this.isRare = false,
     this.imagePath,
+    this.isReusable = false,
   });
 
   final String id;
@@ -31,6 +32,11 @@ class Item {
 
   /// Nombre de archivo en assets/items/ (ej: 'llave_inglesa.png'). null = usar emoji.
   final String? imagePath;
+
+  /// Herramientas reutilizables (Martillo, Llave Inglesa, Sierra, Llave Maestra):
+  /// se verifican en el inventario pero NO se descuentan al completar un
+  /// trabajo o misión — se compran una sola vez y se quedan con el niño.
+  final bool isReusable;
 
   bool get availableInShop => shopPrice > 0;
 
@@ -70,9 +76,10 @@ const allItems = <Item>[
     name: 'Martillo',
     description: 'Herramienta básica para todo tipo de construcción.',
     world: 'forest',
-    shopPrice: 80,
+    shopPrice: 100,
     source: ItemSource.shop,
     imagePath: 'martillo.png',
+    isReusable: true,
   ),
   Item(
     id: 'magic_herb',
@@ -118,9 +125,10 @@ const allItems = <Item>[
     name: 'Llave Inglesa',
     description: 'Herramienta indispensable en cualquier taller galáctico.',
     world: 'space',
-    shopPrice: 90,
+    shopPrice: 110,
     source: ItemSource.shop,
     imagePath: 'llave_inglesa.png',
+    isReusable: true,
   ),
   Item(
     id: 'battery',
@@ -166,9 +174,10 @@ const allItems = <Item>[
     name: 'Sierra',
     description: 'Herramienta de corte para trabajos de precisión en la nave.',
     world: 'space',
-    shopPrice: 100,
+    shopPrice: 120,
     source: ItemSource.shop,
     imagePath: 'sierra.png',
+    isReusable: true,
   ),
   Item(
     id: 'magnet',
@@ -186,9 +195,10 @@ const allItems = <Item>[
     name: 'Llave Maestra',
     description: 'Abre cualquier compartimento sellado de la nave.',
     world: 'space',
-    shopPrice: 130,
+    shopPrice: 160,
     source: ItemSource.shop,
     imagePath: 'llave_maestra.png',
+    isReusable: true,
   ),
   Item(
     id: 'screws',

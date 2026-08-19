@@ -14,6 +14,7 @@ import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../shared/widgets/coin_display.dart';
 import '../../../shared/widgets/game_popup.dart';
+import '../../../shared/widgets/item_icon.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 void showMercadoDialog(BuildContext context) {
@@ -426,7 +427,7 @@ class _InventoryCard extends StatelessWidget {
             Stack(
               alignment: Alignment.topRight,
               children: [
-                Text(stack.item.emoji, style: const TextStyle(fontSize: 36))
+                ItemIcon(item: stack.item, size: 36)
                     .animate(onPlay: (c) => c.repeat(reverse: true))
                     .moveY(
                       begin: 0,
@@ -684,7 +685,7 @@ class _ListingCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            Text(item?.emoji ?? '❓', style: const TextStyle(fontSize: 28)),
+            ItemIcon(item: item, size: 32),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -899,7 +900,7 @@ class _MarketListingCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(
           children: [
-            Text(item?.emoji ?? '❓', style: const TextStyle(fontSize: 32)),
+            ItemIcon(item: item, size: 36),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1074,7 +1075,14 @@ class _AddListingDialogState extends State<_AddListingDialog> {
             items: widget.stacks
                 .map((s) => DropdownMenuItem(
                       value: s,
-                      child: Text('${s.item.emoji} ${s.item.name} (×${s.qty})'),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ItemIcon(item: s.item, size: 18),
+                          const SizedBox(width: 6),
+                          Text('${s.item.name} (×${s.qty})'),
+                        ],
+                      ),
                     ))
                 .toList(),
             onChanged: (s) {
@@ -1262,7 +1270,7 @@ class _BuyMarketDialog extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(item?.emoji ?? '❓', style: const TextStyle(fontSize: 48))
+          ItemIcon(item: item, size: 56)
               .animate()
               .scale(
                 begin: const Offset(0.5, 0.5),

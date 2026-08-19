@@ -114,10 +114,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Blink cae desde arriba con rebote
-                _BlinkHero(),
-
-                const SizedBox(height: 28),
+                // Blink cae desde arriba con rebote — el PNG trae bastante
+                // margen transparente propio debajo de los pies, así que se
+                // reserva menos alto del que ocupa la imagen (OverflowBox
+                // deja que Blink se siga viendo completo, pero el logo de
+                // abajo se acerca porque el layout solo cuenta el alto
+                // reducido).
+                SizedBox(
+                  height: 250,
+                  child: OverflowBox(
+                    maxHeight: 300,
+                    alignment: Alignment.topCenter,
+                    child: _BlinkHero(),
+                  ),
+                ),
 
                 // Logo "Blinkids"
                 SizedBox(
@@ -199,8 +209,8 @@ class _BlinkHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 220,
-      height: 220,
+      width: 300,
+      height: 300,
       child: Image.asset(
         'assets/blink/blink_base.png',
         fit: BoxFit.contain,

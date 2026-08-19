@@ -11,6 +11,7 @@ Future<void> showGamePopup(
   String message, {
   Color accentColor = const Color(0xFF2E7D32),
   Duration autoDismiss = const Duration(seconds: 3),
+  Widget? leading,
 }) {
   return showGeneralDialog(
     context: context,
@@ -45,41 +46,29 @@ Future<void> showGamePopup(
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: BorderRadius.circular(4),
+              child: leading == null
+                  ? _PopupContent(
+                      message: message,
+                      accentColor: accentColor,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      textAlign: TextAlign.center,
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        leading,
+                        const SizedBox(width: 14),
+                        Flexible(
+                          child: _PopupContent(
+                            message: message,
+                            accentColor: accentColor,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            textAlign: TextAlign.left,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Baloo2',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
-                      height: 1.35,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Toca para cerrar',
-                    style: TextStyle(
-                      color: GameTokens.textMuted,
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -90,4 +79,58 @@ Future<void> showGamePopup(
       child: FadeTransition(opacity: anim, child: child),
     ),
   );
+}
+
+class _PopupContent extends StatelessWidget {
+  const _PopupContent({
+    required this.message,
+    required this.accentColor,
+    required this.crossAxisAlignment,
+    required this.textAlign,
+  });
+
+  final String message;
+  final Color accentColor;
+  final CrossAxisAlignment crossAxisAlignment;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: crossAxisAlignment,
+      children: [
+        Container(
+          width: 40,
+          height: 4,
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: accentColor,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+        Text(
+          message,
+          textAlign: textAlign,
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: 'Baloo2',
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Toca para cerrar',
+          style: TextStyle(
+            color: GameTokens.textMuted,
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
 }

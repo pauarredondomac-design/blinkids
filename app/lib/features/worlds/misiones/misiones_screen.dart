@@ -12,7 +12,9 @@ import '../../../shared/providers/mission_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
 import '../../../shared/providers/character_provider.dart';
 import '../../../shared/providers/world_provider.dart';
+import '../../../shared/providers/mission_return_provider.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/item_icon.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/activity_player.dart';
 import '../../../shared/widgets/rocket_launch_overlay.dart';
@@ -26,6 +28,22 @@ import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/tab_icon.dart';
 import '../../../shared/widgets/modal_corners.dart';
 import 'quizzes_screen.dart';
+import '../trabajos/trabajos_screen.dart';
+import '../tienda/tienda_screen.dart';
+import '../space/banco_estelar_screen.dart';
+import '../../wallet/screens/wallet_screen.dart';
+
+// Misiones cuyo requisito faltante tiene UN destino único y claro (las demás
+// —Engrane, Tornillos, Llave Maestra, combinaciones— se consiguen en más de
+// un lugar, así que solo muestran el checklist de requisitos, sin botón).
+const Map<String, (String, String)> _kMissingReqDestination = {
+  'La nave no enciende': ('IR A TRABAJOS', 'trabajos'),
+  'Cada moneda tiene una misión': ('IR A MI BOLSA', 'mi_bolsa'),
+  'Energía para continuar': ('IR A TIENDA', 'tienda'),
+  'Una decisión con empatía': ('IR A MI BOLSA', 'mi_bolsa'),
+  'Haz crecer tus monedas': ('IR AL BANCO ESTELAR', 'banco_estelar'),
+  'No alcanza para todo': ('IR A TRABAJOS', 'trabajos'),
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MisionesScreen
@@ -798,8 +816,10 @@ class _MissionCard extends ConsumerWidget {
                               const Color(0xFFFF9800)),
                         if (mission.itemReward != null)
                           _Pill(
-                            '${mission.itemReward!.item?.emoji ?? '🎁'} ×${mission.itemReward!.qty}',
+                            '×${mission.itemReward!.qty}',
                             const Color(0xFFCE93D8),
+                            icon:
+                                ItemIcon(item: mission.itemReward!.item, size: 14),
                           ),
                       ],
                     ),
@@ -1068,59 +1088,129 @@ class _MissionCard extends ConsumerWidget {
                 _ReqChip('🪙 ${mission.requiredCoins}', coinsOk),
               for (final r in mission.requiredItems)
                 _ReqChip(
-                  '${r.item?.emoji ?? '❓'} ${r.item?.name ?? r.itemId} ×${r.qty}',
+                  '${r.item?.name ?? r.itemId} ×${r.qty}',
                   (have[r.itemId] ?? 0) >= r.qty,
+                  icon: ItemIcon(item: r.item, size: 15),
                 ),
             ],
           ),
           const SizedBox(height: 8),
         ],
-        GestureDetector(
-          onTap: (canClaim && !claiming) ? onClaim : null,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              gradient: canClaim && !claiming
-                  ? const LinearGradient(
-                      colors: [Color(0xFF2E7D32), Color(0xFF43A047)])
-                  : null,
-              color:
-                  canClaim && !claiming ? null : Colors.white.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: claiming
-                ? const Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white60,
-                      ),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(canClaim ? '🎁' : '🛒',
-                          style: const TextStyle(fontSize: 14)),
-                      const SizedBox(width: 6),
-                      Text(
-                        canClaim ? '¡Reclamar!' : 'Te falta lo necesario',
-                        style: TextStyle(
-                          color: canClaim
-                              ? Colors.white
-                              : GameTokens.textSecondary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
+        if (!canClaim && _kMissingReqDestination.containsKey(mission.name))
+          _GoToDestinationButton(
+            mission: mission,
+            label: _kMissingReqDestination[mission.name]!.$1,
+            destination: _kMissingReqDestination[mission.name]!.$2,
+          )
+        else
+          GestureDetector(
+            onTap: (canClaim && !claiming) ? onClaim : null,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                gradient: canClaim && !claiming
+                    ? const LinearGradient(
+                        colors: [Color(0xFF2E7D32), Color(0xFF43A047)])
+                    : null,
+                color: canClaim && !claiming
+                    ? null
+                    : Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: claiming
+                  ? const Center(
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white60,
                         ),
                       ),
-                    ],
-                  ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(canClaim ? '🎁' : '🛒',
+                            style: const TextStyle(fontSize: 14)),
+                        const SizedBox(width: 6),
+                        Text(
+                          canClaim ? '¡Reclamar!' : 'Te falta lo necesario',
+                          style: TextStyle(
+                            color: canClaim
+                                ? Colors.white
+                                : GameTokens.textSecondary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
           ),
-        ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Botón "IR A X" — solo para misiones con un único destino claro para
+// conseguir lo que falta. Marca la misión como "activa" (para el banner
+// "Volver a la misión" en la pantalla destino) y navega para allá.
+// ─────────────────────────────────────────────────────────────────────────────
+class _GoToDestinationButton extends ConsumerWidget {
+  const _GoToDestinationButton({
+    required this.mission,
+    required this.label,
+    required this.destination,
+  });
+  final Mission mission;
+  final String label;
+  final String destination;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      onTap: () {
+        ref.read(activeMissionReturnProvider.notifier).state = mission.id;
+        Navigator.of(context).pop();
+        switch (destination) {
+          case 'trabajos':
+            showTrabajosDialog(context);
+          case 'tienda':
+            showTiendaDialog(context);
+          case 'mi_bolsa':
+            showWalletDialog(context);
+          case 'banco_estelar':
+            showBancoEstelarDialog(context);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+              colors: [Color(0xFF4FC3F7), Color(0xFF1976D2)]),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.arrow_forward_rounded,
+                color: Colors.white, size: 15),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1129,9 +1219,10 @@ class _MissionCard extends ConsumerWidget {
 // Chip de requisito (verde si se cumple, rojo si falta)
 // ─────────────────────────────────────────────────────────────────────────────
 class _ReqChip extends StatelessWidget {
-  const _ReqChip(this.label, this.ok);
+  const _ReqChip(this.label, this.ok, {this.icon});
   final String label;
   final bool ok;
+  final Widget? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1144,13 +1235,22 @@ class _ReqChip extends StatelessWidget {
           color: (ok ? Colors.greenAccent : Colors.redAccent).withOpacity(0.38),
         ),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: ok ? Colors.greenAccent : Colors.redAccent,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            icon!,
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: ok ? Colors.greenAccent : Colors.redAccent,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1160,10 +1260,11 @@ class _ReqChip extends StatelessWidget {
 // Chip de recompensa
 // ─────────────────────────────────────────────────────────────────────────────
 class _Pill extends StatelessWidget {
-  const _Pill(this.label, this.color, {this.showCoin = false});
+  const _Pill(this.label, this.color, {this.showCoin = false, this.icon});
   final String label;
   final Color color;
   final bool showCoin;
+  final Widget? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1179,6 +1280,10 @@ class _Pill extends StatelessWidget {
         children: [
           if (showCoin) ...[
             const AnimatedCoin(size: 12),
+            const SizedBox(width: 3),
+          ],
+          if (icon != null) ...[
+            icon!,
             const SizedBox(width: 3),
           ],
           Text(
@@ -1268,10 +1373,10 @@ class _ClaimDialog extends StatelessWidget {
                     '🚀 +${mission.fuelReward}%', const Color(0xFFFF9800)),
               if (mission.itemReward != null)
                 _ClaimBadge(
-                  '${mission.itemReward!.item?.emoji ?? '🎁'} '
                   '${mission.itemReward!.item?.name ?? ''} '
                   '×${mission.itemReward!.qty}',
                   const Color(0xFFCE93D8),
+                  icon: ItemIcon(item: mission.itemReward!.item, size: 18),
                 ),
             ],
           ),
@@ -1312,10 +1417,11 @@ class _ClaimDialog extends StatelessWidget {
 }
 
 class _ClaimBadge extends StatelessWidget {
-  const _ClaimBadge(this.label, this.color, {this.showCoin = false});
+  const _ClaimBadge(this.label, this.color, {this.showCoin = false, this.icon});
   final String label;
   final Color color;
   final bool showCoin;
+  final Widget? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -1331,6 +1437,10 @@ class _ClaimBadge extends StatelessWidget {
         children: [
           if (showCoin) ...[
             const AnimatedCoin(size: 14),
+            const SizedBox(width: 4),
+          ],
+          if (icon != null) ...[
+            icon!,
             const SizedBox(width: 4),
           ],
           Text(

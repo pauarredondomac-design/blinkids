@@ -82,7 +82,10 @@ class CraftingJobRepository {
     required String jobId,
     required int coinsEarned,
   }) async {
-    if (DemoStore.isActive) return;
+    if (DemoStore.isActive) {
+      DemoStore.instance.markJobCompleted(jobId);
+      return;
+    }
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return;
@@ -92,5 +95,23 @@ class CraftingJobRepository {
         'coins_earned': coinsEarned,
       });
     } catch (_) {}
+  }
+
+  /// IDs de los trabajos que el jugador ya completó — se usa para el
+  /// desbloqueo individual dentro de un capítulo (candados uno por uno,
+  /// no todo el capítulo de golpe).
+  static Future<Set<String>> completedJobIds() async {
+    if (DemoStore.isActive) return DemoStore.instance.completedJobs;
+    try {
+      final userId = _client.auth.currentUser?.id;
+      if (userId == null) return {};
+      final rows = await _client
+          .from('job_completions')
+          .select('job_id')
+          .eq('user_id', userId);
+      return (rows as List).map((r) => r['job_id'] as String).toSet();
+    } catch (_) {
+      return {};
+    }
   }
 }

@@ -93,7 +93,7 @@ class WorldLeftPanel extends ConsumerWidget {
         onLinkParent: () {
           Navigator.pop(ctx);
           showDialog(
-              context: context, builder: (_) => const _RedeemCodeDialog());
+              context: context, builder: (_) => const RedeemCodeDialog());
         },
         onSignOut: () async {
           Navigator.pop(ctx);
@@ -422,14 +422,14 @@ class _OptionItem extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Diálogo para que el hijo ingrese el código de invitación del padre
 // ─────────────────────────────────────────────────────────────────────────────
-class _RedeemCodeDialog extends StatefulWidget {
-  const _RedeemCodeDialog();
+class RedeemCodeDialog extends StatefulWidget {
+  const RedeemCodeDialog();
 
   @override
-  State<_RedeemCodeDialog> createState() => _RedeemCodeDialogState();
+  State<RedeemCodeDialog> createState() => RedeemCodeDialogState();
 }
 
-class _RedeemCodeDialogState extends State<_RedeemCodeDialog> {
+class RedeemCodeDialogState extends State<RedeemCodeDialog> {
   final _ctrl = TextEditingController();
   bool _loading = false;
   String? _error;

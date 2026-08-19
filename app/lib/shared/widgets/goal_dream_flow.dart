@@ -5,10 +5,8 @@ import '../../data/models/wallet.dart';
 import '../../data/models/child_goal.dart';
 import '../providers/wallet_provider.dart';
 import '../providers/child_goal_provider.dart';
-import '../providers/question_provider.dart';
 import 'screen_tutorial.dart';
 import 'coin_display.dart';
-import 'activity_player.dart';
 import 'screen_background.dart';
 import 'game_icon.dart';
 import 'modal_corners.dart';
@@ -129,44 +127,6 @@ class _DreamFrame extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: ScreenBackground(child: child),
         ),
-      ),
-    );
-  }
-}
-
-// Botón para regresar a la vista anterior DENTRO del modal (p.ej. de
-// "Actividad del día" al detalle de la meta) — el título ya vive en la
-// placa flotante de ModalCorners, y el botón para cerrar todo el modal
-// ya vive en su esquina, así que este solo se usa para navegación interna.
-// ─────────────────────────────────────────────────────────────────────────────
-class _DreamBackButton extends StatelessWidget {
-  const _DreamBackButton({required this.onBack});
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF2A1A5E))),
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: onBack,
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.07),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withOpacity(0.18)),
-              ),
-              child: const Icon(Icons.arrow_back_rounded,
-                  color: Colors.white, size: 15),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -338,68 +298,24 @@ class _DreamVaultView extends ConsumerStatefulWidget {
 }
 
 class _DreamVaultViewState extends ConsumerState<_DreamVaultView> {
-  bool _showActivities = false;
-  bool _celebrated = false;
+  bool _claiming = false;
 
-  @override
-  void didUpdateWidget(covariant _DreamVaultView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _maybeCelebrate();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeCelebrate());
-  }
-
-  void _maybeCelebrate() {
-    if (_celebrated) return;
-    if (widget.fundedCoins >= widget.goal.goalCost) {
-      _celebrated = true;
-      ref.read(childGoalRepositoryProvider).markCompleted();
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) {
-          showDialog<void>(
-            context: context,
-            builder: (_) => _GoalCompletedDialog(goal: widget.goal),
-          ).then((_) => ref.invalidate(currentGoalProvider));
-        }
-      });
-    }
+  Future<void> _claim() async {
+    if (_claiming) return;
+    setState(() => _claiming = true);
+    await ref.read(childGoalRepositoryProvider).markCompleted();
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _GoalCompletedDialog(goal: widget.goal),
+    );
+    if (mounted) ref.invalidate(currentGoalProvider);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_showActivities) {
-      return Column(
-        children: [
-          _DreamBackButton(
-              onBack: () => setState(() => _showActivities = false)),
-          Expanded(
-            child: Consumer(builder: (context, ref, __) {
-              final activitiesAsync =
-                  ref.watch(questionsForModuleProvider('banco_estelar'));
-              return activitiesAsync.when(
-                loading: () => const Center(
-                    child: CircularProgressIndicator(color: Color(0xFFFFB300))),
-                error: (_, __) => const Center(
-                    child: Text('No se pudieron cargar las actividades.',
-                        style: TextStyle(
-                            color: GameTokens.textSecondary,
-                            fontFamily: 'Nunito'))),
-                data: (activities) => ActivityPlayer(
-                  activities: activities,
-                  accentColor: const Color(0xFFFFB300),
-                ),
-              );
-            }),
-          ),
-        ],
-      );
-    }
-
     final pct = (widget.fundedCoins / widget.goal.goalCost).clamp(0.0, 1.0);
+    final canClaim = widget.fundedCoins >= widget.goal.goalCost;
 
     return Column(
       children: [
@@ -460,31 +376,45 @@ class _DreamVaultViewState extends ConsumerState<_DreamVaultView> {
                         fontFamily: 'Nunito',
                         fontSize: 11)),
                 const SizedBox(height: 20),
-                GestureDetector(
-                  onTap: () => setState(() => _showActivities = true),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFFFFB300), Color(0xFFFF8C00)]),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('⭐', style: TextStyle(fontSize: 18)),
-                        SizedBox(width: 8),
-                        Text('Actividad del día',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14)),
-                      ],
+                if (canClaim)
+                  GestureDetector(
+                    onTap: _claiming ? null : _claim,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                            colors: [Color(0xFFFFB300), Color(0xFFFF8C00)]),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                              color: const Color(0xFFFFB300).withOpacity(0.40),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4)),
+                        ],
+                      ),
+                      child: _claiming
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('🎉', style: TextStyle(fontSize: 18)),
+                                SizedBox(width: 8),
+                                Text('¡Cumplir!',
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontFamily: 'Nunito',
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15)),
+                              ],
+                            ),
                     ),
                   ),
-                ),
                 const SizedBox(height: 16),
               ],
             ),

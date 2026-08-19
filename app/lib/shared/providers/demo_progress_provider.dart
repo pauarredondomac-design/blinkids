@@ -29,6 +29,9 @@ class DemoStore extends ChangeNotifier {
   final Map<String, int> inventory = {};
   final Map<String, int> missionProgress = {};
   final Set<String> claimedMissions = {};
+  final Set<String> completedJobs = {};
+  final Map<String, int> quizCompletions = {};
+  final Set<String> quizAnsweredQuestions = {};
   final List<Map<String, dynamic>> listings = [];
   int _listingSeq = 0;
 
@@ -156,6 +159,13 @@ class DemoStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool isJobCompleted(String jobId) => completedJobs.contains(jobId);
+
+  void markJobCompleted(String jobId) {
+    completedJobs.add(jobId);
+    notifyListeners();
+  }
+
   void markTutorialSeen(String key) {
     seenTutorials.add(key);
     // No notifyListeners — no rebuild needed for tutorial state
@@ -230,6 +240,9 @@ class DemoStore extends ChangeNotifier {
     inventory.clear();
     missionProgress.clear();
     claimedMissions.clear();
+    completedJobs.clear();
+    quizCompletions.clear();
+    quizAnsweredQuestions.clear();
     listings.clear();
     seenTutorials.clear();
     dailyQuestionsShown.clear();
