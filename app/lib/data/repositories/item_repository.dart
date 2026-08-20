@@ -105,11 +105,8 @@ class ItemRepository {
   }
 
   /// Consume los materiales de la lista (llama [hasRequirements] antes).
-  /// Las herramientas reutilizables (Item.isReusable) se verifican pero no
-  /// se descuentan del inventario — se compran una sola vez.
   Future<void> consumeRequirements(List<ItemRequirement> requirements) async {
     for (final req in requirements) {
-      if (itemById(req.itemId)?.isReusable == true) continue;
       await removeFromInventory(req.itemId, req.qty);
     }
   }

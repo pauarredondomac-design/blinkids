@@ -340,37 +340,46 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0D1B3E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Column(
-          children: [
-            Text('🚀', style: TextStyle(fontSize: 48)),
-            SizedBox(height: 8),
-            Text(
-              '¡Ponle nombre a tu galaxia!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+        // El juego corre en horizontal — cuando el teclado abre, queda muy
+        // poco alto disponible y el diálogo se aprieta. Sin scroll, el
+        // campo de texto (en medio del título y el botón) terminaba
+        // recortado/invisible. SingleChildScrollView garantiza que siempre
+        // se pueda llegar a él.
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🚀', style: TextStyle(fontSize: 40)),
+              const SizedBox(height: 6),
+              const Text(
+                '¡Ponle nombre a tu galaxia!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 20,
-          textCapitalization: TextCapitalization.words,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
-          decoration: InputDecoration(
-            hintText: 'Ej: Galaxia Blink',
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.1),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            counterStyle: const TextStyle(color: Colors.white54),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                maxLength: 20,
+                textCapitalization: TextCapitalization.words,
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+                decoration: InputDecoration(
+                  hintText: 'Ej: Galaxia Blink',
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.1),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  counterStyle: const TextStyle(color: Colors.white54),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [

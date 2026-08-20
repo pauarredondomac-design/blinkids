@@ -984,12 +984,18 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
           controller: _titleCtrl,
           autofocus: true,
           maxLength: 60,
+          textInputAction: TextInputAction.next,
           style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
           decoration: _fieldDecoration(
             label: 'Título de la misión',
             hint: 'Ej: Tender la cama',
           ),
           onChanged: (_) => setState(() {}),
+          onSubmitted: (_) {
+            if (_titleCtrl.text.trim().isNotEmpty) {
+              setState(() => _step = 1);
+            }
+          },
         ),
       ],
     );
@@ -1012,12 +1018,14 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
           autofocus: true,
           maxLines: 3,
           maxLength: 140,
+          textInputAction: TextInputAction.next,
           style: const TextStyle(
               color: Colors.white, fontFamily: 'Nunito', fontSize: 13),
           decoration: _fieldDecoration(
             label: 'Instrucciones (opcional)',
             hint: 'Ej: Todos los días antes de las 9am',
           ),
+          onSubmitted: (_) => setState(() => _step = 2),
         ),
       ],
     );
@@ -1067,8 +1075,7 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
                           : Colors.white.withAlpha(10),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color:
-                        selected ? const Color(0xFFFFD600) : Colors.white24,
+                    color: selected ? const Color(0xFFFFD600) : Colors.white24,
                   ),
                 ),
                 child: Row(
@@ -1104,119 +1111,98 @@ class _CreateMissionDialogState extends State<_CreateMissionDialog> {
     final titleOk = _titleCtrl.text.trim().isNotEmpty;
     final canAfford = _reward <= widget.parentBalance;
 
-    // Dialog propio (en vez de AlertDialog): tamaño y posición fijos, sin
-    // reaccionar al teclado — el niño... digo, el padre, sigue viendo el
-    // popup completo en vez de que se achique o se corra al escribir.
     // Asistente de 3 pasos (título → instrucciones → recompensa) en vez de
-    // un solo formulario con todo junto.
-    return MediaQuery.removeViewInsets(
-      context: context,
-      removeBottom: true,
-      child: Dialog(
-        backgroundColor: const Color(0xFF0D1230),
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 360),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  const Text('👨‍👩‍👧', style: TextStyle(fontSize: 26)),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Misión para\n${widget.child.displayName}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Nunito',
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
+    // un solo formulario con todo junto. Dialog normal: cuando abre el
+    // teclado, se corre hacia arriba solo (comportamiento estándar) — antes
+    // se le quitaba ese aviso a propósito para que no se moviera, pero eso
+    // hacía que el teclado tapara el campo en vez de que el diálogo se
+    // acomodara.
+    return Dialog(
+      backgroundColor: const Color(0xFF0D1230),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFF7C3AED), width: 1),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420, maxHeight: 360),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: List.generate(_totalSteps, (i) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.only(right: 6),
+                    width: i == _step ? 22 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color:
+                          i <= _step ? const Color(0xFF7C3AED) : Colors.white24,
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                  ),
-                ]),
-                const SizedBox(height: 14),
-                Row(
-                  children: List.generate(_totalSteps, (i) {
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.only(right: 6),
-                      width: i == _step ? 22 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: i <= _step
-                            ? const Color(0xFF7C3AED)
-                            : Colors.white24,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    );
-                  }),
+                  );
+                }),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                height: 160,
+                child: SingleChildScrollView(
+                  child: switch (_step) {
+                    0 => _titleStep(),
+                    1 => _descriptionStep(),
+                    _ => _rewardStep(),
+                  },
                 ),
-                const SizedBox(height: 18),
-                SizedBox(
-                  height: 160,
-                  child: SingleChildScrollView(
-                    child: switch (_step) {
-                      0 => _titleStep(),
-                      1 => _descriptionStep(),
-                      _ => _rewardStep(),
-                    },
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: _step == 0
+                        ? () => Navigator.pop(context)
+                        : () => setState(() => _step--),
+                    child: Text(_step == 0 ? 'Cancelar' : 'Atrás',
+                        style: const TextStyle(
+                            color: Colors.white54, fontFamily: 'Nunito')),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: _step == 0
-                          ? () => Navigator.pop(context)
-                          : () => setState(() => _step--),
-                      child: Text(_step == 0 ? 'Cancelar' : 'Atrás',
-                          style: const TextStyle(
-                              color: Colors.white54, fontFamily: 'Nunito')),
-                    ),
-                    FilledButton(
-                      onPressed: _canAdvance(titleOk, canAfford)
-                          ? () {
-                              if (_step < _totalSteps - 1) {
-                                setState(() => _step++);
-                              } else {
-                                Navigator.pop(
-                                  context,
-                                  _NewMissionData(
-                                    title: _titleCtrl.text.trim(),
-                                    description: _descCtrl.text.trim().isEmpty
-                                        ? null
-                                        : _descCtrl.text.trim(),
-                                    coinReward: _reward,
-                                  ),
-                                );
-                              }
+                  FilledButton(
+                    onPressed: _canAdvance(titleOk, canAfford)
+                        ? () {
+                            if (_step < _totalSteps - 1) {
+                              setState(() => _step++);
+                            } else {
+                              Navigator.pop(
+                                context,
+                                _NewMissionData(
+                                  title: _titleCtrl.text.trim(),
+                                  description: _descCtrl.text.trim().isEmpty
+                                      ? null
+                                      : _descCtrl.text.trim(),
+                                  coinReward: _reward,
+                                ),
+                              );
                             }
-                          : null,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF7C3AED),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: Text(
-                          _step < _totalSteps - 1 ? 'Siguiente' : 'Crear misión',
-                          style: const TextStyle(
-                              fontFamily: 'Nunito',
-                              fontWeight: FontWeight.w800)),
+                          }
+                        : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF7C3AED),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                    child: Text(
+                        _step < _totalSteps - 1 ? 'Siguiente' : 'Crear misión',
+                        style: const TextStyle(
+                            fontFamily: 'Nunito', fontWeight: FontWeight.w800)),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

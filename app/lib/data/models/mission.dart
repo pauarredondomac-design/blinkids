@@ -44,6 +44,25 @@ class Mission {
   /// Monedas que hay que tener (y se descuentan) para poder reclamar la misión.
   final int requiredCoins;
 
+  /// Categoría de Mi Bolsa que debe tener cierto saldo para reclamar la
+  /// misión: 'guardar' | 'invertir' | 'donar' | 'gastar' | 'all' (las 4 a la
+  /// vez). Null = sin requisito de categoría. A diferencia de requiredItems/
+  /// requiredCoins, esto NO se descuenta al reclamar — solo se verifica el
+  /// saldo actual (el niño ya lo repartió ahí, es un logro, no un costo).
+  final String? requiredCategory;
+  final int requiredCategoryAmount;
+
+  /// Solo cuando [requiredCategory] es 'multi': cuántas categorías
+  /// DISTINTAS deben tener movimiento (además de que la suma llegue a
+  /// [requiredCategoryAmount]). Ej. "repartir 20 entre 2 o más categorías".
+  final int requiredCategoryMinSpread;
+
+  /// Ítems candidatos de los que hay que juntar [requiredAnyCount] en total,
+  /// en cualquier combinación (no hace falta tener todos). Ej. "consigue 2
+  /// de estos 4 objetos". Vacío = sin este tipo de requisito.
+  final List<String> requiredAnyItems;
+  final int requiredAnyCount;
+
   /// Si se reclama esta misión, desbloquea este número de capítulo.
   final int? unlocksChapter;
 
@@ -72,6 +91,11 @@ class Mission {
     this.fuelReward = 0,
     this.requiredItems = const [],
     this.requiredCoins = 0,
+    this.requiredCategory,
+    this.requiredCategoryAmount = 0,
+    this.requiredCategoryMinSpread = 0,
+    this.requiredAnyItems = const [],
+    this.requiredAnyCount = 0,
     this.unlocksChapter,
     this.isSeasonFinale = false,
   });
@@ -127,6 +151,14 @@ class Mission {
       fuelReward: json['fuel_reward'] as int? ?? 0,
       requiredItems: requiredItems,
       requiredCoins: json['required_coins'] as int? ?? 0,
+      requiredCategory: json['required_category'] as String?,
+      requiredCategoryAmount: json['required_category_amount'] as int? ?? 0,
+      requiredCategoryMinSpread:
+          json['required_category_min_spread'] as int? ?? 0,
+      requiredAnyItems: ((json['required_any_items'] as List?) ?? [])
+          .map((e) => e as String)
+          .toList(),
+      requiredAnyCount: json['required_any_count'] as int? ?? 0,
       unlocksChapter: json['unlocks_chapter'] as int?,
       isSeasonFinale: json['is_season_finale'] as bool? ?? false,
     );
@@ -146,5 +178,15 @@ class Mission {
   bool get isChapterMission => chapterNumber != null;
 
   /// ¿Necesita ítems y/o monedas para poder reclamarse?
-  bool get hasClaimRequirements => requiredItems.isNotEmpty || requiredCoins > 0;
+  bool get hasClaimRequirements =>
+      requiredItems.isNotEmpty || requiredCoins > 0;
+
+  /// ¿Necesita saldo en alguna categoría de Mi Bolsa?
+  bool get hasCategoryRequirement =>
+      requiredCategory != null && requiredCategoryAmount > 0;
+
+  /// ¿Necesita juntar N de una lista de ítems candidatos (cualquier
+  /// combinación)?
+  bool get hasAnyItemsRequirement =>
+      requiredAnyItems.isNotEmpty && requiredAnyCount > 0;
 }

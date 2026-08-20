@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/mission.dart';
+import '../../../data/models/wallet.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
 import '../../../shared/providers/demo_progress_provider.dart';
@@ -33,17 +34,27 @@ import '../tienda/tienda_screen.dart';
 import '../space/banco_estelar_screen.dart';
 import '../../wallet/screens/wallet_screen.dart';
 
-// Misiones cuyo requisito faltante tiene UN destino único y claro (las demás
-// —Engrane, Tornillos, Llave Maestra, combinaciones— se consiguen en más de
-// un lugar, así que solo muestran el checklist de requisitos, sin botón).
+// Destino sugerido para completar cada misión de Historia — cada una de las
+// 12 misiones ahora pide una acción concreta en un edificio específico, así
+// que todas tienen un botón (antes solo 6/12 lo tenían).
 const Map<String, (String, String)> _kMissingReqDestination = {
-  'La nave no enciende': ('IR A TRABAJOS', 'trabajos'),
-  'Cada moneda tiene una misión': ('IR A MI BOLSA', 'mi_bolsa'),
-  'Energía para continuar': ('IR A TIENDA', 'tienda'),
-  'Una decisión con empatía': ('IR A MI BOLSA', 'mi_bolsa'),
-  'Haz crecer tus monedas': ('IR AL BANCO ESTELAR', 'banco_estelar'),
-  'No alcanza para todo': ('IR A TRABAJOS', 'trabajos'),
+  'Aterrizaje forzoso': ('IR A TRABAJOS', 'trabajos'),
+  'Racionar suministros': ('IR A MI BOLSA', 'mi_bolsa'),
+  'Reparar motor principal': ('IR A TIENDA', 'tienda'),
+  'Despegar de Marte': ('IR AL BANCO ESTELAR', 'banco_estelar'),
+  'Explorar la estación': ('IR A QUIZZES', 'quizzes'),
+  'Restaurar la energía': ('IR A MI BOLSA', 'mi_bolsa'),
+  'Reparar navegación': ('IR A TIENDA', 'tienda'),
+  'Escapar de la estación': ('IR A MI BOLSA', 'mi_bolsa'),
+  'Trazar la ruta final': ('IR A TIENDA', 'tienda'),
+  'Resistir tormenta de asteroides': ('IR A MI BOLSA', 'mi_bolsa'),
+  'Construir escudo de aterrizaje': ('IR A TIENDA', 'tienda'),
+  'Aterrizar y fundar base': ('IR AL BANCO ESTELAR', 'banco_estelar'),
 };
+
+String _categoryLabel(String category) => WalletCategoryType.values
+    .firstWhere((t) => t.name == category, orElse: () => WalletCategoryType.guardar)
+    .displayName;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MisionesScreen
@@ -100,6 +111,13 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
   int _unlockedChapter = 1;
   int? _expandedChapter;
 
+  // Foto del progreso al momento en que cada capítulo se desbloqueó — las
+  // misiones que piden una acción (trabajos/quizzes/compras/repartir en Mi
+  // Bolsa) cuentan solo lo que pasa DESPUÉS de esta foto, no de toda la
+  // vida de la cuenta. chapterNumber → {guardar,invertir,donar,gastar,
+  // quizzes,jobs,purchases}.
+  Map<int, Map<String, int>> _chapterSnapshots = {};
+
   @override
   void initState() {
     super.initState();
@@ -122,11 +140,23 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
     final claimed = results[1] as Set<String>;
     final unlockedChapter = tracker.unlockedChapterFrom(missions, claimed);
 
+    // Asegura que cada capítulo ya desbloqueado tenga su foto — la primera
+    // vez que se pide una la crea con los valores de ahora mismo.
+    final chapterNumbers = List.generate(unlockedChapter, (i) => i + 1);
+    final snapshotResults = await Future.wait(
+      chapterNumbers.map((c) => tracker.ensureChapterSnapshot(c)),
+    );
+    final snapshots = {
+      for (var i = 0; i < chapterNumbers.length; i++)
+        chapterNumbers[i]: snapshotResults[i],
+    };
+
     if (mounted) {
       setState(() {
         _progress = progress;
         _claimed = claimed;
         _unlockedChapter = unlockedChapter;
+        _chapterSnapshots = snapshots;
         _expandedChapter ??= unlockedChapter;
         _loadingProgress = false;
       });
@@ -136,9 +166,27 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
   int _progressFor(MissionObjectiveType? type) =>
       type == null ? 0 : (_progress[type] ?? 0);
 
+  static String? _objectiveKey(MissionObjectiveType? type) => switch (type) {
+        MissionObjectiveType.completeQuizzes => 'quizzes',
+        MissionObjectiveType.completeJobs => 'jobs',
+        MissionObjectiveType.buyFromShop => 'purchases',
+        null => null,
+      };
+
+  /// Progreso del objetivo contando solo desde que se desbloqueó el
+  /// capítulo de la misión (0 para misiones sin capítulo — legado).
+  int _deltaProgress(Mission m) {
+    if (!m.hasObjective) return 0;
+    final baseline = m.chapterNumber != null
+        ? (_chapterSnapshots[m.chapterNumber]?[_objectiveKey(m.objectiveType)] ?? 0)
+        : 0;
+    final delta = _progressFor(m.objectiveType) - baseline;
+    return delta < 0 ? 0 : delta;
+  }
+
   bool _isComplete(Mission m) {
     if (!m.hasObjective) return false;
-    return _progressFor(m.objectiveType) >= m.objectiveTarget;
+    return _deltaProgress(m) >= m.objectiveTarget;
   }
 
   Future<void> _handleClaim(Mission mission) async {
@@ -296,7 +344,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
           widgets.add(
             _MissionCard(
               mission: m,
-              progress: _progressFor(m.objectiveType),
+              progress: _deltaProgress(m),
+              categoryBaseline: _chapterSnapshots[m.chapterNumber] ?? const {},
               complete: _isComplete(m),
               claimed: _claimed.contains(m.id),
               claiming: _claiming.contains(m.id),
@@ -317,7 +366,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
       for (final m in missions.where((m) => m.chapterNumber == null))
         _MissionCard(
           mission: m,
-          progress: _progressFor(m.objectiveType),
+          progress: _deltaProgress(m),
+          categoryBaseline: const {},
           complete: _isComplete(m),
           claimed: _claimed.contains(m.id),
           claiming: _claiming.contains(m.id),
@@ -675,6 +725,7 @@ class _MissionCard extends ConsumerWidget {
   const _MissionCard({
     required this.mission,
     required this.progress,
+    required this.categoryBaseline,
     required this.complete,
     required this.claimed,
     required this.claiming,
@@ -683,7 +734,13 @@ class _MissionCard extends ConsumerWidget {
   });
 
   final Mission mission;
+  // Ya viene calculado como delta desde que se desbloqueó el capítulo (ver
+  // _MisionesScreenState._deltaProgress) — no es el total de toda la cuenta.
   final int progress;
+  // Saldo por categoría de Mi Bolsa al momento de desbloquear el capítulo
+  // de esta misión — para requiredCategory se compara el saldo ACTUAL
+  // contra saldo_actual - baseline >= requiredCategoryAmount.
+  final Map<String, int> categoryBaseline;
   final bool complete;
   final bool claimed;
   final bool claiming;
@@ -1060,17 +1117,51 @@ class _MissionCard extends ConsumerWidget {
     final coins = DemoStore.isActive
         ? ref.watch(demoProgressProvider).coins
         : (ref.watch(currentWalletProvider).valueOrNull?.totalCoins ?? 0);
+    final categories = ref.watch(walletCategoriesProvider).valueOrNull ?? [];
+    final categoryBalance = {
+      for (final c in categories) c.category.name: c.balance,
+    };
+
+    // Solo cuenta lo repartido DESPUÉS del desbloqueo del capítulo (saldo
+    // actual menos la foto), no el saldo total de toda la cuenta.
+    int deltaFor(String category) {
+      final delta =
+          (categoryBalance[category] ?? 0) - (categoryBaseline[category] ?? 0);
+      return delta < 0 ? 0 : delta;
+    }
 
     final itemsOk =
         mission.requiredItems.every((r) => (have[r.itemId] ?? 0) >= r.qty);
     final coinsOk = coins >= mission.requiredCoins;
-    final canClaim = itemsOk && coinsOk;
+    final categoriesTouched =
+        assignableWalletCategories.where((t) => deltaFor(t.name) > 0).length;
+    final categoriesSum = assignableWalletCategories.fold<int>(
+        0, (s, t) => s + deltaFor(t.name));
+    final categoryOk = !mission.hasCategoryRequirement ||
+        switch (mission.requiredCategory) {
+          'all' => assignableWalletCategories
+              .every((t) => deltaFor(t.name) >= mission.requiredCategoryAmount),
+          'multi' => categoriesSum >= mission.requiredCategoryAmount &&
+              categoriesTouched >= mission.requiredCategoryMinSpread,
+          _ => deltaFor(mission.requiredCategory!) >=
+              mission.requiredCategoryAmount,
+        };
+    final anyItemsCount = mission.requiredAnyItems
+        .fold<int>(0, (s, id) => s + (have[id] ?? 0));
+    final anyItemsOk = !mission.hasAnyItemsRequirement ||
+        anyItemsCount >= mission.requiredAnyCount;
+    final objectiveOk = !mission.hasObjective || complete;
+    final canClaim =
+        itemsOk && coinsOk && categoryOk && anyItemsOk && objectiveOk;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (mission.hasClaimRequirements) ...[
+        if (mission.hasClaimRequirements ||
+            mission.hasCategoryRequirement ||
+            mission.hasAnyItemsRequirement ||
+            mission.hasObjective) ...[
           const Text(
             'Necesitas:',
             style: TextStyle(
@@ -1091,6 +1182,28 @@ class _MissionCard extends ConsumerWidget {
                   '${r.item?.name ?? r.itemId} ×${r.qty}',
                   (have[r.itemId] ?? 0) >= r.qty,
                   icon: ItemIcon(item: r.item, size: 15),
+                ),
+              if (mission.hasCategoryRequirement)
+                _ReqChip(
+                  switch (mission.requiredCategory) {
+                    'all' =>
+                      '💰 ${mission.requiredCategoryAmount} en cada categoría',
+                    'multi' =>
+                      '💰 ${mission.requiredCategoryAmount} en ${mission.requiredCategoryMinSpread}+ categorías ($categoriesSum/${mission.requiredCategoryAmount})',
+                    _ =>
+                      '💰 ${_categoryLabel(mission.requiredCategory!)} ≥ ${mission.requiredCategoryAmount}',
+                  },
+                  categoryOk,
+                ),
+              if (mission.hasAnyItemsRequirement)
+                _ReqChip(
+                  '🎁 ${mission.requiredAnyCount} de estos objetos ($anyItemsCount/${mission.requiredAnyCount})',
+                  anyItemsOk,
+                ),
+              if (mission.hasObjective)
+                _ReqChip(
+                  '$_objectiveIcon ${progress > mission.objectiveTarget ? mission.objectiveTarget : progress}/${mission.objectiveTarget}',
+                  objectiveOk,
                 ),
             ],
           ),
@@ -1184,6 +1297,8 @@ class _GoToDestinationButton extends ConsumerWidget {
             showWalletDialog(context);
           case 'banco_estelar':
             showBancoEstelarDialog(context);
+          case 'quizzes':
+            showQuizzesDialog(context);
         }
       },
       child: Container(

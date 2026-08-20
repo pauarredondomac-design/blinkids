@@ -9,6 +9,8 @@ import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/game_card.dart';
 import '../../../shared/widgets/game_popup.dart';
 import '../../../shared/widgets/tab_icon.dart';
+import '../../../shared/widgets/return_to_mission_banner.dart';
+import 'misiones_screen.dart';
 
 // Todas las preguntas de Quizzes dan 10 monedas fijas cada una (sin importar
 // que el banco original de cada pregunta esté en 0 para su uso como
@@ -195,7 +197,8 @@ class _QuizzesScreenState extends ConsumerState<QuizzesScreen> {
               fontSize: 20),
         ),
       ),
-      body: ScreenBackground(
+      body: Stack(children: [
+        ScreenBackground(
         child: Builder(builder: (context) {
           if (sourceAsyncs.values.any((a) => a.isLoading)) {
             return const Center(
@@ -247,6 +250,13 @@ class _QuizzesScreenState extends ConsumerState<QuizzesScreen> {
           );
         },
       )),
+        ReturnToMissionBanner(
+          onReturn: () {
+            Navigator.of(context).pop();
+            showMisionesDialog(context);
+          },
+        ),
+      ]),
     );
   }
 }

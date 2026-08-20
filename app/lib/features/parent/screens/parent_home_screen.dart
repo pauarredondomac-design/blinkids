@@ -546,8 +546,8 @@ class _LeftPanel extends StatelessWidget {
                 const SizedBox(width: 8),
                 Image.asset(
                   'assets/blink/poses/celebrando.png',
-                  width: 52,
-                  errorBuilder: (_, __, ___) => const SizedBox(width: 52),
+                  width: 80,
+                  errorBuilder: (_, __, ___) => const SizedBox(width: 80),
                 ),
               ],
             ),

@@ -323,6 +323,7 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
                                   badge: c.slot.displayName.toUpperCase(),
                                   badgeColor: const Color(0xFF00BCD4),
                                   accentColor: const Color(0xFF006064),
+                                  iconScale: 1.35,
                                   onBuy: () => _buyCostume(c, coins),
                                 )
                                     .animate(delay: (40 * i).ms)
@@ -494,6 +495,7 @@ class _ShopCard extends StatefulWidget {
     this.badge,
     this.badgeColor,
     this.accentColor = const Color(0xFF7B2FBE),
+    this.iconScale = 1.0,
     required this.onBuy,
   });
 
@@ -506,6 +508,10 @@ class _ShopCard extends StatefulWidget {
   final String? badge;
   final Color? badgeColor;
   final Color accentColor;
+  // Los PNG de cosméticos traen más margen transparente propio que los de
+  // ítems, así que se ven más chicos con el mismo BoxFit.contain — este
+  // multiplicador solo se usa para cosméticos, los ítems quedan intactos.
+  final double iconScale;
   final VoidCallback onBuy;
 
   @override
@@ -549,12 +555,15 @@ class _ShopCardState extends State<_ShopCard> {
                         Border.all(color: widget.accentColor.withOpacity(0.30)),
                   ),
                   child: widget.assetPath != null
-                      ? Image.asset(
-                          widget.assetPath!,
-                          fit: BoxFit.contain,
-                          alignment: Alignment.center,
-                          errorBuilder: (_, __, ___) => _EmojiBackground(
-                              emoji: widget.emoji, color: widget.accentColor),
+                      ? Transform.scale(
+                          scale: widget.iconScale,
+                          child: Image.asset(
+                            widget.assetPath!,
+                            fit: BoxFit.contain,
+                            alignment: Alignment.center,
+                            errorBuilder: (_, __, ___) => _EmojiBackground(
+                                emoji: widget.emoji, color: widget.accentColor),
+                          ),
                         )
                       : _EmojiBackground(
                           emoji: widget.emoji, color: widget.accentColor),

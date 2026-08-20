@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/crafting_job.dart';
 import '../../data/models/mission.dart';
+import '../../data/models/wallet.dart';
 import '../../data/repositories/crafting_job_repository.dart';
 import '../../data/repositories/mission_tracker.dart';
 import 'demo_progress_provider.dart';
@@ -72,15 +73,68 @@ final misionesPendingCountProvider = FutureProvider<int>((ref) async {
       ? ref.read(demoProgressProvider).coins
       : (ref.read(currentWalletProvider).valueOrNull?.totalCoins ?? 0);
 
-  final claimed = await MissionTracker().claimedMissionIds();
-  final unlockedChapter =
-      MissionTracker().unlockedChapterFrom(missions, claimed);
+  final tracker = MissionTracker();
+  final claimed = await tracker.claimedMissionIds();
+  final unlockedChapter = tracker.unlockedChapterFrom(missions, claimed);
+  final categories = await ref.read(walletCategoriesProvider.future);
+  final categoryBalance = {
+    for (final c in categories) c.category.name: c.balance,
+  };
+  final objectiveProgress = await tracker.allProgress();
+
+  // Fotos de progreso al desbloquear cada capítulo — mismo criterio "desde
+  // que se desbloqueó" que usa la pantalla de Misiones, para que el número
+  // del mapa coincida con lo que el niño ve al entrar.
+  final chapterNumbers = List.generate(unlockedChapter, (i) => i + 1);
+  final snapshotResults = await Future.wait(
+    chapterNumbers.map((c) => tracker.ensureChapterSnapshot(c)),
+  );
+  final snapshots = {
+    for (var i = 0; i < chapterNumbers.length; i++)
+      chapterNumbers[i]: snapshotResults[i],
+  };
 
   bool canClaim(Mission m) {
+    final baseline = m.chapterNumber != null
+        ? (snapshots[m.chapterNumber] ?? const {})
+        : const <String, int>{};
+    int deltaFor(String category) {
+      final delta =
+          (categoryBalance[category] ?? 0) - (baseline[category] ?? 0);
+      return delta < 0 ? 0 : delta;
+    }
+
     final itemsOk =
         m.requiredItems.every((r) => (have[r.itemId] ?? 0) >= r.qty);
     final coinsOk = coins >= m.requiredCoins;
-    return itemsOk && coinsOk;
+    final categoriesTouched =
+        assignableWalletCategories.where((t) => deltaFor(t.name) > 0).length;
+    final categoriesSum =
+        assignableWalletCategories.fold<int>(0, (s, t) => s + deltaFor(t.name));
+    final categoryOk = !m.hasCategoryRequirement ||
+        switch (m.requiredCategory) {
+          'all' => assignableWalletCategories
+              .every((t) => deltaFor(t.name) >= m.requiredCategoryAmount),
+          'multi' => categoriesSum >= m.requiredCategoryAmount &&
+              categoriesTouched >= m.requiredCategoryMinSpread,
+          _ => deltaFor(m.requiredCategory!) >= m.requiredCategoryAmount,
+        };
+    final anyItemsCount =
+        m.requiredAnyItems.fold<int>(0, (s, id) => s + (have[id] ?? 0));
+    final anyItemsOk =
+        !m.hasAnyItemsRequirement || anyItemsCount >= m.requiredAnyCount;
+    final objectiveKey = switch (m.objectiveType) {
+      MissionObjectiveType.completeQuizzes => 'quizzes',
+      MissionObjectiveType.completeJobs => 'jobs',
+      MissionObjectiveType.buyFromShop => 'purchases',
+      null => null,
+    };
+    final objectiveBaseline =
+        objectiveKey != null ? (baseline[objectiveKey] ?? 0) : 0;
+    final objectiveDelta =
+        (objectiveProgress[m.objectiveType] ?? 0) - objectiveBaseline;
+    final objectiveOk = !m.hasObjective || objectiveDelta >= m.objectiveTarget;
+    return itemsOk && coinsOk && categoryOk && anyItemsOk && objectiveOk;
   }
 
   var count = 0;

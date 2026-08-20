@@ -1064,7 +1064,6 @@ class _ConfirmJobDialog extends StatelessWidget {
           const SizedBox(height: 10),
           ...job.requirements.map((req) {
             final item = req.item;
-            final reusable = item?.isReusable == true;
             return Padding(
               padding: const EdgeInsets.only(bottom: 5),
               child: Row(
@@ -1079,12 +1078,10 @@ class _ConfirmJobDialog extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    reusable ? '(se queda contigo)' : '(se gasta)',
+                  const Text(
+                    '(se gasta)',
                     style: TextStyle(
-                      color: reusable
-                          ? Colors.greenAccent.withOpacity(0.85)
-                          : GameTokens.textSecondary,
+                      color: GameTokens.textSecondary,
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
                     ),

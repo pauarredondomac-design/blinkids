@@ -160,6 +160,41 @@ class MissionTracker {
   /// del capítulo N-1. Usado por Misiones y Trabajos para mostrar el
   /// mismo estado de bloqueo en ambas pantallas. No hace red — recibe el
   /// conjunto de reclamados ya obtenido con [claimedMissionIds].
+  // ── Foto de progreso al desbloquear un capítulo ──────────────────────────
+
+  /// Devuelve la foto de progreso (saldo por categoría + contadores de
+  /// trabajos/quizzes/compras) del capítulo indicado — si es la primera vez
+  /// que se consulta, el servidor la crea con los valores de AHORA MISMO
+  /// (ese momento pasa a ser el "desde que se desbloqueó" del capítulo).
+  /// En demo siempre es cero: cada sesión demo ya arranca limpia.
+  Future<Map<String, int>> ensureChapterSnapshot(int chapterNumber) async {
+    const zero = {
+      'guardar': 0,
+      'invertir': 0,
+      'donar': 0,
+      'gastar': 0,
+      'quizzes': 0,
+      'jobs': 0,
+      'purchases': 0,
+    };
+    if (DemoStore.isActive) return zero;
+    try {
+      final row = await _client.rpc('ensure_chapter_snapshot',
+          params: {'p_chapter_number': chapterNumber}) as Map<String, dynamic>;
+      return {
+        'guardar': row['guardar_at_unlock'] as int? ?? 0,
+        'invertir': row['invertir_at_unlock'] as int? ?? 0,
+        'donar': row['donar_at_unlock'] as int? ?? 0,
+        'gastar': row['gastar_at_unlock'] as int? ?? 0,
+        'quizzes': row['quizzes_at_unlock'] as int? ?? 0,
+        'jobs': row['jobs_at_unlock'] as int? ?? 0,
+        'purchases': row['purchases_at_unlock'] as int? ?? 0,
+      };
+    } catch (_) {
+      return zero;
+    }
+  }
+
   int unlockedChapterFrom(List<Mission> chapterMissions, Set<String> claimedIds) {
     final finales = chapterMissions
         .where((m) => m.chapterNumber != null && m.orderInChapter == 4)
