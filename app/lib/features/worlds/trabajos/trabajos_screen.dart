@@ -6,6 +6,7 @@ import '../../../data/models/crafting_job.dart';
 import '../../../data/repositories/crafting_job_repository.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../shared/providers/character_provider.dart';
 import '../../../shared/providers/demo_progress_provider.dart';
 import '../../../shared/providers/fuel_provider.dart';
@@ -187,6 +188,7 @@ class _TrabajosScreenState extends ConsumerState<TrabajosScreen> {
       ref.invalidate(inventoryProvider);
       await _loadInventory();
       await _loadCompletedJobs();
+      AnalyticsService.instance.jobCompleted(job.id, job.coinReward);
 
       if (mounted) {
         await _showRewardDialog(job);

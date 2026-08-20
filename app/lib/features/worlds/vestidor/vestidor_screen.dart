@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/cosmetic.dart';
 import '../../../data/models/item.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/providers/item_provider.dart';
 import '../../../shared/providers/blink_ambient_provider.dart';
@@ -158,6 +159,7 @@ class _VestidorScreenState extends ConsumerState<VestidorScreen> {
           changed = true;
           if (preview != null) {
             await notifier.equip(preview.id);
+            AnalyticsService.instance.cosmeticEquipped(preview.id, slot.id);
           } else {
             await notifier.unequip(slot);
           }

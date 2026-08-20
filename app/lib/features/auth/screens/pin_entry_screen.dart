@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../shared/widgets/blink_character.dart';
 
 /// Pantalla de entrada del PIN de 6 dígitos para usuarios con cuenta completa.
@@ -86,6 +87,7 @@ class _PinEntryScreenState extends State<PinEntryScreen> {
       }
 
       if (stored == _pin) {
+        AnalyticsService.instance.login('pin');
         if (mounted) context.go('/world');
         return;
       }

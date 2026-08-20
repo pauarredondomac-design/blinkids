@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/blink_dialogues_repository.dart';
+import '../../data/services/analytics_service.dart';
 import '../providers/demo_progress_provider.dart';
 
 class TutorialStep {
@@ -90,6 +91,8 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
   Future<void> _dismiss() async {
     if (mounted) setState(() => _show = false);
     widget.onReady?.call();
+    AnalyticsService.instance
+        .track('tutorial_completed', properties: {'key': widget.tutorialKey});
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
     if (user == null || user.isAnonymous) {

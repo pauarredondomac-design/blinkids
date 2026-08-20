@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/badge.dart';
 import '../../data/repositories/badge_repository.dart';
+import '../../data/services/analytics_service.dart';
 import 'auth_provider.dart';
 
 final _repo = BadgeRepository();
@@ -33,6 +34,9 @@ class BadgeCheckerNotifier extends AsyncNotifier<List<String>> {
     if (newBadges.isNotEmpty) {
       // Refrescar la lista de medallas del jugador
       ref.invalidate(playerBadgesProvider);
+      for (final badgeId in newBadges) {
+        AnalyticsService.instance.badgeEarned(badgeId);
+      }
     }
     return newBadges;
   }

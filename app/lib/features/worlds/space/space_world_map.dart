@@ -27,6 +27,7 @@ import '../tienda/tienda_screen.dart';
 import '../../wallet/screens/wallet_screen.dart';
 import '../../../shared/widgets/world_side_panels.dart';
 import '../../../shared/widgets/game_popup.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../shared/providers/badge_provider.dart';
 import '../../../shared/providers/map_badge_provider.dart';
 import '../../../shared/widgets/badge_unlock_celebration.dart';
@@ -107,6 +108,7 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(currentWorldProvider.notifier).state = 'space';
+      AnalyticsService.instance.worldEntered('space');
       NotificationHelper.checkEngagement();
       BlinkAmbientHelper.maybeGreet(ref);
       _checkOnboarding();

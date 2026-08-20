@@ -7,6 +7,7 @@ import '../../data/repositories/building_question_repository.dart';
 import '../../data/repositories/mission_tracker.dart';
 import '../../data/repositories/question_repository.dart';
 import '../../data/repositories/wallet_repository.dart';
+import '../../data/services/analytics_service.dart';
 import '../providers/demo_progress_provider.dart';
 import '../providers/wallet_provider.dart';
 import '../providers/character_provider.dart';
@@ -91,6 +92,8 @@ class _ActivityPlayerState extends ConsumerState<ActivityPlayer> {
         isCorrect: isCorrect,
       );
     }
+    AnalyticsService.instance.quizCompleted(
+        _current.id, isCorrect, isCorrect ? _current.xpReward : 0);
 
     if (!isCorrect) {
       _hadWrong = true;

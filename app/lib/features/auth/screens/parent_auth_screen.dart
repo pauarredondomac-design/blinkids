@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../data/services/analytics_service.dart';
 
 class ParentAuthScreen extends StatefulWidget {
   const ParentAuthScreen({super.key});
@@ -60,6 +61,7 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
         email: email,
         password: pass,
       );
+      AnalyticsService.instance.login('parent_email');
       if (mounted) context.go('/parent');
     } on AuthException catch (e) {
       if (mounted) {
@@ -117,6 +119,7 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
         'weekly_allowance': 500,
       });
 
+      AnalyticsService.instance.register('parent');
       if (mounted) context.go('/parent');
     } on AuthException catch (e) {
       if (mounted) {

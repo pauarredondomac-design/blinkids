@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/widgets/blink_character.dart';
 import 'pin_pad_widget.dart';
@@ -57,6 +58,7 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
       );
       ref.invalidate(equippedLoadoutProvider);
       ref.invalidate(ownedCosmeticsProvider);
+      AnalyticsService.instance.login('child_email');
       if (mounted) context.go('/world');
     } on AuthException {
       if (mounted) {

@@ -7,6 +7,7 @@ import '../../../data/models/profile.dart';
 import '../../../data/repositories/parent_repository.dart';
 import '../../../data/repositories/salary_repository.dart';
 import '../../../data/repositories/wallet_repository.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/providers/parent_mission_provider.dart';
 import '../../../shared/providers/parent_provider.dart';
@@ -63,6 +64,7 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
 
       ref.invalidate(currentWalletProvider);
       ref.invalidate(childStatsProvider(widget.child));
+      AnalyticsService.instance.coinsReceived(_sendAmount, 'parent');
       _snack('¡Enviaste $_sendAmount 🪙 a ${widget.child.displayName}!',
           const Color(0xFF2E7D32));
     } catch (e) {

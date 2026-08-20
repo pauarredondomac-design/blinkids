@@ -7,6 +7,7 @@ import '../../../data/models/item.dart';
 import '../../../data/repositories/item_definitions_repository.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../shared/providers/badge_provider.dart';
 import '../../../shared/providers/cosmetic_provider.dart';
 import '../../../shared/providers/demo_progress_provider.dart';
@@ -159,6 +160,7 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
       await ref.read(itemRepositoryProvider).addToInventory(item.id, qty);
       await MissionTracker().recordPurchase();
       ref.invalidate(inventoryProvider);
+      AnalyticsService.instance.itemPurchased(item.id, totalPrice);
       if (mounted) {
         _blinkReaction.react(BlinkMood.celebrando);
         _snack('¡Compraste ${qty}x ${item.name}!', const Color(0xFF2E7D32),
@@ -200,6 +202,7 @@ class _TiendaScreenState extends ConsumerState<TiendaScreen> {
     try {
       await ref.read(cosmeticShopProvider.notifier).buy(c.id);
       ref.invalidate(currentWalletProvider);
+      AnalyticsService.instance.cosmeticPurchased(c.id, c.price);
       final newBadges = await ref.read(badgeCheckerProvider.notifier).check();
       if (mounted) {
         _blinkReaction.react(BlinkMood.celebrando);

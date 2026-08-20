@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/mission.dart';
 import '../../../data/models/wallet.dart';
+import '../../../data/services/analytics_service.dart';
 import '../../../data/repositories/mission_tracker.dart';
 import '../../../data/repositories/wallet_repository.dart';
 import '../../../shared/providers/demo_progress_provider.dart';
@@ -269,6 +270,8 @@ class _MisionesScreenState extends ConsumerState<MisionesScreen> {
                   .addFuel('space', mission.itemReward!.qty * 10);
         }
       }
+
+      AnalyticsService.instance.missionCompleted(mission.id, mission.xpReward);
 
       if (mounted) {
         setState(() {

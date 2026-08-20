@@ -47,6 +47,9 @@ Future<void> main() async {
   runApp(const ProviderScope(child: BlinkidsApp()));
 
   // Servicios secundarios en background — no bloquean el arranque
+  // Mantener sincronizado a mano con la version: de pubspec.yaml — no hay
+  // paquete de package_info instalado, así que no se puede leer en vivo.
+  AnalyticsService.appVersion = '1.0.0+7';
   AnalyticsService.instance.appOpen(voluntaryOpen: true);
   PushNotificationService.instance.init();
 }
