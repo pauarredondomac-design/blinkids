@@ -1,3 +1,16 @@
+# Registro de plugins auto-generado por 'flutter pub get' para plataformas
+# que este proyecto no compila de verdad (linux/macos/windows) — el
+# contenido difiere entre la Mac y Windows, y estar trackeado causaba que
+# git pull abortara en la Mac cada vez ("your local changes would be
+# overwritten by merge"). Se regenera solo, no hace falta versionarlo.
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+macos/Flutter/GeneratedPluginRegistrant.swift
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
 # Credenciales locales (NUNCA commitear)
 dart_defines/local.json
 
