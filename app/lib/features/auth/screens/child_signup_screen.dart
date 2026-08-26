@@ -218,7 +218,10 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      // El paso de nombre usa el teclado del sistema — con esto en false el
+      // teclado tapaba el campo en vez de dejar que la pantalla se acomodara.
+      // El formulario ya está centrado dentro de un FittedBox que se achica
+      // solo si hace falta, así que no necesita scroll, solo este cambio.
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -361,11 +364,14 @@ class _ChildSignupScreenState extends ConsumerState<ChildSignupScreen> {
                       : null,
             ),
             onChanged: (v) {
+              final len = _sanitize(v).length;
               setState(() {
                 _nameOk = false;
-                _errorMsg = '';
+                _errorMsg = (len > 0 && len < _minLen)
+                    ? 'Tu nombre necesita al menos $_minLen letras.'
+                    : '';
               });
-              if (_sanitize(v).length >= _minLen) _checkName(v);
+              if (len >= _minLen) _checkName(v);
             },
           ),
         ),

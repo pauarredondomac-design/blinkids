@@ -150,7 +150,7 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
                   onSignOut: () async {
                     await ref.read(authRepositoryProvider).signOut();
                     if (!context.mounted) return;
-                    context.go('/child-login');
+                    context.go('/welcome');
                   },
                 ),
 

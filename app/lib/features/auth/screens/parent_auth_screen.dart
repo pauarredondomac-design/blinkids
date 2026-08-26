@@ -195,7 +195,9 @@ class _ParentAuthScreenState extends State<ParentAuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      // Los campos de correo/contraseña usan el teclado del sistema — con
+      // esto en false el teclado los tapaba. El formulario ya está en un
+      // FittedBox que se achica solo si hace falta, no necesita scroll.
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(

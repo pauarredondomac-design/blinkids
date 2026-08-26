@@ -252,7 +252,7 @@ class ProfileBottomSheet extends ConsumerWidget {
                           color: const Color(0xFF4FC3F7),
                           onTap: () {
                             Navigator.pop(context);
-                            context.push('/child-login');
+                            context.push('/welcome');
                           },
                         )
                       else
@@ -312,7 +312,7 @@ class ProfileBottomSheet extends ConsumerWidget {
               await ref.read(authRepositoryProvider).signOut();
               ref.invalidate(equippedLoadoutProvider);
               ref.invalidate(ownedCosmeticsProvider);
-              if (context.mounted) context.go('/child-login');
+              if (context.mounted) context.go('/welcome');
             },
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),

@@ -784,11 +784,10 @@ class _JobCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 7),
 
-                  // Historia
+                  // Historia — sin límite de líneas, antes se cortaba con
+                  // "..." y no había forma de leer el resto.
                   Text(
                     '"${job.story}"',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: GameTokens.textSecondary,
                       fontSize: 11,

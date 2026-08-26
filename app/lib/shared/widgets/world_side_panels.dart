@@ -88,7 +88,7 @@ class WorldLeftPanel extends ConsumerWidget {
         isChild: isChild,
         onSignIn: () {
           Navigator.pop(ctx);
-          context.push('/child-login');
+          context.push('/welcome');
         },
         onLinkParent: () {
           Navigator.pop(ctx);
@@ -98,7 +98,7 @@ class WorldLeftPanel extends ConsumerWidget {
         onSignOut: () async {
           Navigator.pop(ctx);
           await ref.read(authRepositoryProvider).signOut();
-          if (context.mounted) context.go('/child-login');
+          if (context.mounted) context.go('/welcome');
         },
       ),
     );
@@ -831,19 +831,37 @@ class WorldRightPanel extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'Hangar de Despegue',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                      // FittedBox en vez de dejar que el texto se ajuste
+                      // solo — en pantallas angostas este panel no tiene
+                      // espacio ni para la primera palabra completa, y sin
+                      // esto el texto se partía letra por letra ("Han/gar/
+                      // de/Desp/egue"). Así siempre cabe en una línea,
+                      // achicándose si hace falta, en vez de partirse.
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: const Text(
+                          'Hangar de Despegue',
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      Text(
-                        'Prepárate para Marte',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.45),
-                          fontSize: 9,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Prepárate para Marte',
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.45),
+                            fontSize: 9,
+                          ),
                         ),
                       ),
                     ],
@@ -895,11 +913,18 @@ class WorldRightPanel extends ConsumerWidget {
                       color: const Color(0xFF4FC3F7).withOpacity(0.80),
                       size: 18),
                   const SizedBox(width: 6),
-                  Text('Cambiar mundo',
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.70),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600)),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text('Cambiar mundo',
+                          maxLines: 1,
+                          softWrap: false,
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.70),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
                 ],
               ),
             ),

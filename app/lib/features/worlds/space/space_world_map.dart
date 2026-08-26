@@ -60,6 +60,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
       -35.0; // -1.0 = mueve 1px a la izquierda
   static const double structureOffsetY = 0;
 
+  // Mueve solo a Blink (sombra + personaje + burbuja), como fracción de
+  // imgH, sin tocar la estructura ni los edificios.
+  static const double blinkOffsetXFraction = 0.09;
+
   // ── Guía interactiva de bienvenida (solo primera vez, sesión real) ────────
   // Demo: recorrido corto (solo Mi Bolsa + Banco Estelar, el ciclo
   // "reparto → veo crecer") para una demo rápida. Cuenta real: los 5 edificios.
@@ -422,17 +426,49 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
         builder: (ctx, constraints) {
           final w = constraints.maxWidth;
           final h = constraints.maxHeight;
-          final panelW = w * 0.16;
+          // Máximo fijo (no solo 16% del ancho) — en tabletas, 16% de un
+          // ancho mucho mayor dejaba paneles enormes y de paso le quitaba
+          // espacio de sobra al mapa de en medio. El contenido de los
+          // paneles ya cabía bien a este tamaño en los celulares actuales.
+          final panelW = min(w * 0.16, 180.0);
 
           // ── Rect de estructuras.png en coordenadas de pantalla ────────────
           // TODO MOVER AQUÍ: structureOffsetX / structureOffsetY (arriba de
           // esta clase) mueven la estructura Y los edificios juntos, como
           // un solo bloque, porque ambos usan este mismo imgLeft/imgTop.
           const double natW = 3954, natH = 1767;
-          final imgH = h * 0.90;
-          final imgW = imgH * natW / natH;
+          double imgH = h * 0.90;
+          double imgW = imgH * natW / natH;
+          // En celulares (pantalla muy alargada) esto ya cabía solo. En
+          // tabletas (mucho menos alargadas) el resultado por alto podía ser
+          // MÁS ANCHO que la pantalla, empujando edificios como Trabajos
+          // fuera del área visible/tocable.
+          //
+          // Los edificios NO llegan hasta los bordes de estructuras.png: el
+          // más a la izquierda (Mi Bolsa) empieza a ~21% del ancho de la
+          // imagen y el más a la derecha (Trabajos) termina a ~91% (ver
+          // islandFx en _buildBuildings). Limitar con `w - 2*panelW` (como
+          // si los edificios llegaran hasta el borde) dejaba la escena mucho
+          // más chica de lo necesario en tabletas. En vez de eso, se calcula
+          // el imgW máximo que mantiene esos bordes de edificios lejos de
+          // los paneles, con un margen de seguridad de 16px.
+          const leftBuildingEdge = 0.21; // borde izq. de Mi Bolsa
+          const rightBuildingEdge = 0.91; // borde der. de Trabajos
+          const safetyMargin = 16.0;
+          final maxImgWFromRight =
+              (w / 2 - panelW - safetyMargin - structureOffsetX) /
+                  (rightBuildingEdge - 0.5);
+          final maxImgWFromLeft =
+              (panelW + safetyMargin - w / 2 - structureOffsetX) /
+                  (leftBuildingEdge - 0.5);
+          final maxImgW = min(maxImgWFromRight, maxImgWFromLeft);
+          if (imgW > maxImgW) {
+            imgW = maxImgW;
+            imgH = imgW * natH / natW;
+          }
           final imgLeft = (w - imgW) / 2 + structureOffsetX;
           final imgTop = (h - imgH) / 2 + structureOffsetY;
+          final blinkOffsetX = imgH * blinkOffsetXFraction;
 
           final (buildingWidgets, guideRect) =
               _buildBuildings(imgLeft, imgTop, imgW, imgH, demoMode: isDemo);
@@ -467,13 +503,27 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
               // ── Edificios ─────────────────────────────────────────────────
               ...buildingWidgets,
 
+              // Blink (sombra + personaje + burbuja) antes se posicionaba y
+              // dimensionaba a partir de `h` directo — en celulares eso
+              // coincidía por casualidad con el tamaño de la estructura,
+              // pero en tabletas la estructura se achica (ver el límite de
+              // ancho arriba) y Blink se quedaba con su tamaño de celular,
+              // gigante junto a los edificios ya chicos. Ahora todo el
+              // bloque usa imgLeft/imgTop/imgW/imgH — el mismo rect que
+              // usan los edificios — así que escala y se mueve junto con
+              // ellos sin importar la forma de la pantalla.
+
+              // Empuja a Blink (y su sombra/burbuja) un poco a la derecha de
+              // su posición centrada original, a pedido — como fracción de
+              // imgH para que el desplazamiento escale igual que todo lo
+              // demás del bloque.
               // ── Sombra/glow bajo Blink ────────────────────────────────────
               Positioned(
-                left: w * 0.5 - h * 0.095,
-                top: h * 0.25 + h * 0.38,
+                left: imgLeft + imgW / 2 - imgH * 0.10556 + blinkOffsetX,
+                top: imgTop + imgH * 0.64444,
                 child: Container(
-                  width: h * 0.19,
-                  height: h * 0.028,
+                  width: imgH * 0.21111,
+                  height: imgH * 0.03111,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(100),
                     gradient: RadialGradient(
@@ -489,10 +539,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
 
               // ── Blink ─────────────────────────────────────────────────────
               Positioned(
-                left: w * 0.5 - (h * 0.20) / 1.35,
-                top: h * 0.29,
+                left: imgLeft + imgW / 2 - imgH * 0.16461 + blinkOffsetX,
+                top: imgTop + imgH * 0.26667,
                 child: BlinkCharacterWidget(
-                  width: h * 0.15,
+                  width: imgH * 0.16667,
                   enableBounce: false,
                 ),
               ),
@@ -500,8 +550,8 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
               // ── Burbuja ambiental de Blink ───────────────────────────────
               if (ambientMessage != null)
                 Positioned(
-                  left: w * 0.5 - (h * 0.20) / 3.2 + h * 0.14,
-                  top: h * 0.29 - h * 0.02,
+                  left: imgLeft + imgW / 2 + imgH * 0.08611 + blinkOffsetX,
+                  top: imgTop + imgH * 0.24444,
                   child: _AmbientBubble(
                     text: ambientMessage,
                     onDismiss: () => ref
@@ -520,9 +570,10 @@ class _SpaceWorldMapState extends ConsumerState<SpaceWorldMap>
                     worldName.toUpperCase(),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.06),
+                      color: Colors.white.withOpacity(0.38),
+                      fontFamily: 'Baloo2',
                       fontSize: h * 0.065,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                       letterSpacing: 4,
                     ),
                   ),

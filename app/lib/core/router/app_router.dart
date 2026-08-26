@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'go_router_refresh_stream.dart';
 
 import '../../features/auth/screens/splash_screen.dart';
+import '../../features/auth/screens/entry_gate_screen.dart';
 import '../../features/auth/screens/child_signup_screen.dart';
 import '../../features/auth/screens/child_login_screen.dart';
 import '../../features/auth/screens/parent_auth_screen.dart';
@@ -36,6 +37,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Rutas de auth y demo — siempre accesibles
       const openRoutes = [
+        '/welcome',
         '/child-signup',
         '/child-login',
         '/parent-auth',
@@ -67,6 +69,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // ── Auth ─────────────────────────────────────────────────────────────────
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome',
+        builder: (_, __) => const EntryGateScreen(),
+      ),
       GoRoute(
         path: '/child-signup',
         name: 'child-signup',

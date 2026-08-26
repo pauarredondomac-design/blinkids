@@ -82,6 +82,14 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // El fondo (degradado + SafeArea) NUNCA se mueve ni se achica al salir
+      // el teclado — antes, con resizeToAvoidBottomInset en true (default),
+      // todo el Column se achicaba dentro del FittedBox al aparecer el
+      // teclado, viéndose "chiquito". Ahora el fondo queda fijo y solo el
+      // contenido (dentro del SingleChildScrollView de abajo) se desplaza
+      // hacia arriba lo necesario para que el campo enfocado quede visible
+      // arriba del teclado — el SizedBox(height: constraints.maxHeight)
+      // conserva el layout normal (con su Expanded) cuando no hay teclado.
       resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
@@ -92,8 +100,14 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
+          child: LayoutBuilder(builder: (context, constraints) {
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            return SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: SizedBox(
+                height: constraints.maxHeight,
+                child: Column(
+              children: [
               Expanded(
                 child: Row(
                   children: [
@@ -206,7 +220,10 @@ class _ChildLoginScreenState extends ConsumerState<ChildLoginScreen> {
                 ),
               ),
             ],
-          ),
+                ),
+              ),
+            );
+          }),
         ),
       ),
     );

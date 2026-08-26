@@ -850,8 +850,8 @@ class _MissionCard extends ConsumerWidget {
                       const SizedBox(height: 5),
                       Text(
                         '"${mission.storyText}"',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        // Sin límite de líneas — antes se cortaba con "..."
+                        // y no había forma de leer el resto de la historia.
                         style: const TextStyle(
                           color: GameTokens.textSecondary,
                           fontSize: 11,

@@ -229,11 +229,20 @@ class _AdventurerNameScreenState extends State<AdventurerNameScreen> {
                         checking: _checking,
                         available: _nameAvailable,
                         onChanged: (v) {
+                          final len = _sanitize(v).length;
                           setState(() {
-                            _errorMessage = '';
+                            // Antes esto se quedaba en silencio: el botón
+                            // simplemente no se activaba y el aviso de
+                            // "necesitas al menos 3 letras" solo salía al
+                            // tocar el botón — pero como estaba deshabilitado,
+                            // nunca se llegaba a mostrar. Ahora avisa apenas
+                            // escribe algo corto, sin esperar a que intente.
+                            _errorMessage = (len > 0 && len < _minLen)
+                                ? 'Tu nombre necesita al menos $_minLen letras.'
+                                : '';
                             _nameAvailable = false;
                           });
-                          if (_sanitize(v).length >= _minLen) _checkName(v);
+                          if (len >= _minLen) _checkName(v);
                         },
                         onSubmitted: (_) => _start(),
                       ).animate().fadeIn(delay: 600.ms),

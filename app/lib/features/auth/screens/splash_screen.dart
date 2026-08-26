@@ -47,9 +47,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
 
-    // Sin sesión → modo demo
+    // Sin sesión → pantalla de bienvenida (elegir padre/niño o probar demo)
     if (user == null) {
-      if (mounted) context.go('/world');
+      if (mounted) context.go('/welcome');
       return;
     }
 
@@ -108,9 +108,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           // Estrellas de fondo
           IgnorePointer(child: _StarField()),
 
-          // Contenido centrado
+          // Contenido centrado — SingleChildScrollView evita overflow en
+          // pantallas de poca altura (celulares en horizontal).
           Center(
-            child: Column(
+            child: SingleChildScrollView(
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -196,6 +198,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       duration: const Duration(milliseconds: 500),
                     ),
               ],
+              ),
             ),
           ),
         ],
