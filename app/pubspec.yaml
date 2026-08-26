@@ -1,7 +1,7 @@
 name: blinkids
 description: Blinkids — Videojuego educativo de finanzas personales para niños
 publish_to: none
-version: 1.0.0+8
+version: 1.0.0+9
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
