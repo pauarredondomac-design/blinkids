@@ -71,6 +71,7 @@ flutter:
     - assets/blink/
     - assets/blink/layers/
     - assets/blink/poses/
+    - assets/blink/Bolsa/
     - assets/cosmetics/shop/
     - assets/cosmetics/equipped/
     - assets/worlds/space/

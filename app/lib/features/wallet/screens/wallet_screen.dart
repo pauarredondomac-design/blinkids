@@ -4,14 +4,18 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../data/models/wallet.dart';
+import '../../../data/models/donation_cause.dart';
 import '../../../shared/providers/fuel_provider.dart';
 import '../../../shared/providers/wallet_provider.dart';
-import '../../../shared/providers/child_goal_provider.dart';
+import '../../../shared/providers/donation_provider.dart';
+import '../../../shared/providers/character_provider.dart';
+import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/providers/music_provider.dart';
 import '../../../shared/providers/sfx_provider.dart';
 import '../../../shared/widgets/screen_tutorial.dart';
 import '../../../shared/widgets/activity_player.dart';
 import '../../../shared/widgets/coin_display.dart';
+import '../../../shared/widgets/game_popup.dart';
 import '../../../shared/widgets/rocket_launch_overlay.dart';
 import '../../../shared/widgets/screen_background.dart';
 import '../../../shared/widgets/game_icon.dart';
@@ -20,6 +24,8 @@ import '../../../shared/widgets/modal_corners.dart';
 import '../../../shared/widgets/return_to_mission_banner.dart';
 import '../../../shared/theme/game_tokens.dart';
 import '../../worlds/misiones/misiones_screen.dart';
+import '../../worlds/tienda/tienda_screen.dart';
+import '../../worlds/space/banco_estelar_screen.dart';
 
 // Valor especial que _AddCoinsDialog devuelve cuando el niño toca "Ver Mis
 // Sueños" en vez de repartir monedas — así el diálogo se cierra primero y
@@ -101,45 +107,45 @@ class WalletScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         body: Stack(children: [
           ScreenBackground(
-            child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 50),
-              _CoinStackSource(available: available, enabled: true),
-              const SizedBox(height: 6),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSizes.md, 0, AppSizes.md, AppSizes.sm),
-                  child: categoriesAsync.when(
-                    data: (cats) {
-                      final totalEver = available +
-                          cats.fold<int>(0, (s, c) => s + c.balance);
-                      return _CategoriesRow(
-                        categories: cats,
-                        wallet: wallet,
-                        totalEver: totalEver,
-                        ref: ref,
-                      );
-                    },
-                    loading: () => const Center(
-                      child:
-                          CircularProgressIndicator(color: Color(0xFF4FC3F7)),
-                    ),
-                    error: (_, __) => const Center(
-                      child: Text(
-                        'No se pudo cargar la bolsa',
-                        style: TextStyle(
-                            color: Colors.white, fontFamily: 'Nunito'),
+              child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 38),
+                _CoinStackSource(available: available, enabled: true),
+                const SizedBox(height: 4),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.md, 0, AppSizes.md, AppSizes.sm),
+                    child: categoriesAsync.when(
+                      data: (cats) {
+                        final totalEver = available +
+                            cats.fold<int>(0, (s, c) => s + c.balance);
+                        return _CategoriesRow(
+                          categories: cats,
+                          wallet: wallet,
+                          totalEver: totalEver,
+                          ref: ref,
+                        );
+                      },
+                      loading: () => const Center(
+                        child:
+                            CircularProgressIndicator(color: Color(0xFF4FC3F7)),
+                      ),
+                      error: (_, __) => const Center(
+                        child: Text(
+                          'No se pudo cargar la bolsa',
+                          style: TextStyle(
+                              color: Colors.white, fontFamily: 'Nunito'),
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSizes.sm),
-            ],
-          ),
-        )),
+                const SizedBox(height: AppSizes.sm),
+              ],
+            ),
+          )),
           ReturnToMissionBanner(
             onReturn: () {
               Navigator.of(context).pop();
@@ -210,7 +216,19 @@ class _CategoriesRowState extends State<_CategoriesRow> {
 
   Future<void> _openAddDialog(WalletCategory category) async {
     final available = widget.wallet?.totalCoins ?? 0;
-    if (available <= 0) return;
+    if (available <= 0) {
+      showGamePopup(
+        context,
+        'No tienes monedas sin repartir todavía 🪙\nGana más en Trabajos o Misiones.',
+        accentColor: const Color(0xFFF59E0B),
+      );
+      return;
+    }
+
+    // Igual que Guardar/Invertir/Disfrutar: asigna monedas del pool libre
+    // al saldo de Donar. "Elegir causa" (_openDonarCauses) es un paso
+    // APARTE que reparte lo que YA está en Donar entre las 3 causas — no
+    // toca el pool libre.
     final result = await showDialog<Object>(
       context: context,
       builder: (_) => _AddCoinsDialog(category: category, available: available),
@@ -222,12 +240,35 @@ class _CategoriesRowState extends State<_CategoriesRow> {
     if (result is int) await _assignCoins(category, result);
   }
 
+  /// "Elegir causa" — reparte lo que YA está en el saldo de Donar entre las
+  /// 3 causas, RESTANDO cada reparto del saldo de Donar (igual que gastar
+  /// monedas). Si Donar llega a 0 hay que agregarle más desde el ícono.
+  Future<void> _openDonarCauses(WalletCategory category) async {
+    if (widget.wallet == null) return;
+    if (category.balance <= 0) {
+      showGamePopup(
+        context,
+        'Primero asigna monedas a Donar 💛\nToca el ícono para repartir.',
+        accentColor: const Color(0xFFF59E0B),
+      );
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (_) => _DonarCausesDialog(
+        category: category,
+        walletId: widget.wallet!.id,
+      ),
+    );
+  }
+
   Widget _cardFor(WalletCategory cat, int i) {
     return _CategoryDropZone(
       category: cat,
       totalEver: widget.totalEver,
       onCoinDropped: (amount) => _assignCoins(cat, amount),
       onTap: () => _openAddDialog(cat),
+      onDonarCausesTap: () => _openDonarCauses(cat),
       ref: widget.ref,
     )
         .animate()
@@ -324,14 +365,30 @@ class _CoinStackSource extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final amount in tiers) ...[
-              _CoinChipDraggable(amount: amount),
-              if (amount != tiers.last) const SizedBox(width: 6),
+        const Text(
+          'Arrastra las monedas',
+          style: TextStyle(
+            color: GameTokens.textSecondary,
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 4),
+        // FittedBox: si con el tamaño más grande no caben las 4 en
+        // pantallas angostas, se reduce proporcionalmente en vez de
+        // desbordarse — nunca se rompe el layout.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final amount in tiers) ...[
+                _CoinChipDraggable(amount: amount),
+                if (amount != tiers.last) const SizedBox(width: 16),
+              ],
             ],
-          ],
+          ),
         ),
       ],
     );
@@ -346,7 +403,7 @@ class _CoinChipDraggable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chip = CoinChip(coins: amount, size: CoinChipSize.sm);
+    final chip = CoinChip(coins: amount, size: CoinChipSize.md);
     return Draggable<int>(
       data: amount,
       feedback: Material(color: Colors.transparent, child: chip),
@@ -366,12 +423,64 @@ const _categoryIcons = <String, IconData>{
   'gastar': Icons.celebration_rounded,
 };
 
+// Ilustraciones de Blink por misión (assets/blink/Bolsa) — los nombres de
+// archivo traen typos de origen ("isfrutar", "onar"), se respetan tal cual
+// están en disco.
+const _categoryImages = <String, String>{
+  'guardar': 'assets/blink/Bolsa/blink_guardar.png',
+  'invertir': 'assets/blink/Bolsa/blink_invertir.png',
+  'donar': 'assets/blink/Bolsa/blink_onar.png',
+  'gastar': 'assets/blink/Bolsa/blink_isfrutar.png',
+};
+
+// A dónde lleva el botón de cada categoría. Donar todavía no tiene destino
+// (falta definir con Pau el sistema de asociaciones ficticias) — null =
+// botón "Próximamente" sin acción.
+void Function(BuildContext)? _destinationFor(WalletCategoryType type) {
+  switch (type) {
+    case WalletCategoryType.guardar:
+      return (ctx) {
+        Navigator.of(ctx).pop();
+        showTiendaDialog(ctx);
+      };
+    case WalletCategoryType.invertir:
+      return (ctx) {
+        Navigator.of(ctx).pop();
+        showBancoEstelarDialog(ctx);
+      };
+    case WalletCategoryType.gastar:
+      return (ctx) {
+        Navigator.of(ctx).pop();
+        showGoalDreamDialog(ctx);
+      };
+    case WalletCategoryType.donar:
+    case WalletCategoryType.banco_estelar:
+      return null;
+  }
+}
+
+String _destinationLabel(WalletCategoryType type) {
+  switch (type) {
+    case WalletCategoryType.guardar:
+      return 'Ir a Tienda';
+    case WalletCategoryType.invertir:
+      return 'Ir a Banco Estelar';
+    case WalletCategoryType.gastar:
+      return 'Ver mis metas';
+    case WalletCategoryType.donar:
+      return 'Elegir causa';
+    default:
+      return 'Próximamente';
+  }
+}
+
 class _CategoryDropZone extends StatefulWidget {
   const _CategoryDropZone({
     required this.category,
     required this.totalEver,
     required this.onCoinDropped,
     required this.onTap,
+    required this.onDonarCausesTap,
     required this.ref,
   });
 
@@ -379,6 +488,9 @@ class _CategoryDropZone extends StatefulWidget {
   final int totalEver;
   final ValueChanged<int> onCoinDropped;
   final VoidCallback onTap;
+
+  /// Solo se usa en la categoría Donar — abre el selector de causas.
+  final VoidCallback onDonarCausesTap;
   final WidgetRef ref;
 
   /// Acento de color por categoría — se conserva como identidad de cada
@@ -489,13 +601,6 @@ class _CategoryDropZoneState extends State<_CategoryDropZone>
                   ),
                 ),
                 const SizedBox(height: 2),
-                GameIcon(
-                  name: category.category.name,
-                  fallback:
-                      _categoryIcons[category.category.name] ?? Icons.star_rounded,
-                  size: 138,
-                ),
-                const SizedBox(height: 2),
                 Text(
                   '${category.balance}',
                   style: const TextStyle(
@@ -504,6 +609,29 @@ class _CategoryDropZoneState extends State<_CategoryDropZone>
                     fontFamily: 'Nunito',
                     fontSize: 14,
                   ),
+                ),
+                const SizedBox(height: 2),
+                Image.asset(
+                  _categoryImages[category.category.name] ?? '',
+                  width: 110,
+                  height: 110,
+                  errorBuilder: (_, __, ___) => GameIcon(
+                    name: category.category.name,
+                    fallback: _categoryIcons[category.category.name] ??
+                        Icons.star_rounded,
+                    size: 110,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _DestinationButton(
+                  label: _destinationLabel(category.category),
+                  accent: accent,
+                  // Donar no sale a otra pantalla — reparte lo que ya está
+                  // en su saldo entre las 3 causas (onDonarCausesTap), un
+                  // paso APARTE de asignar monedas nuevas (widget.onTap).
+                  onTap: category.category == WalletCategoryType.donar
+                      ? (_) => widget.onDonarCausesTap()
+                      : _destinationFor(category.category),
                 ),
               ],
             ),
@@ -544,6 +672,51 @@ class _CategoryDropZoneState extends State<_CategoryDropZone>
 }
 
 // ─────────────────────────────────────────────
+// Botón "Ir a..." — lleva a la pantalla donde esa categoría cobra vida
+// (Tienda, Banco Estelar, Mis Metas). Toque independiente del ícono de
+// arriba (que sigue abriendo el diálogo de repartir monedas).
+// ─────────────────────────────────────────────
+class _DestinationButton extends StatelessWidget {
+  const _DestinationButton({
+    required this.label,
+    required this.accent,
+    required this.onTap,
+  });
+  final String label;
+  final Color accent;
+  final void Function(BuildContext)? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return GestureDetector(
+      onTap: enabled ? () => onTap!(context) : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: enabled ? accent.withOpacity(0.16) : Colors.white10,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: enabled ? accent.withOpacity(0.55) : Colors.white24),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: enabled ? accent : GameTokens.textMuted,
+            fontWeight: FontWeight.w800,
+            fontFamily: 'Nunito',
+            fontSize: 10.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
 // Diálogo — agregar la cantidad que el niño quiera (solo suma)
 // ─────────────────────────────────────────────
 class _AddCoinsDialog extends ConsumerStatefulWidget {
@@ -569,7 +742,385 @@ class _AddCoinsDialogState extends ConsumerState<_AddCoinsDialog> {
   @override
   Widget build(BuildContext context) {
     final amount = _amount.round();
-    final isGastar = widget.category.category == WalletCategoryType.gastar;
+
+    // Pantalla completa (sin scroll): Blink se mueve a un ícono chico en la
+    // esquina superior izquierda junto al título, para liberar espacio
+    // vertical para el slider y los botones rápidos.
+    return Dialog(
+      backgroundColor: const Color(0xFF0D1B3E),
+      insetPadding: EdgeInsets.zero,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      child: SizedBox.expand(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSizes.lg, vertical: AppSizes.md),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Image.asset(
+                      _categoryImages[widget.category.category.name] ?? '',
+                      width: 44,
+                      height: 44,
+                      errorBuilder: (_, __, ___) => GameIcon(
+                        name: widget.category.category.name,
+                        fallback:
+                            _categoryIcons[widget.category.category.name] ??
+                                Icons.star_rounded,
+                        size: 44,
+                        color: _accent,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.category.category.displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Nunito',
+                              fontSize: AppSizes.fontLg,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Tienes ${widget.available} monedas por repartir',
+                            style: const TextStyle(
+                                color: GameTokens.textSecondary,
+                                fontFamily: 'Nunito',
+                                fontSize: AppSizes.fontSm),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded,
+                          color: GameTokens.textSecondary),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const AnimatedCoin(size: 32),
+                    const SizedBox(width: 10),
+                    Text(
+                      '$amount',
+                      style: TextStyle(
+                          color: _accent,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 56,
+                          fontFamily: 'Nunito'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSizes.md),
+                Slider(
+                  value: _amount,
+                  min: 1,
+                  max: widget.available.toDouble(),
+                  divisions: widget.available > 1 ? widget.available - 1 : 1,
+                  activeColor: _accent,
+                  onChanged: (v) => setState(() => _amount = v),
+                ),
+                const SizedBox(height: AppSizes.sm),
+                Wrap(
+                  spacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    for (final q in [1, 5, 10, 25])
+                      if (q <= widget.available)
+                        _QuickPickChip(
+                            label: '$q',
+                            accent: _accent,
+                            onTap: () =>
+                                setState(() => _amount = q.toDouble())),
+                    _QuickPickChip(
+                        label: 'Todo',
+                        accent: _accent,
+                        onTap: () => setState(
+                            () => _amount = widget.available.toDouble())),
+                  ],
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancelar'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.md),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(amount),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: _accent,
+                            foregroundColor: Colors.black87),
+                        child: const Text('¡Agregar!'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSizes.xs),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Donar — elegir causa (v1: meta personal, ver donation_cause.dart)
+// ─────────────────────────────────────────────
+class _DonarCausesDialog extends ConsumerStatefulWidget {
+  const _DonarCausesDialog({required this.category, required this.walletId});
+
+  /// Categoría Donar en el momento de abrir el diálogo (saldo inicial,
+  /// mientras carga el valor en vivo desde el provider).
+  final WalletCategory category;
+  final String walletId;
+
+  @override
+  ConsumerState<_DonarCausesDialog> createState() => _DonarCausesDialogState();
+}
+
+class _DonarCausesDialogState extends ConsumerState<_DonarCausesDialog> {
+  bool _busy = false;
+
+  Future<void> _pickCause(DonationCause cause, int remaining) async {
+    if (remaining <= 0 || _busy) return;
+    final amount = await showDialog<int>(
+      context: context,
+      builder: (_) => _DonateAmountDialog(cause: cause, available: remaining),
+    );
+    if (amount == null || amount <= 0 || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      // Registra el progreso de la causa Y resta el monto del saldo de
+      // Donar (igual que gastar monedas) — así "Donar" siempre muestra
+      // lo que queda por repartir, no el histórico total.
+      final user = ref.read(currentRealUserProvider);
+      var reachedGoal = false;
+      if (user != null) {
+        reachedGoal = await ref.read(donationRepositoryProvider).donate(
+              userId: user.id,
+              causeId: cause.id,
+              amount: amount,
+              goal: cause.goal,
+            );
+        ref.invalidate(donationProgressProvider);
+      }
+
+      final currentTotal =
+          ref.read(currentWalletProvider).valueOrNull?.totalCoins ??
+              widget.category.balance;
+      await ref.read(walletRepositoryProvider).distributeCoins(
+            categoryId: widget.category.id,
+            newCategoryBalance: (remaining - amount).clamp(0, remaining),
+            walletId: widget.walletId,
+            newWalletTotal: currentTotal,
+          );
+      ref.invalidate(walletCategoriesProvider);
+
+      if (reachedGoal && mounted) {
+        await awardXp(ref, 20);
+        if (mounted) {
+          await showDialog<void>(
+            context: context,
+            builder: (_) => _DonationCompleteDialog(cause: cause),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categoriesAsync = ref.watch(walletCategoriesProvider);
+    final progressAsync = ref.watch(donationProgressProvider);
+    final progress = progressAsync.valueOrNull ?? {};
+    WalletCategory? liveCategory;
+    for (final c in categoriesAsync.valueOrNull ?? const <WalletCategory>[]) {
+      if (c.id == widget.category.id) {
+        liveCategory = c;
+        break;
+      }
+    }
+    final remaining = liveCategory?.balance ?? widget.category.balance;
+
+    return Dialog(
+      backgroundColor: const Color(0xFF060618),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        side: BorderSide(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.lg, vertical: AppSizes.md),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('🌍', style: TextStyle(fontSize: 52)),
+              const SizedBox(height: 6),
+              const Text(
+                'Desde aquí vemos que en la Tierra\nhay causas que necesitan ayuda',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const AnimatedCoin(size: 16),
+                  const SizedBox(width: 4),
+                  Text('$remaining sin repartir entre causas',
+                      style: const TextStyle(
+                          color: GameTokens.gold,
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              for (final cause in donationCauses) ...[
+                _CauseCard(
+                  cause: cause,
+                  progress: progress[cause.id] ?? DonationCauseProgress.empty,
+                  enabled: !_busy && remaining > 0,
+                  onTap: () => _pickCause(cause, remaining),
+                ),
+                if (cause != donationCauses.last) const SizedBox(height: 10),
+              ],
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cerrar',
+                    style: TextStyle(
+                        color: GameTokens.textMuted, fontFamily: 'Nunito')),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CauseCard extends StatelessWidget {
+  const _CauseCard({
+    required this.cause,
+    required this.progress,
+    required this.enabled,
+    required this.onTap,
+  });
+  final DonationCause cause;
+  final DonationCauseProgress progress;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (progress.amount / cause.goal).clamp(0.0, 1.0);
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.5,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: GameTokens.bgPanel.withOpacity(0.75),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: Row(
+            children: [
+              Text(cause.emoji, style: const TextStyle(fontSize: 30)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(cause.label,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'Nunito',
+                                fontSize: 14)),
+                        const Spacer(),
+                        Text('${progress.amount}/${cause.goal}',
+                            style: const TextStyle(
+                                color: GameTokens.gold,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Nunito',
+                                fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: pct,
+                        minHeight: 8,
+                        backgroundColor: Colors.white12,
+                        color: const Color(0xFFF59E0B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DonateAmountDialog extends StatefulWidget {
+  const _DonateAmountDialog({required this.cause, required this.available});
+  final DonationCause cause;
+  final int available;
+
+  @override
+  State<_DonateAmountDialog> createState() => _DonateAmountDialogState();
+}
+
+class _DonateAmountDialogState extends State<_DonateAmountDialog> {
+  static const _accent = Color(0xFFF59E0B);
+  late double _amount;
+
+  @override
+  void initState() {
+    super.initState();
+    _amount = widget.available.clamp(1, widget.available).toDouble();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = _amount.round();
 
     return Dialog(
       backgroundColor: const Color(0xFF0D1B3E),
@@ -577,157 +1128,164 @@ class _AddCoinsDialogState extends ConsumerState<_AddCoinsDialog> {
         borderRadius: BorderRadius.circular(AppSizes.radiusXl),
         side: BorderSide(color: _accent.withOpacity(0.45)),
       ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.lg, vertical: AppSizes.md),
-            // Scroll de seguridad: si el contenido no cabe en pantallas
-            // cortas (celular en horizontal), no se cortan los botones de
-            // abajo — simplemente aparece scroll.
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.lg, vertical: AppSizes.md),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.cause.emoji, style: const TextStyle(fontSize: 46)),
+              const SizedBox(height: 6),
+              Text(
+                widget.cause.label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontFamily: 'Nunito',
+                  fontSize: AppSizes.fontLg,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tienes ${widget.available} monedas por repartir',
+                style: const TextStyle(
+                    color: GameTokens.textSecondary,
+                    fontFamily: 'Nunito',
+                    fontSize: AppSizes.fontSm),
+              ),
+              const SizedBox(height: AppSizes.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  GameIcon(
-                    name: widget.category.category.name,
-                    fallback: _categoryIcons[widget.category.category.name] ??
-                        Icons.star_rounded,
-                    size: 58,
-                    color: _accent,
-                  ),
-                  const SizedBox(height: 6),
+                  const AnimatedCoin(size: 26),
+                  const SizedBox(width: 8),
                   Text(
-                    widget.category.category.displayName,
+                    '$amount',
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Nunito',
-                      fontSize: AppSizes.fontLg,
-                    ),
+                        color: _accent,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 40,
+                        fontFamily: 'Nunito'),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Tienes ${widget.available} monedas por repartir',
-                    style: const TextStyle(
-                        color: GameTokens.textSecondary,
-                        fontFamily: 'Nunito',
-                        fontSize: AppSizes.fontSm),
-                  ),
-                  const SizedBox(height: AppSizes.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const AnimatedCoin(size: 26),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$amount',
-                        style: TextStyle(
-                            color: _accent,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 40,
-                            fontFamily: 'Nunito'),
-                      ),
-                    ],
-                  ),
-                  Slider(
-                    value: _amount,
-                    min: 1,
-                    max: widget.available.toDouble(),
-                    divisions:
-                        widget.available > 1 ? widget.available - 1 : 1,
-                    activeColor: _accent,
-                    onChanged: (v) => setState(() => _amount = v),
-                  ),
-                  Wrap(
-                    spacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      for (final q in [1, 5, 10, 25])
-                        if (q <= widget.available)
-                          _QuickPickChip(
-                              label: '$q',
-                              accent: _accent,
-                              onTap: () =>
-                                  setState(() => _amount = q.toDouble())),
-                      _QuickPickChip(
-                          label: 'Todo',
-                          accent: _accent,
-                          onTap: () => setState(
-                              () => _amount = widget.available.toDouble())),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.md),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Cancelar'),
-                        ),
-                      ),
-                      const SizedBox(width: AppSizes.md),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop(amount),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: _accent,
-                              foregroundColor: Colors.black87),
-                          child: const Text('¡Agregar!'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSizes.xs),
                 ],
               ),
-            ),
-          ),
-          if (isGastar)
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Consumer(builder: (context, ref, __) {
-                final goalAsync = ref.watch(currentGoalProvider);
-                final hasGoal =
-                    goalAsync.valueOrNull != null && !goalAsync.valueOrNull!.isCompleted;
-                final label = hasGoal ? 'Ver mi meta' : 'Seleccionar meta';
-                return GestureDetector(
-                  onTap: () => Navigator.of(context).pop(_kOpenGoalDream),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _accent.withOpacity(0.14),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _accent.withOpacity(0.5)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/ui/modal/categories/icon_meta.png',
-                          width: 16,
-                          height: 16,
-                          errorBuilder: (_, __, ___) => Icon(
-                              Icons.flag_rounded,
-                              size: 16,
-                              color: _accent),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(label,
-                            style: TextStyle(
-                                color: _accent,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 10.5,
-                                fontFamily: 'Nunito')),
-                      ],
+              Slider(
+                value: _amount,
+                min: 1,
+                max: widget.available.toDouble(),
+                divisions: widget.available > 1 ? widget.available - 1 : 1,
+                activeColor: _accent,
+                onChanged: (v) => setState(() => _amount = v),
+              ),
+              Wrap(
+                spacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  for (final q in [1, 5, 10, 25])
+                    if (q <= widget.available)
+                      _QuickPickChip(
+                          label: '$q',
+                          accent: _accent,
+                          onTap: () => setState(() => _amount = q.toDouble())),
+                  _QuickPickChip(
+                      label: 'Todo',
+                      accent: _accent,
+                      onTap: () => setState(
+                          () => _amount = widget.available.toDouble())),
+                ],
+              ),
+              const SizedBox(height: AppSizes.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancelar'),
                     ),
                   ),
-                );
-              }),
+                  const SizedBox(width: AppSizes.md),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(amount),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: _accent,
+                          foregroundColor: Colors.black87),
+                      child: const Text('¡Donar!'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSizes.xs),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DonationCompleteDialog extends StatelessWidget {
+  const _DonationCompleteDialog({required this.cause});
+  final DonationCause cause;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFF0D1B3E),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        side: const BorderSide(color: Color(0xFFF59E0B)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSizes.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(cause.emoji, style: const TextStyle(fontSize: 56))
+                .animate()
+                .scale(
+                    begin: const Offset(0.6, 0.6),
+                    end: const Offset(1, 1),
+                    duration: 350.ms,
+                    curve: Curves.elasticOut),
+            const SizedBox(height: 10),
+            const Text('¡Meta cumplida! 🎉',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Nunito',
+                    fontSize: 18)),
+            const SizedBox(height: 8),
+            Text(
+              cause.impactMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: GameTokens.textSecondary,
+                  fontFamily: 'Nunito',
+                  fontSize: 13,
+                  height: 1.3),
             ),
-        ],
+            const SizedBox(height: 10),
+            const Text('+20 XP',
+                style: TextStyle(
+                    color: Color(0xFFF59E0B),
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Nunito',
+                    fontSize: 14)),
+            const SizedBox(height: AppSizes.md),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF59E0B),
+                    foregroundColor: Colors.black87),
+                child: const Text('¡Genial!'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

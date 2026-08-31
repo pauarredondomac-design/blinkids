@@ -13,7 +13,6 @@ import 'blink_character.dart';
 import 'child_notification_bell.dart';
 import 'coin_display.dart';
 import 'game_popup.dart';
-import '../../features/worlds/vestidor/vestidor_screen.dart';
 import '../../features/worlds/world_selector_screen.dart';
 import '../../features/worlds/mercado/mercado_screen.dart';
 import '../providers/wallet_provider.dart';
@@ -72,7 +71,7 @@ class WorldLeftPanel extends ConsumerWidget {
   final Profile? profile;
 
   void _showWardrobeDialog(BuildContext context) {
-    showVestidorDialog(context);
+    context.push('/mi-nave');
   }
 
   void _showOptionsMenu(BuildContext context, WidgetRef ref) {

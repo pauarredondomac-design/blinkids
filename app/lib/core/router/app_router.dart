@@ -20,6 +20,9 @@ import '../../features/worlds/demo/demo_building_screen.dart';
 import '../../features/worlds/trabajos/trabajos_screen.dart';
 import '../../features/worlds/misiones/misiones_screen.dart';
 import '../../features/worlds/tienda/tienda_screen.dart';
+import '../../features/worlds/widgets/ship_hub_screen.dart';
+import '../../features/worlds/vestidor/wardrobe_screen.dart';
+import '../../features/worlds/vestidor/inventory_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -181,6 +184,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/world/forest',
         name: 'world-forest',
         builder: (_, __) => const ForestWorldMap(),
+      ),
+
+      // ── Mi nave / Vestidor / Inventario (accesible desde cualquier mundo) ────
+      GoRoute(
+        path: '/mi-nave',
+        name: 'mi-nave',
+        builder: (_, __) => const ShipHubScreen(),
+      ),
+      GoRoute(
+        path: '/mi-nave/vestidor',
+        name: 'mi-nave-vestidor',
+        builder: (_, __) => const WardrobeScreen(),
+      ),
+      GoRoute(
+        path: '/mi-nave/inventario',
+        name: 'mi-nave-inventario',
+        builder: (_, __) => const InventoryScreen(),
       ),
     ],
     errorBuilder: (_, state) => _ErrorScreen(error: state.error.toString()),

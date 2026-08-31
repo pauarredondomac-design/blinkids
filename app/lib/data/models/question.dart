@@ -135,5 +135,7 @@ class Question {
     );
   }
 
-  bool isCorrect(String answerId) => answerId == correctAnswer;
+  bool isCorrect(String answerId) => correctAnswer is List
+      ? (correctAnswer as List).contains(answerId)
+      : answerId == correctAnswer;
 }

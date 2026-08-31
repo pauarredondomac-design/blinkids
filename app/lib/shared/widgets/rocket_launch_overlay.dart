@@ -194,7 +194,9 @@ class _ForestUnlockedCard extends StatelessWidget {
           builder: (context, t, child) =>
               Transform.scale(scale: t.clamp(0.0, 1.2), child: child),
           child: Container(
-            width: 320,
+            width: (MediaQuery.sizeOf(context).width - 32)
+                .clamp(260.0, 420.0)
+                .toDouble(),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
@@ -227,9 +229,9 @@ class _ForestUnlockedCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   child: forest.unlockedImagePath != null
                       ? Image.asset(forest.unlockedImagePath!,
-                          width: 220, height: 140, fit: BoxFit.cover)
+                      width: double.infinity, height: 140, fit: BoxFit.cover)
                       : Container(
-                          width: 220,
+                          width: double.infinity,
                           height: 140,
                           color: forest.accentColor.withOpacity(0.3),
                           child: const Center(

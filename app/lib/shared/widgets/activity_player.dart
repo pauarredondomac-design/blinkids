@@ -580,7 +580,12 @@ class _ElegirBodyState extends State<_ElegirBody> {
       children: List.generate(options.length, (i) {
         final opt = options[i];
         final isSelected = _selected == opt.id;
-        final isCorrectOpt = widget.question.correctAnswer == opt.id;
+        // correctAnswer normalmente es un solo id, pero para preguntas
+        // "ambas opciones son válidas" (sin respuesta incorrecta) puede
+        // venir como lista de ids — cualquiera de ellos cuenta como acierto.
+        final _correct = widget.question.correctAnswer;
+        final isCorrectOpt =
+            _correct is List ? _correct.contains(opt.id) : _correct == opt.id;
         Color accent = Colors.white38;
         Color bg = Colors.white.withOpacity(0.05);
         IconData? trailingIcon;
@@ -1418,30 +1423,10 @@ class _DailyQuestionDialogState extends ConsumerState<_DailyQuestionDialog> {
       }
     }
 
-    if (!isCorrect) return;
-
-    if (DemoStore.isActive) {
-      ref.read(demoProgressProvider).addCoins(_q.coinReward);
-    } else {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId != null) {
-        await WalletRepository()
-            .awardStarterCoins(userId, _q.coinReward)
-            .catchError((_) {});
-        ref.invalidate(currentWalletProvider);
-      }
-    }
-
-    final newBadges = await awardXp(ref, _q.xpReward);
-    var reachedFullFuel = false;
-    if (_q.fuelReward > 0) {
-      reachedFullFuel = await ref
-          .read(fuelNotifierProvider.notifier)
-          .addFuel(widget.worldIdForFuel, _q.fuelReward);
-    }
-    if (!mounted) return;
-    showBadgeUnlockCelebrations(context, ref, newBadges);
-    if (reachedFullFuel) await handleFuelReachedFull(context, ref);
+    // La pregunta del día del edificio ya NO da recompensa (monedas/XP/
+    // combustible) — eso quedó exclusivo de Quizzes, que reutiliza este
+    // mismo banco "Diario". Antes esta pregunta y Quizzes podían dar
+    // monedas dos veces por la misma pregunta; ahora solo Quizzes paga.
   }
 
   String get _blinkPose {

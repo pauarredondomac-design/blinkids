@@ -116,6 +116,9 @@ class _CelebrationEntryState extends State<_CelebrationEntry>
     final description = widget.def?.description;
     final emoji = widget.def?.emoji ?? '🏅';
     final imageAsset = widget.def?.imageAsset;
+    final artSize = (MediaQuery.sizeOf(context).height * 0.48)
+        .clamp(180.0, 320.0)
+        .toDouble();
 
     return Positioned.fill(
       child: GestureDetector(
@@ -132,15 +135,15 @@ class _CelebrationEntryState extends State<_CelebrationEntry>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
-                      width: 320,
-                      height: 320,
+                      width: artSize,
+                      height: artSize,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
                           AnimatedBuilder(
                             animation: _rayCtrl,
                             builder: (context, _) => CustomPaint(
-                              size: const Size(320, 320),
+                            size: Size.square(artSize),
                               painter: _LightRaysPainter(_rayCtrl.value),
                             ),
                           ),

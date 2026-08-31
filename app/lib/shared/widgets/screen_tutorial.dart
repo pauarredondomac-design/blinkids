@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -126,6 +127,9 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
 
     final step = _steps[_step];
     final isLast = _step == _steps.length - 1;
+    final size = MediaQuery.sizeOf(context);
+    final blinkWidth = (size.height * 0.52).clamp(120.0, 170.0).toDouble();
+    final bubbleLeft = math.min(160.0, size.width * 0.28);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -143,8 +147,8 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
         // Globo de diálogo — esquina inferior derecha, deja espacio para Blink
         Positioned(
           bottom: 16,
-          left: 160,
-          right: 24,
+          left: bubbleLeft,
+          right: 16,
           child: GestureDetector(
             onTap: _advance,
             behavior: HitTestBehavior.opaque,
@@ -173,11 +177,11 @@ class _ScreenTutorialState extends State<ScreenTutorial> {
             onTap: _advance,
             behavior: HitTestBehavior.opaque,
             child: SizedBox(
-              width: 170,
-              height: 145,
+              width: blinkWidth,
+              height: blinkWidth * 0.85,
               child: Image.asset(
                 'assets/blink/poses/dialogo.png',
-                width: 170,
+                width: blinkWidth,
                 fit: BoxFit.fitWidth,
                 alignment: Alignment.topCenter,
                 filterQuality: FilterQuality.high,

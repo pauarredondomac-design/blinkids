@@ -158,12 +158,15 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final leftWidth = constraints.maxWidth.clamp(190.0, 240.0).toDouble();
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                         // ── Panel izquierdo ───────────────────────────────
                         SizedBox(
-                          width: 240,
+                          width: leftWidth,
                           child: _LeftPanel(wallet: wallet),
                         ),
                         const SizedBox(width: 16),
@@ -181,7 +184,9 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen>
                             ),
                           ),
                         ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -1256,7 +1261,7 @@ class _NotifOverlay extends ConsumerWidget {
           top: 0,
           right: 0,
           bottom: 0,
-          width: 360,
+          width: (MediaQuery.sizeOf(context).width * 0.82).clamp(280.0, 360.0),
           child: SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(1, 0),

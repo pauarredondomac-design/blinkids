@@ -56,6 +56,8 @@ class EntryGateScreen extends ConsumerWidget {
               child: LayoutBuilder(
                 builder: (ctx, constraints) {
                   final narrow = constraints.maxWidth < 720;
+                  final availableWidth = (constraints.maxWidth - 40).clamp(280.0, 1040.0).toDouble();
+                  final contentWidth = availableWidth;
                   return Center(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -63,7 +65,7 @@ class EntryGateScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(20),
                         child: narrow
                             ? SizedBox(
-                                width: 380,
+                                width: contentWidth,
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -78,7 +80,7 @@ class EntryGateScreen extends ConsumerWidget {
                                 ),
                               )
                             : SizedBox(
-                                width: 900,
+                                width: contentWidth,
                                 child: Row(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.center,

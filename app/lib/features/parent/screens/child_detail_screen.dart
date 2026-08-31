@@ -218,11 +218,14 @@ class _ChildDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final panelWidth = constraints.maxWidth.clamp(210.0, 260.0).toDouble();
+        return Row(
+          children: [
         // ── Panel izquierdo: carácter ──────────────────────────────────────
         SizedBox(
-          width: 260,
+          width: panelWidth,
           child: _LeftCharPanel(stats: stats),
         ),
         const VerticalDivider(width: 1, color: Colors.white10),
@@ -230,7 +233,9 @@ class _ChildDetailBody extends StatelessWidget {
         Expanded(
           child: _RightActivityPanel(child: child, stats: stats),
         ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
